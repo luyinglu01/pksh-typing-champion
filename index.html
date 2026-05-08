@@ -8,14 +8,13 @@
 <!-- ★★★ 請把下方的 firebaseConfig 換成你自己的設定 ★★★ -->
 <script>
 const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyB25e8VFzjneOwJ_0-xmlM3UA8-QF15KzM",
-  authDomain: "typing-champion-pksh.firebaseapp.com",
-  databaseURL: "https://typing-champion-pksh-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "typing-champion-pksh",
-  storageBucket: "typing-champion-pksh.firebasestorage.app",
-  messagingSenderId: "488113242984",
-  appId: "1:488113242984:web:a9a78c6ee35f0cacc78cdd",
-  measurementId: "G-MK9XZ4KZEQ"
+  apiKey: "https://typing-champion-pksh-default-rtdb.asia-southeast1.firebasedatabase.app/",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+  projectId: "YOUR_PROJECT",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
 </script>
 
@@ -209,7 +208,6 @@ textarea:disabled { opacity: 0.6; }
     <div class="config-row">
       <span class="config-label">每局題數</span>
       <select id="sel-qcount" class="config-select" style="width:auto">
-        <option value="1">1 題（單題）</option>
         <option value="3">3 題（快速）</option>
         <option value="5" selected>5 題（標準）</option>
         <option value="10">10 題（進階）</option>
@@ -279,9 +277,8 @@ textarea:disabled { opacity: 0.6; }
       <span class="live-wpm" id="g-wpm">0 字/分</span>
     </div>
   </div>
-  <div id="g-passage-title" style="font-size:12px;color:var(--text2);margin-bottom:4px;font-weight:500"></div>
   <div class="passage-box" id="g-passage"></div>
-  <textarea id="g-input" placeholder="在此輸入文字…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" onpaste="return false;" ondrop="return false;"></textarea>
+  <textarea id="g-input" placeholder="在此輸入文字…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
   <div class="stats-row">
     <div class="stat-box"><div class="stat-val" id="g-stat-wpm">0</div><div class="stat-lbl">字/分</div></div>
     <div class="stat-box"><div class="stat-val" id="g-stat-acc">100%</div><div class="stat-lbl">準確率</div></div>
@@ -499,12 +496,10 @@ function beginQuestion(data) {
   const q = data.questions[curQ];
   myTyped = '';
   myFinishedThisQ = false;
-  advancingQ = false;
   startTime = data.roundStart ? new Date(data.roundStart).getTime() : Date.now();
   const players = data.players ? Object.values(data.players) : [];
 
   document.getElementById('g-qinfo').textContent = `第 ${curQ+1} / ${data.qcount} 題`;
-  document.getElementById('g-passage-title').textContent = `題目 ${curQ+1}：`;
   document.getElementById('g-finish-banner').style.display = 'none';
   document.getElementById('g-waiting').style.display = 'none';
   renderPassage('', q.text);
@@ -568,8 +563,6 @@ function buildProgressBars(players) {
     </div>`).join('');
 }
 
-let advancingQ = false;
-
 function updateGameProgress(data, players) {
   players.forEach(p => {
     const fill = document.getElementById('pfill-' + p.uid);
@@ -578,25 +571,22 @@ function updateGameProgress(data, players) {
     if (lbl) lbl.textContent = Math.min(Math.round(p.progress||0), 100) + '%';
   });
 
-  // 判斷本題是否全員完成（finishedQ 明確等於 curQ 才算完成）
-  const allDone = players.length > 0 && players.every(p => typeof p.finishedQ === 'number' && p.finishedQ >= curQ);
-  if (allDone && isHost && data.status === 'playing' && !advancingQ) {
-    advancingQ = true;
+  // 判斷本題是否全員完成
+  const allDone = players.every(p => (p.finishedQ || -1) >= curQ);
+  if (allDone && isHost && data.status === 'playing') {
     const nextQ = curQ + 1;
-    setTimeout(() => {
-      if (nextQ >= data.qcount) {
-        db.ref('rooms/' + roomId).update({ status: 'results' });
-      } else {
-        const updates = {};
-        players.forEach(p => { updates[`players/${p.uid}/progress`] = 0; });
-        updates.currentQ = nextQ;
-        updates.roundStart = Date.now();
-        updates.status = 'countdown';
-        updates.countdownStart = Date.now();
-        db.ref('rooms/' + roomId).update(updates);
-      }
-      advancingQ = false;
-    }, 1500);
+    if (nextQ >= data.qcount) {
+      db.ref('rooms/' + roomId).update({ status: 'results' });
+    } else {
+      // 重置進度，進下一題
+      const updates = {};
+      players.forEach(p => { updates[`players/${p.uid}/progress`] = 0; });
+      updates.currentQ = nextQ;
+      updates.roundStart = Date.now();
+      updates.status = 'countdown';
+      updates.countdownStart = Date.now();
+      db.ref('rooms/' + roomId).update(updates);
+    }
   }
 }
 
