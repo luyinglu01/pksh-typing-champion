@@ -5,16 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>打字競速 — 多人連線版</title>
 
-<!-- ★★★ 請把下方的 firebaseConfig 換成你自己的設定 ★★★ -->
+<!-- ★★★ 請把下方換成你自己的 Firebase 設定 ★★★ -->
 <script>
 const FIREBASE_CONFIG = {
-  apiKey: "https://typing-champion-pksh-default-rtdb.asia-southeast1.firebasedatabase.app/",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-  projectId: "YOUR_PROJECT",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyB25e8VFzjneOwJ_0-xmlM3UA8-QF15KzM",
+  authDomain: "typing-champion-pksh.firebaseapp.com",
+  databaseURL: "https://typing-champion-pksh-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "typing-champion-pksh",
+  storageBucket: "typing-champion-pksh.firebasestorage.app",
+  messagingSenderId: "488113242984",
+  appId: "1:488113242984:web:a9a78c6ee35f0cacc78cdd",
+  measurementId: "G-MK9XZ4KZEQ"
+};
 };
 </script>
 
@@ -24,656 +26,568 @@ const FIREBASE_CONFIG = {
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --bg: #ffffff;
-  --bg2: #f5f5f3;
-  --bg3: #ebebea;
-  --text: #1a1a1a;
-  --text2: #666;
+  --bg: #ffffff; --bg2: #f5f5f3; --bg3: #ebebea;
+  --text: #1a1a1a; --text2: #666;
   --border: rgba(0,0,0,0.12);
-  --purple: #7F77DD;
-  --purple-light: #EEEDFE;
-  --purple-dark: #534AB7;
-  --green: #1D9E75;
-  --green-light: #EAF3DE;
-  --red: #E24B4A;
-  --red-light: #FCEBEB;
-  --amber: #BA7517;
-  --amber-light: #FAEEDA;
-  --radius: 8px;
-  --radius-lg: 12px;
+  --purple: #7F77DD; --purple-light: #EEEDFE; --purple-dark: #534AB7;
+  --green: #1D9E75; --green-light: #EAF3DE;
+  --red: #E24B4A; --red-light: #FCEBEB;
+  --radius: 8px; --radius-lg: 12px;
 }
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #1a1a1a; --bg2: #242424; --bg3: #2e2e2e;
     --text: #f0f0f0; --text2: #999;
     --border: rgba(255,255,255,0.12);
-    --purple-light: #26215C; --green-light: #173404;
-    --red-light: #501313; --amber-light: #412402;
+    --purple-light: #26215C; --green-light: #173404; --red-light: #501313;
   }
 }
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-.container { max-width: 680px; margin: 0 auto; padding: 2rem 1rem; }
+.wrap { max-width: 680px; margin: 0 auto; padding: 2rem 1rem; }
 h1 { font-size: 22px; font-weight: 500; margin-bottom: 6px; }
 h2 { font-size: 18px; font-weight: 500; margin-bottom: 12px; }
 .sub { font-size: 14px; color: var(--text2); margin-bottom: 1.5rem; }
 .card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 12px; }
-input[type=text], input[type=number], select {
-  width: 100%; padding: 9px 12px; border: 0.5px solid var(--border);
-  border-radius: var(--radius); font-size: 15px;
-  background: var(--bg); color: var(--text); outline: none;
-  transition: border-color .15s;
-}
+input[type=text], select { width: 100%; padding: 9px 12px; border: 0.5px solid var(--border); border-radius: var(--radius); font-size: 15px; background: var(--bg); color: var(--text); outline: none; transition: border-color .15s; }
 input:focus, select:focus { border-color: var(--purple); box-shadow: 0 0 0 3px var(--purple-light); }
-button {
-  padding: 9px 18px; border: 0.5px solid var(--border); border-radius: var(--radius);
-  background: transparent; color: var(--text); font-size: 14px; cursor: pointer;
-  transition: background .15s, transform .1s;
-}
+button { padding: 9px 18px; border: 0.5px solid var(--border); border-radius: var(--radius); background: transparent; color: var(--text); font-size: 14px; cursor: pointer; transition: background .15s, transform .1s; }
 button:hover { background: var(--bg2); }
 button:active { transform: scale(0.98); }
 button:disabled { opacity: 0.4; cursor: not-allowed; }
-.btn-primary { background: var(--purple); color: #fff; border-color: var(--purple); }
-.btn-primary:hover { background: var(--purple-dark); border-color: var(--purple-dark); }
-.btn-danger { background: var(--red); color: #fff; border-color: var(--red); }
+.btn-p { background: var(--purple); color: #fff; border-color: var(--purple); }
+.btn-p:hover { background: var(--purple-dark); border-color: var(--purple-dark); }
 .screen { display: none; }
 .screen.active { display: block; }
-.flex { display: flex; align-items: center; gap: 10px; }
-.flex-end { justify-content: flex-end; }
-.flex-between { justify-content: space-between; }
+.row { display: flex; align-items: center; gap: 10px; }
+.row-end { justify-content: flex-end; }
+.row-between { justify-content: space-between; }
 .mt1 { margin-top: 1rem; }
-.mb1 { margin-bottom: 1rem; }
+.gap8 { gap: 8px; }
 .gap12 { gap: 12px; }
 .divider { border: none; border-top: 0.5px solid var(--border); margin: 1.25rem 0; }
-
-/* Lobby */
-.room-code-display {
-  font-size: 42px; font-weight: 500; letter-spacing: 10px; color: var(--purple);
-  text-align: center; padding: 1.5rem; background: var(--purple-light);
-  border-radius: var(--radius); margin: 1rem 0;
-}
-.players-list { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
-.player-item {
-  display: flex; align-items: center; gap: 10px; padding: 10px 14px;
-  background: var(--bg2); border-radius: var(--radius);
-  border: 0.5px solid var(--border);
-}
-.player-avatar {
-  width: 36px; height: 36px; border-radius: 50%; display: flex;
-  align-items: center; justify-content: center; font-size: 13px; font-weight: 500;
-  flex-shrink: 0;
-}
-.avatar-colors { background: var(--purple-light); color: var(--purple-dark); }
-.avatar-colors:nth-child(2) { background: var(--green-light); color: var(--green); }
-.player-name { flex: 1; font-size: 15px; }
 .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
-.badge-host { background: var(--purple-light); color: var(--purple-dark); }
-.badge-ready { background: var(--green-light); color: var(--green); }
-.badge-waiting { background: var(--bg3); color: var(--text2); }
-.waiting-hint { text-align: center; color: var(--text2); font-size: 14px; padding: 1rem; }
+.badge-purple { background: var(--purple-light); color: var(--purple-dark); }
+.badge-gray { background: var(--bg3); color: var(--text2); }
 .dots::after { content: ''; animation: dots 1.5s infinite; }
 @keyframes dots { 0%{content:''} 33%{content:'.'} 66%{content:'..'} 100%{content:'...'} }
-
-/* Countdown */
-.countdown-wrap { text-align: center; padding: 4rem 0; }
-.countdown-num { font-size: 96px; font-weight: 500; color: var(--purple); animation: pop .4s ease; }
+.code-box { font-size: 42px; font-weight: 500; letter-spacing: 10px; color: var(--purple); text-align: center; padding: 1.5rem; background: var(--purple-light); border-radius: var(--radius); margin: 1rem 0; }
+.player-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--bg2); border-radius: var(--radius); border: 0.5px solid var(--border); margin-bottom: 8px; }
+.avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500; flex-shrink: 0; }
+.hint { text-align: center; color: var(--text2); font-size: 14px; padding: 1rem; }
+.cd-wrap { text-align: center; padding: 4rem 0; }
+.cd-num { font-size: 96px; font-weight: 500; color: var(--purple); animation: pop .4s ease; }
 @keyframes pop { from{transform:scale(1.4);opacity:0} to{transform:scale(1);opacity:1} }
-.countdown-label { font-size: 16px; color: var(--text2); margin-top: 12px; }
-
-/* Game */
-.game-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.q-info { font-size: 13px; color: var(--text2); }
-.live-stats { display: flex; gap: 14px; font-size: 13px; }
-.live-wpm { color: var(--purple); font-weight: 500; }
-.passage-box {
-  font-size: 16px; line-height: 1.9; padding: 1rem 1.2rem;
-  background: var(--bg2); border-radius: var(--radius);
-  margin-bottom: 10px; min-height: 80px; letter-spacing: 0.02em;
-}
-.char-correct { color: var(--green); }
-.char-wrong { color: var(--red); background: var(--red-light); border-radius: 2px; }
-.char-pending { color: var(--text2); }
-.char-cursor { border-bottom: 2px solid var(--purple); }
-textarea {
-  width: 100%; height: 90px; padding: 10px 14px; font-size: 16px;
-  border: 0.5px solid var(--border); border-radius: var(--radius);
-  background: var(--bg); color: var(--text); resize: none;
-  font-family: inherit; outline: none; transition: border-color .15s;
-  line-height: 1.6;
-}
+.game-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.q-label { font-size: 12px; color: var(--text2); font-weight: 500; margin-bottom: 4px; }
+.passage { font-size: 16px; line-height: 1.9; padding: 1rem 1.2rem; background: var(--bg2); border-radius: var(--radius); margin-bottom: 10px; min-height: 80px; letter-spacing: 0.02em; }
+.c-ok { color: var(--green); }
+.c-err { color: var(--red); background: var(--red-light); border-radius: 2px; }
+.c-dim { color: var(--text2); }
+.c-cur { border-bottom: 2px solid var(--purple); }
+textarea { width: 100%; height: 90px; padding: 10px 14px; font-size: 16px; border: 0.5px solid var(--border); border-radius: var(--radius); background: var(--bg); color: var(--text); resize: none; font-family: inherit; outline: none; transition: border-color .15s; line-height: 1.6; }
 textarea:focus { border-color: var(--purple); box-shadow: 0 0 0 3px var(--purple-light); }
 textarea:disabled { opacity: 0.6; }
-.stats-row { display: flex; gap: 10px; margin: 10px 0; }
-.stat-box { flex: 1; padding: 10px; background: var(--bg2); border-radius: var(--radius); text-align: center; }
-.stat-val { font-size: 22px; font-weight: 500; color: var(--purple); }
-.stat-lbl { font-size: 11px; color: var(--text2); margin-top: 2px; }
-.progress-section { margin: 10px 0; }
-.p-row { margin-bottom: 9px; }
-.p-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--text2); margin-bottom: 3px; }
-.p-bar { height: 8px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
-.p-fill { height: 100%; border-radius: 4px; transition: width .4s ease; }
-.colors { background: var(--purple); }
-.p-fill-1 { background: var(--purple); }
-.p-fill-2 { background: var(--green); }
-.p-fill-3 { background: #D85A30; }
-.p-fill-4 { background: #D4537E; }
-.finished-banner {
-  text-align: center; padding: 12px; background: var(--green-light);
-  border-radius: var(--radius); margin: 8px 0; color: var(--green);
-  font-size: 15px; font-weight: 500;
-}
-.waiting-others { text-align: center; padding: 10px; color: var(--text2); font-size: 14px; }
-
-/* Results */
-.result-row {
-  display: flex; align-items: center; gap: 12px; padding: 12px 14px;
-  border-radius: var(--radius); margin-bottom: 8px;
-  background: var(--bg2); border: 0.5px solid var(--border);
-}
+.stats { display: flex; gap: 10px; margin: 10px 0; }
+.stat { flex: 1; padding: 10px; background: var(--bg2); border-radius: var(--radius); text-align: center; }
+.stat-v { font-size: 22px; font-weight: 500; color: var(--purple); }
+.stat-l { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.prog-row { margin-bottom: 9px; }
+.prog-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--text2); margin-bottom: 3px; }
+.prog-bar { height: 8px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
+.prog-fill { height: 100%; border-radius: 4px; transition: width .4s ease; }
+.fin-banner { text-align: center; padding: 12px; background: var(--green-light); border-radius: var(--radius); margin: 8px 0; color: var(--green); font-size: 15px; font-weight: 500; }
+.wait-msg { text-align: center; padding: 10px; color: var(--text2); font-size: 14px; }
+.result-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--radius); margin-bottom: 8px; background: var(--bg2); border: 0.5px solid var(--border); }
 .result-row.gold { background: var(--purple-light); border-color: #AFA9EC; }
-.rank-medal { font-size: 24px; width: 32px; text-align: center; }
-.rank-name { flex: 1; font-weight: 500; }
-.rank-stats { font-size: 13px; color: var(--text2); text-align: right; }
-.rank-stats strong { color: var(--text); }
-
-/* Config row */
-.config-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
-.config-label { font-size: 14px; color: var(--text2); }
-.config-select { width: auto; padding: 6px 10px; }
-
-/* Error toast */
-.toast {
-  position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
-  background: var(--red); color: #fff; padding: 10px 20px;
-  border-radius: var(--radius); font-size: 14px; z-index: 999;
-  opacity: 0; transition: opacity .3s; pointer-events: none;
-}
+.medal { font-size: 24px; width: 32px; text-align: center; }
+.rname { flex: 1; font-weight: 500; }
+.rstat { font-size: 13px; color: var(--text2); text-align: right; }
+.rstat strong { color: var(--text); }
+.toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); background: var(--red); color: #fff; padding: 10px 20px; border-radius: var(--radius); font-size: 14px; z-index: 999; opacity: 0; transition: opacity .3s; pointer-events: none; }
 .toast.show { opacity: 1; }
 </style>
 </head>
 <body>
-<div class="container">
+<div class="wrap">
 
-<!-- ── 畫面 0：主選單 ── -->
-<div id="screen-menu" class="screen active">
-  <h1>打字競速 <span class="badge badge-host">連線版</span></h1>
+<!-- 主選單 -->
+<div id="s-menu" class="screen active">
+  <h1>算你會打-電腦應用丙級檢定補打文字 <span class="badge badge-purple">連線版</span></h1>
   <p class="sub">隨機配對，最多 4 人同時對戰</p>
-
   <div class="card">
     <div style="font-size:14px;font-weight:500;margin-bottom:10px">你的名字</div>
-    <input type="text" id="input-name" placeholder="輸入暱稱（最多 10 字）" maxlength="10">
+    <input type="text" id="inp-name" placeholder="輸入暱稱（最多 10 字）" maxlength="10">
   </div>
-
-  <div class="card" id="host-options">
+  <div class="card">
     <div style="font-size:14px;font-weight:500;margin-bottom:10px">房間設定</div>
-    <div class="config-row">
-      <span class="config-label">每局題數</span>
-      <select id="sel-qcount" class="config-select" style="width:auto">
+    <div class="row row-between" style="margin-bottom:8px">
+      <span style="font-size:14px;color:var(--text2)">每局題數</span>
+      <select id="sel-q" style="width:auto;padding:6px 10px">
+        <option value="1">1 題（單題）</option>
         <option value="3">3 題（快速）</option>
         <option value="5" selected>5 題（標準）</option>
         <option value="10">10 題（進階）</option>
         <option value="15">15 題（全部）</option>
       </select>
     </div>
-    <div class="config-row" style="margin-top:6px">
-      <span class="config-label">最少幾人開始</span>
-      <select id="sel-minplayers" class="config-select" style="width:auto">
-        <option value="1">1 人（自己就能開始）</option>
+    <div class="row row-between">
+      <span style="font-size:14px;color:var(--text2)">最少幾人開始</span>
+      <select id="sel-min" style="width:auto;padding:6px 10px">
+        <option value="1">1 人（單人）</option>
         <option value="2" selected>2 人</option>
         <option value="3">3 人</option>
         <option value="4">4 人</option>
       </select>
     </div>
   </div>
-
-  <div class="flex flex-end gap12 mt1">
-    <button class="btn-primary" onclick="joinQueue()">🔍 隨機配對加入</button>
+  <div class="row row-end mt1">
+    <button class="btn-p" onclick="joinQueue()">🔍 隨機配對加入</button>
   </div>
-  <p style="font-size:12px;color:var(--text2);margin-top:10px;text-align:center">
-    進入等候室後系統自動配對，湊齊人數即開始
-  </p>
 </div>
 
-<!-- ── 畫面 1：等候室 ── -->
-<div id="screen-lobby" class="screen">
+<!-- 等候室 -->
+<div id="s-lobby" class="screen">
   <h2>等候室</h2>
   <div class="card">
-    <div style="font-size:13px;color:var(--text2);margin-bottom:6px">房間代碼（可分享給朋友）</div>
-    <div class="room-code-display" id="lobby-code">----</div>
-    <p style="font-size:12px;color:var(--text2);text-align:center">朋友輸入此代碼可直接加入同一房間</p>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:4px">房間代碼（可分享給朋友）</div>
+    <div class="code-box" id="lob-code">----</div>
   </div>
   <div class="card">
-    <div class="flex flex-between mb1">
+    <div class="row row-between" style="margin-bottom:10px">
       <span style="font-size:14px;font-weight:500">目前玩家</span>
-      <span id="lobby-count" style="font-size:13px;color:var(--text2)">0 / 4</span>
+      <span id="lob-count" style="font-size:13px;color:var(--text2)">0 / 4</span>
     </div>
-    <div class="players-list" id="lobby-players"></div>
-    <div class="waiting-hint" id="lobby-hint">
-      等待其他玩家加入<span class="dots"></span>
-    </div>
+    <div id="lob-players"></div>
+    <div class="hint" id="lob-hint">等待其他玩家加入<span class="dots"></span></div>
   </div>
-  <div id="start-btn-row" style="display:none" class="flex flex-end gap12">
+  <div id="lob-start-row" style="display:none" class="row row-end gap8">
     <button onclick="leaveRoom()">離開</button>
-    <button class="btn-primary" id="btn-start" onclick="hostStartGame()">開始遊戲</button>
+    <button class="btn-p" id="btn-start" onclick="hostStart()">開始遊戲</button>
   </div>
-  <div id="leave-btn-row" class="flex flex-end gap12">
+  <div id="lob-leave-row" class="row row-end">
     <button onclick="leaveRoom()">離開房間</button>
   </div>
 </div>
 
-<!-- ── 畫面 2：倒數 ── -->
-<div id="screen-countdown" class="screen">
-  <div class="countdown-wrap">
-    <div class="countdown-num" id="countdown-num">3</div>
-    <div class="countdown-label">準備好了嗎？</div>
+<!-- 倒數 -->
+<div id="s-cd" class="screen">
+  <div class="cd-wrap">
+    <div class="cd-num" id="cd-num">3</div>
+    <div style="font-size:16px;color:var(--text2);margin-top:12px">準備好了嗎？</div>
   </div>
 </div>
 
-<!-- ── 畫面 3：遊戲中 ── -->
-<div id="screen-game" class="screen">
-  <div class="game-header">
-    <div class="q-info" id="g-qinfo">第 1 / 5 題</div>
-    <div class="live-stats">
+<!-- 遊戲 -->
+<div id="s-game" class="screen">
+  <div class="game-top">
+    <span id="g-qinfo" style="font-size:13px;color:var(--text2)">第 1 / 5 題</span>
+    <div class="row gap12" style="font-size:13px">
       <span id="g-timer">⏱ 0s</span>
-      <span class="live-wpm" id="g-wpm">0 字/分</span>
+      <span id="g-wpm" style="color:var(--purple);font-weight:500">0 字/分</span>
     </div>
   </div>
-  <div class="passage-box" id="g-passage"></div>
-  <textarea id="g-input" placeholder="在此輸入文字…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
-  <div class="stats-row">
-    <div class="stat-box"><div class="stat-val" id="g-stat-wpm">0</div><div class="stat-lbl">字/分</div></div>
-    <div class="stat-box"><div class="stat-val" id="g-stat-acc">100%</div><div class="stat-lbl">準確率</div></div>
-    <div class="stat-box"><div class="stat-val" id="g-stat-chars">0</div><div class="stat-lbl">已輸入</div></div>
+  <div id="g-qtitle" class="q-label"></div>
+  <div class="passage" id="g-passage"></div>
+  <textarea id="g-input" placeholder="在此輸入文字…"
+    autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+    onpaste="return false;" ondrop="return false;"></textarea>
+  <div class="stats">
+    <div class="stat"><div class="stat-v" id="g-swpm">0</div><div class="stat-l">字/分</div></div>
+    <div class="stat"><div class="stat-v" id="g-sacc">100%</div><div class="stat-l">準確率</div></div>
+    <div class="stat"><div class="stat-v" id="g-schar">0</div><div class="stat-l">已輸入</div></div>
   </div>
-  <div class="progress-section" id="g-progress"></div>
-  <div class="finished-banner" id="g-finish-banner" style="display:none"></div>
-  <div class="waiting-others" id="g-waiting" style="display:none">等待其他玩家完成本題<span class="dots"></span></div>
+  <div id="g-prog"></div>
+  <div class="fin-banner" id="g-fin" style="display:none"></div>
+  <div class="wait-msg" id="g-wait" style="display:none">等待其他玩家完成<span class="dots"></span></div>
 </div>
 
-<!-- ── 畫面 4：結果 ── -->
-<div id="screen-results" class="screen">
+<!-- 結果 -->
+<div id="s-result" class="screen">
   <h2>🏆 最終排名</h2>
-  <div id="results-list"></div>
+  <div id="res-list"></div>
   <hr class="divider">
-  <div id="results-summary" style="font-size:13px;color:var(--text2)"></div>
-  <div class="flex flex-end gap12 mt1">
-    <button onclick="backToMenu()">回主選單</button>
-    <button class="btn-primary" onclick="playAgain()">再玩一局</button>
+  <div id="res-sum" style="font-size:13px;color:var(--text2)"></div>
+  <div class="row row-end gap8 mt1">
+    <button onclick="backMenu()">回主選單</button>
+    <button class="btn-p" onclick="playAgain()">再玩一局</button>
   </div>
 </div>
 
-</div><!-- /container -->
-
+</div>
 <div class="toast" id="toast"></div>
 
 <script>
-// ── Firebase 初始化 ──
 firebase.initializeApp(FIREBASE_CONFIG);
 const db = firebase.database();
 
-// ── 15 題文章 ──
-const ALL_PASSAGES = [
+const PASSAGES = [
   "由此可知，Dell經營線上購物成功，是經過有效規劃，善用企業原本的優勢，契合市場機會，而非人云亦云、盲目上網。國內業者企圖經營線上購物業務時，不妨考慮是否也有相類似的條件或是其他利基。",
-  "由藍色巨人IBM、媒體巨擘Time Warner集團與軟體霸主Microsoft經營線上購物中心Avenue、DreamShop與線上服務業務MSN的前例來看，僅憑藉大量資金、專業技術便想在線上購物市場大小通吃的作法不切實際，缺乏本業專門領域知識往往遭致失敗命運。",
-  "為了解決在無線電環境下頻寬過小的窘境，展頻技術自然而然就被提出來了。展頻技術的方法有兩種，一種叫做直接序列，另外一種叫做跳頻。這兩種技巧都是利用一個虛擬雜訊碼產生器，來產生虛擬雜訊碼，利用這個特殊的虛擬雜訊碼與原調變後的訊號相結合而達到展頻的目的。",
-  "行業萎縮的效應若再加上我國加入WTO組織、市場開放的因素，便是加乘的效應。跨國性的公司本來就有獨特的行業經營模式，若搭配Internet為工具，便更容易接觸到終端客戶，國內廠商若不能妥善因應，將可能出現我國中小廠商直接迎戰裝備優良的跨國企業的局面。",
-  "ANSI與ETSI已決定採用DMT為ADSL的調變方式，因此標準業已產生，各電話公司均已展開部署ADSL設備。由於同時提供語音與數據傳輸服務，須於用戶家中及電信機房中裝設分歧器，將語音與數據傳輸信號分離，故導致ADSL設備成本上升，價格昂貴。",
-  "對於使用者而言，防火牆不是完全透通的，有些程式應用很可能會莫名其妙地被阻擋在門外。當有新的程式應用或是TCP/IP的服務要增加時，必須要重新開發新的過濾器，使用者在網路上所能使用的程式應用數目及服務項目，受到代理器的數量限制，不能任意加添。",
-  "1997年8月28日，法國的Fernand Portela先生宣稱Netscape Communicator的軟體出現兩個JavaScript的嚴重缺陷，當使用者配置Netscape記憶電子郵件POP所需的密碼時，惡意的網站伺服器操作員即可劫取該密碼。是項安全漏洞已經告知Netscape並被立刻修正。",
-  "在全美各地大規模的測試實驗計畫中，有部分區域已進入商用階段，並且有巨額投資將現有網路升級成雙向HFC網路，用戶每月只要付少許費用就可以快速連上網際網路。在國內除了有寶福有線電視公司在台北從事相關的實驗計畫外，新竹的竹視有線電視公司在科學園區亦有實驗計畫。",
-  "有線電纜網路系統就是提供頭端與用戶端之間雙向傳輸的功能，並將數位資料經過調變之後以類比訊號傳送。頭端除了要配備光訊號接收器以接收用戶端在上行頻道傳遞的訊號，且根據用戶需求分配合理的頻寬外，同時須具備解決碰撞的機制。",
-  "Internet Phone的出現可以說是真正開始讓人感受到網際網路也可以提供原本通信網路的服務，而且成本低廉。在學術網路上的兩個使用者只要透過兩台連接於網際網路的電腦就可以進行交談，不論相隔多遠都只要付市內電話的錢即可。",
-  "當然使用此一方式，需要天時、地利、人和的配合，再加上駭客高超的技術，缺一不可。因此筆者親自上網申請認證，在申請憑證的過程中，填寫各項資料，同時監控資料封包，這時發現了一個從以前就存在的有趣議題，只是許多人會忽略了它。",
-  "隨著公司業務的成長，辦公室擴張，公司內部的網路系統也越來越大，到了一定的程度後，還會開花結果，分株形成另外一棵樹，也就是產生了分枝辦公室。如果您用的網路作業系統是Windows NT的話，只要使用數據機，透過電話線，就可以連接兩個網路。",
-  "一般而言，一個區域內所需考慮的頻寬需求有幾類。一般的文字、檔案的更新、刪除、增加並不需要特別的頻寬，Ethernet的速度應綽綽有餘，只要在一個網路區段的節點數不要太多。然而特殊應用的軟體，如汽車風動、航太工業、氣象預報等則很有可能在一個網路區段中只有少數節點。",
-  "整合服務的主要工作，是要使分散系統與現有的有線網路能作訊息交換，即作傳輸媒介與位址的轉換。分送服務的主要工作，是將分散系統內的資料送至正確的位址上。在IEEE 802.11標準上，並未訂出此服務要如何將分散系統內的資料送至正確的位址上。",
-  "一般大眾認為，傳統的企業運算環境往往太過於複雜、安全性及穩定性不夠，應用軟體的功能並不能被每一個使用者所運用，對於桌上型系統的管理及升級的費用過高。這些缺點都可在Java的運算環境中獲得解決，這也是Java被採用為佈署應用系統最新方式的原因之一。"
+  "由藍色巨人IBM、媒體巨擘Time Warner集團與軟體霸主Microsoft經營線上購物中心Avenue、DreamShop與線上服務業務MSN的前例來看，僅憑藉大量資金、專業技術便想在線上購物市場大小通吃的作法不切實際，缺乏本業專門領域知識（Know-how）往往遭致失敗命運。",
+  "然而令人頭疼的是，如果你用無線電來當傳輸介質的話，單單利用基本的調變方式，是沒有辦法在目前受限的頻帶下傳遞大量的資料。當然事情也沒有這麼糟糕，為了解決在無線電環境下頻寬過小的窘境，展頻（Spread Spectrum）技術自然而然就被提出來了。展頻技術的方法有兩種，一種叫做直接序列（Direct Sequence），另外一種叫做跳頻（Frequency Hopping）。這兩種技巧都是利用一個虛擬雜訊碼產生器（Pseudo Noise Code Generator），來產生虛擬雜訊碼，利用這個特殊的虛擬雜訊碼與原調變後的訊號相結合而達到展頻的目的。",
+  "「行業萎縮」的效應若再加上我國加入WTO組織、市場開放的因素，便是加乘的效應，這些效應在過去可以看到的例子是保險業，外國的保險商在我國市場開放之後，這幾年挾其服務的效率與品質已搶佔了頗大的市場版圖。其他諸如貨運、金融、食品等行業不可避免地將迎戰另一波衝擊。跨國性的公司本來就有獨特的行業經營模式，若搭配Internet為工具，便更容易接觸到終端客戶，國內廠商若不能妥善因應，將可能出現我國中小廠商直接迎戰裝備優良的跨國企業的局面。",
+  "ANSI與ETSI已決定採用DMT（Discrete Multitone）為ADSL的調變方式，因此ANSIT 1.413的標準業已產生，各電話公司均已展開部署ADSL設備，唯恐在這場高速傳輸服務的競爭中缺席。ADSL的典型應用架構，由於同時提供語音與數據傳輸服務，須於用戶家中及電信機房中裝設分歧器（Splitter），將語音與數據傳輸信號分離，故導致ADSL設備成本上升，價格昂貴，且須由專業技術人員至用戶家中，將電話線重新佈線並裝置分歧器方可使用。在電話公司方面，亦須花費巨額投資。於各個電信機房加裝分歧器及DSLAM等設備。",
+  "對於使用者而言，它不是完全透通的，有些程式應用很可能會莫名其妙地被阻擋在門外；當有新的程式應用或是TCP/IP的服務要增加時，必須要重新開發新的過濾器；使用者在網路上所能使用的程式應用數目，以及服務項目，受到代理器的數量限制，不能任意加添。以一個檔案傳輸（FTP）的相同實例來看，在應用程式層的過濾方式可以用應用程式閘通道（Application Gateway）來實現。比較先進的防火牆在這一方面都做了一些補強措施，只讓真正在檔案傳輸狀態的資料封包能通過防火牆。",
+  "1997年8月28日，法國的Fernand Portela先生宣稱Netscape Communicator for Windows 95/NT 4.03版以前的軟體出現兩個JavaScript的嚴重缺陷，當使用者配置Netscape記憶電子郵件POP所需的密碼時，惡意的網站伺服器操作員即可劫取該密碼。是項安全漏洞已經告知Netscape並被立刻修正。1997年8月7日，Ben Mesander先生證實了微軟IE的Java安全漏洞。該漏洞可以讓網站伺服器的操作員用以竊取使用者的檔案，即使使用者有防火牆的安全防護亦不能倖免。這一個問題波及微軟IE 3.0與4.0的版本，Macintosh不受影響；Netscape瀏覽器如果設置HTTP Proxy Server也會受到影響。使用者可以取消Java的方式加以防堵。",
+  "在全美各地大規模的測試實驗計畫中，有部分區域已進入商用階段，並且有巨額投資將現有網路升級成雙向HFC網路，用戶每月只要付US$40左右就可以快速連上網際網路。而在國內除了有寶福有線電視公司在台北萬華、中正區從事相關的實驗計畫，實驗規模為一百戶，採用的是3Com、Hybrid以及West End的有線電視數據機外，新竹的竹視有線電視公司在科學園區亦有實驗計畫，採用的是3Com、Hybrid以及LAN city的產品。這兩個實驗計畫都是由T1連上HiNet，以提供網際網路存取服務。",
+  "有線電纜網路系統就是提供頭端與用戶端之間雙向傳輸的功能，並將數位資料經過調變（Modulation）之後以類比訊號傳送。為了在此系統中提供雙向的資訊存取服務，頭端除了要配備光訊號接收器以接收用戶端在上行（由用戶端至頭端）頻道傳遞的訊號，且根據用戶需求分配合理的頻寬外，同時須具備解決碰撞的機制，並將相關控制資訊由下行（頭端往用戶端）頻道傳給用戶端。此外，在頭端架設路由器與網際網路相連，及設置WWW快取伺服器，可以使用戶端透過有線電視數據機進行網際網路存取，無需打電話撥接，也無連線時間過長的顧忌。",
+  "Internet Phone的出現可以說是真正開始讓人感受到網際網路也可以提供原本通信網路的服務，而且成本低廉。比如在學術網路上的兩個使用者只要透過兩台連接於網際網路的電腦就可以進行交談，不論相隔多遠都只要付市內電話的錢即可，如果電腦是直接連上網際網路，而不是撥接上網，則連一毛錢都不用付，想聊多久就聊多久！這種利用分封技術為基礎的網路電話目前雖受限於頻寬的不足而影響語音的品質，但是網路技術的進步終將會克服這項瓶頸。目前許多廠商已看好這個新興的市場，而紛紛投入發展網路電信的相關技術。",
+  "當然使用此一方式，需要天時、地利、人和的配合，再加上駭客高超的技術，缺一不可，但並非人人皆有此能力可以截取到資料，因此筆者親自上網申請認證，在申請憑證的過程中，原想使用假IP攻擊法來試試，但此行為卻會觸犯法律範圍（別因小小的好奇而讓您深陷囹圄，畢竟Hacker與Cracker只有一線之隔），所以只能以正常程序申請，填寫各項資料，同時監控資料封包，這時發現了一個從以前就存在的有趣議題，只是許多人會忽略了它，所以在此提出與各位共同來討論。",
+  "隨著公司業務的成長，辦公室擴張，公司內部的網路系統也像小樹苗漸漸成長茁壯一樣越來越大，到了一定的程度後，還會開花結果，分株形成另外一棵樹，也就是產生了分枝辦公室（Branch Office）。兩個辦公室相隔了一段距離，分屬兩棟辦公大樓，如何讓兩個辦公室內的網路互通有無，就是隨之而來的挑戰。經過一段時間的嘗試後，筆者在此提供一個花費不多的方式，讓您不用購買昂貴的路由器，大費周章地再佈線連結兩個辦公室。如果您用的網路作業系統是Windows NT的話，只要使用數據機，透過電話線，就可以連接兩個網路。",
+  "一般而言，一個區域內所需考慮的頻寬需求有幾類。以下將從問題考量為出發點，再針對問題做分析與解答，以進一步有效的規劃出頻寬的需求與擴充的能量。特殊與一般的應用程式：一般的文字、檔案的更新、刪除、增加並不需要特別的頻寬，Ethernet的10Mbps或token Ring的16Mbps應綽綽有餘，只要在一個網路區段的node數不要太多（一般以不超過30個node為限）。然而特殊應用的軟體，如汽車風動、航太工業、氣象預報等則很有可能在一個網路區段中只有一到二個nodes。",
+  "整合服務（Integration）的主要工作，是要使分散系統與現有的有線網路能作訊息交換，即作傳輸媒介與位址的轉換。此工作主角，使落在埠接器（Portal）上。分送服務（Distribution）的主要工作，是將分散系統內的資料送至正確的位址上。在IEEE 802.11標準上，並未訂出此服務要如何將分散系統內的資料送至正確的位址上，但說明了要達成此工作所需必要資訊，這些資訊將由聯結服務（Association）、取消聯結服務（Disassociation）、重新聯結服務（Reassociation）等來提供。",
+  "一般大眾認為，傳統的企業運算環境，往往有以下缺點：太過於複雜、安全性及穩定性不夠、應用軟體的特性、功能、以及應用系統並不能被每一個使用者所運用、對於桌上型系統的管理及升級的費用過高、要開發並且佈署一個應用系統所需的時間過長。這些缺點都可在Java的運算環境中獲得解決！這不但是Java被採用為佈署應用系統最新方式的原因之一，更重要的是，由於Java具有跨工作平臺作業的特性，因此已成為企業採用的最佳考慮因素，使用者也不致浪費了原本在軟硬體上的投資。"
 ];
 
-// ── 工具函式 ──
-function shuffle(arr) { return [...arr].sort(() => Math.random() - .5); }
-function genRoomCode() { return Math.random().toString(36).slice(2,6).toUpperCase(); }
-function showScreen(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
-function showToast(msg, duration=3000) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), duration);
-}
+const COLORS = ['#7F77DD','#1D9E75','#D85A30','#D4537E'];
+
+// ── 工具 ──
+function shuffle(a) { return [...a].sort(() => Math.random() - .5); }
+function rndCode() { return Math.random().toString(36).slice(2,6).toUpperCase(); }
+function go(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
+function calcWpm(chars, t0) { const m = (Date.now() - t0) / 60000; return m > 0 ? Math.round(chars / m / 2) : 0; }
 
 // ── 狀態 ──
-let myUid = 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+const myUid = 'u' + Date.now() + Math.random().toString(36).slice(2,5);
 let myName = '';
 let roomId = null;
 let isHost = false;
 let roomRef = null;
-let roomListener = null;
-let gameState = null; // mirror of Firebase room
 let curQ = 0;
-let startTime = null;
-let timerInterval = null;
-let inputEnabled = false;
-let myTyped = '';
-let myFinishedThisQ = false;
+let curText = '';
+let startTime = 0;
+let timerIv = null;
+let inputOn = false;
+let typed = '';
+let doneThisQ = false;
+let lastStatus = '';
+let lastQ = -1;
 
-// ── 主選單：加入配對佇列 ──
+// ── 配對 ──
 async function joinQueue() {
-  myName = document.getElementById('input-name').value.trim();
-  if (!myName) { showToast('請先輸入你的名字'); return; }
-  const qcount = parseInt(document.getElementById('sel-qcount').value);
-  const minPlayers = parseInt(document.getElementById('sel-minplayers').value);
+  myName = document.getElementById('inp-name').value.trim();
+  if (!myName) { toast('請先輸入名字'); return; }
+  const qcount = parseInt(document.getElementById('sel-q').value);
+  const minP = parseInt(document.getElementById('sel-min').value);
 
-  // 先查有沒有等待中的房間
-  const snapshot = await db.ref('rooms').orderByChild('status').equalTo('waiting').once('value');
-  let foundRoom = null;
-  snapshot.forEach(child => {
-    const r = child.val();
-    const playerCount = r.players ? Object.keys(r.players).length : 0;
-    if (playerCount < 4 && !foundRoom) foundRoom = { id: child.key, data: r };
+  const snap = await db.ref('rooms').orderByChild('status').equalTo('waiting').once('value');
+  let found = null;
+  snap.forEach(c => {
+    const r = c.val();
+    const n = r.players ? Object.keys(r.players).length : 0;
+    if (n < 4 && !found) found = c.key;
   });
 
-  if (foundRoom) {
-    await joinRoom(foundRoom.id);
+  if (found) {
+    await doJoin(found);
   } else {
-    await createRoom(qcount, minPlayers);
+    await doCreate(qcount, minP);
   }
 }
 
-// ── 建立房間 ──
-async function createRoom(qcount, minPlayers) {
+async function doCreate(qcount, minP) {
   isHost = true;
-  const code = genRoomCode();
+  const code = rndCode();
   roomId = 'room_' + code;
-  const questions = shuffle(ALL_PASSAGES).slice(0, qcount).map((t,i)=>({id:i,text:t}));
-  const roomData = {
-    code,
-    status: 'waiting',
-    hostUid: myUid,
-    qcount,
-    minPlayers,
-    questions,
-    currentQ: 0,
-    players: {
-      [myUid]: { name: myName, uid: myUid, joinedAt: Date.now(), progress: 0, wpm: 0, totalWpm: 0, totalAcc: 0, rounds: 0, finishedQ: -1 }
-    }
-  };
-  await db.ref('rooms/' + roomId).set(roomData);
+  const qs = shuffle(PASSAGES).slice(0, qcount).map((t, i) => ({ i: i, t: t }));
+  await db.ref('rooms/' + roomId).set({
+    code: code, status: 'waiting', host: myUid,
+    qcount: qcount, minP: minP, qs: qs, q: 0, roundStart: 0,
+    players: { [myUid]: mkPlayer() }
+  });
   db.ref('rooms/' + roomId).onDisconnect().remove();
-  listenRoom();
-  showScreen('screen-lobby');
+  listen();
+  go('s-lobby');
 }
 
-// ── 加入房間 ──
-async function joinRoom(rid) {
-  roomId = rid;
+async function doJoin(rid) {
   isHost = false;
-  await db.ref('rooms/' + roomId + '/players/' + myUid).set({
-    name: myName, uid: myUid, joinedAt: Date.now(), progress: 0, wpm: 0, totalWpm: 0, totalAcc: 0, rounds: 0, finishedQ: -1
-  });
+  roomId = rid;
+  await db.ref('rooms/' + roomId + '/players/' + myUid).set(mkPlayer());
   db.ref('rooms/' + roomId + '/players/' + myUid).onDisconnect().remove();
-  listenRoom();
-  showScreen('screen-lobby');
+  listen();
+  go('s-lobby');
 }
 
-// ── 監聽房間狀態 ──
-function listenRoom() {
-  if (roomListener) db.ref('rooms/' + roomId).off('value', roomListener);
+function mkPlayer() {
+  return { name: myName, uid: myUid, prog: 0, wpm: 0, done: 0, totalWpm: 0, totalAcc: 0, rounds: 0 };
+}
+
+// ── 監聽房間 ──
+function listen() {
+  if (roomRef) roomRef.off();
   roomRef = db.ref('rooms/' + roomId);
-  roomListener = roomRef.on('value', snap => {
-    const data = snap.val();
-    if (!data) { backToMenu(); return; }
-    gameState = data;
-    handleRoomUpdate(data);
+  roomRef.on('value', function(snap) {
+    const d = snap.val();
+    if (!d) { backMenu(); return; }
+    onRoom(d);
   });
 }
 
-function handleRoomUpdate(data) {
-  const players = data.players ? Object.values(data.players) : [];
-  const playerCount = players.length;
+function onRoom(d) {
+  const ps = d.players ? Object.values(d.players) : [];
 
-  if (data.status === 'waiting') {
-    renderLobby(data, players);
-  } else if (data.status === 'countdown') {
-    showScreen('screen-countdown');
-    startCountdown(data.countdownStart || Date.now());
-  } else if (data.status === 'playing') {
-    if (document.getElementById('screen-game').classList.contains('active')) {
-      updateGameProgress(data, players);
-    } else {
-      beginQuestion(data);
+  if (d.status === 'waiting') {
+    renderLobby(d, ps);
+
+  } else if (d.status === 'countdown') {
+    if (lastStatus !== 'countdown' || lastQ !== d.q) {
+      lastStatus = 'countdown';
+      lastQ = d.q;
+      doCountdown(d.cdStart || Date.now(), d);
     }
-  } else if (data.status === 'results') {
-    showResults(data, players);
+
+  } else if (d.status === 'playing') {
+    if (d.q !== lastQ) {
+      lastQ = d.q;
+      lastStatus = 'playing';
+      startQ(d, ps);
+    } else {
+      updateBars(ps);
+      if (isHost) checkAllDone(d, ps);
+    }
+
+  } else if (d.status === 'results') {
+    if (lastStatus !== 'results') {
+      lastStatus = 'results';
+      showResults(d, ps);
+    }
   }
 }
 
-// ── 等候室渲染 ──
-function renderLobby(data, players) {
-  document.getElementById('lobby-code').textContent = data.code || '----';
-  document.getElementById('lobby-count').textContent = players.length + ' / 4';
-  const colors = ['#7F77DD','#1D9E75','#D85A30','#D4537E'];
-  document.getElementById('lobby-players').innerHTML = players.map((p,i) => `
-    <div class="player-item">
-      <div class="player-avatar" style="background:${colors[i]}22;color:${colors[i]}">${p.name.slice(0,2)}</div>
-      <div class="player-name">${p.name}</div>
-      <span class="badge ${p.uid===data.hostUid?'badge-host':'badge-waiting'}">${p.uid===data.hostUid?'房主':'等待中'}</span>
-    </div>`).join('');
-
-  const canStart = players.length >= (data.minPlayers || 2);
-  document.getElementById('lobby-hint').style.display = canStart ? 'none' : 'block';
-  if (isHost) {
-    document.getElementById('start-btn-row').style.display = canStart ? 'flex' : 'none';
-    document.getElementById('leave-btn-row').style.display = canStart ? 'none' : 'flex';
-    document.getElementById('btn-start').disabled = !canStart;
-  }
+// ── 等候室 ──
+function renderLobby(d, ps) {
+  go('s-lobby');
+  document.getElementById('lob-code').textContent = d.code || '----';
+  document.getElementById('lob-count').textContent = ps.length + ' / 4';
+  document.getElementById('lob-players').innerHTML = ps.map(function(p, i) {
+    return '<div class="player-item">' +
+      '<div class="avatar" style="background:' + COLORS[i] + '22;color:' + COLORS[i] + '">' + p.name.slice(0,2) + '</div>' +
+      '<div style="flex:1">' + p.name + '</div>' +
+      '<span class="badge ' + (p.uid === d.host ? 'badge-purple' : 'badge-gray') + '">' + (p.uid === d.host ? '房主' : '等待中') + '</span>' +
+      '</div>';
+  }).join('');
+  const canStart = ps.length >= d.minP;
+  document.getElementById('lob-hint').style.display = canStart ? 'none' : 'block';
+  document.getElementById('lob-start-row').style.display = (isHost && canStart) ? 'flex' : 'none';
+  document.getElementById('lob-leave-row').style.display = (isHost && canStart) ? 'none' : 'flex';
 }
 
-// ── 房主開始遊戲 ──
-async function hostStartGame() {
-  await db.ref('rooms/' + roomId).update({ status: 'countdown', countdownStart: Date.now() });
+async function hostStart() {
+  await db.ref('rooms/' + roomId).update({ status: 'countdown', cdStart: Date.now(), q: 0 });
 }
 
 // ── 倒數 ──
-function startCountdown(serverStart) {
-  showScreen('screen-countdown');
-  const elapsed = (Date.now() - serverStart) / 1000;
-  let n = Math.max(1, Math.ceil(3 - elapsed));
-  document.getElementById('countdown-num').textContent = n;
-  const iv = setInterval(() => {
+function doCountdown(t0, d) {
+  go('s-cd');
+  let n = Math.max(1, Math.ceil(3 - (Date.now() - t0) / 1000));
+  document.getElementById('cd-num').textContent = n;
+  const iv = setInterval(function() {
     n--;
     if (n <= 0) {
       clearInterval(iv);
       if (isHost) {
-        db.ref('rooms/' + roomId).update({ status: 'playing', currentQ: 0, roundStart: Date.now() });
+        db.ref('rooms/' + roomId).update({ status: 'playing', roundStart: Date.now() });
       }
     } else {
-      document.getElementById('countdown-num').textContent = n;
+      document.getElementById('cd-num').textContent = n;
     }
   }, 1000);
 }
 
-// ── 開始作答 ──
-function beginQuestion(data) {
-  curQ = data.currentQ || 0;
-  const q = data.questions[curQ];
-  myTyped = '';
-  myFinishedThisQ = false;
-  startTime = data.roundStart ? new Date(data.roundStart).getTime() : Date.now();
-  const players = data.players ? Object.values(data.players) : [];
+// ── 開始新題 ──
+function startQ(d, ps) {
+  curQ = d.q;
+  curText = d.qs[curQ].t;
+  typed = '';
+  doneThisQ = false;
+  startTime = d.roundStart || Date.now();
 
-  document.getElementById('g-qinfo').textContent = `第 ${curQ+1} / ${data.qcount} 題`;
-  document.getElementById('g-finish-banner').style.display = 'none';
-  document.getElementById('g-waiting').style.display = 'none';
-  renderPassage('', q.text);
-  buildProgressBars(players);
+  document.getElementById('g-qinfo').textContent = '第 ' + (curQ + 1) + ' / ' + d.qcount + ' 題';
+  document.getElementById('g-qtitle').textContent = '題目 ' + (curQ + 1) + '：';
+  document.getElementById('g-fin').style.display = 'none';
+  document.getElementById('g-wait').style.display = 'none';
+  renderPassage('', curText);
+  buildBars(ps);
 
   const inp = document.getElementById('g-input');
   inp.value = '';
   inp.disabled = false;
-  inputEnabled = true;
+  inputOn = true;
 
-  if (timerInterval) clearInterval(timerInterval);
-  timerInterval = setInterval(() => updateLiveStats(q.text), 400);
-  showScreen('screen-game');
-  setTimeout(() => inp.focus(), 100);
+  if (timerIv) clearInterval(timerIv);
+  timerIv = setInterval(function() {
+    const s = Math.round((Date.now() - startTime) / 1000);
+    document.getElementById('g-timer').textContent = '⏱ ' + s + 's';
+    document.getElementById('g-wpm').textContent = calcWpm(typed.length, startTime) + ' 字/分';
+  }, 400);
+
+  go('s-game');
+  setTimeout(function() { inp.focus(); }, 100);
 }
 
 // ── 打字輸入 ──
 document.getElementById('g-input').addEventListener('input', function() {
-  if (!inputEnabled || !gameState) return;
-  myTyped = this.value;
-  const text = gameState.questions[curQ].text;
-  renderPassage(myTyped, text);
+  if (!inputOn || !curText) return;
+  typed = this.value;
 
-  const correct = [...myTyped].filter((c,i) => c === text[i]).length;
-  const wrong = myTyped.length - correct;
-  const pct = Math.round((myTyped.length / text.length) * 100);
-  const wpm = calcWpm(myTyped.length, startTime);
-  const acc = myTyped.length > 0 ? Math.round((correct / myTyped.length) * 100) : 100;
+  renderPassage(typed, curText);
 
-  document.getElementById('g-stat-wpm').textContent = wpm;
-  document.getElementById('g-stat-acc').textContent = acc + '%';
-  document.getElementById('g-stat-chars').textContent = myTyped.length;
+  const correct = Array.from(typed).filter(function(c, i) { return c === curText[i]; }).length;
+  const pct = Math.round((typed.length / curText.length) * 100);
+  const wpm = calcWpm(typed.length, startTime);
+  const acc = typed.length > 0 ? Math.round((correct / typed.length) * 100) : 100;
+
+  document.getElementById('g-swpm').textContent = wpm;
+  document.getElementById('g-sacc').textContent = acc + '%';
+  document.getElementById('g-schar').textContent = typed.length;
   document.getElementById('g-wpm').textContent = wpm + ' 字/分';
 
-  // 更新自己進度到 Firebase（節流：只在整數 % 時更新）
-  if (pct % 2 === 0 || myTyped === text) {
-    db.ref(`rooms/${roomId}/players/${myUid}`).update({ progress: pct, wpm });
+  if (pct % 2 === 0 || typed === curText) {
+    db.ref('rooms/' + roomId + '/players/' + myUid).update({ prog: pct, wpm: wpm });
   }
 
-  if (myTyped === text && !myFinishedThisQ) {
-    myFinishedThisQ = true;
-    humanFinishedQ(wpm, acc);
+  if (typed === curText && !doneThisQ) {
+    doneThisQ = true;
+    finishQ(wpm, acc);
   }
 });
 
-function renderPassage(typed, target) {
-  document.getElementById('g-passage').innerHTML = [...target].map((c,i) => {
-    let cls = 'char-pending';
-    if (i < typed.length) cls = typed[i] === c ? 'char-correct' : 'char-wrong';
-    if (i === typed.length) cls = 'char-cursor';
-    return `<span class="${cls}">${c === ' ' ? '&nbsp;' : c}</span>`;
+function renderPassage(ty, text) {
+  document.getElementById('g-passage').innerHTML = Array.from(text).map(function(c, i) {
+    var cls = 'c-dim';
+    if (i < ty.length) cls = ty[i] === c ? 'c-ok' : 'c-err';
+    if (i === ty.length) cls = 'c-cur';
+    return '<span class="' + cls + '">' + (c === ' ' ? '&nbsp;' : c) + '</span>';
   }).join('');
 }
 
-function buildProgressBars(players) {
-  const colors = ['p-fill-1','p-fill-2','p-fill-3','p-fill-4'];
-  document.getElementById('g-progress').innerHTML = players.map((p,i) => `
-    <div class="p-row">
-      <div class="p-label"><span>${p.name}</span><span id="ppct-${p.uid}">0%</span></div>
-      <div class="p-bar"><div class="p-fill ${colors[i%4]}" id="pfill-${p.uid}" style="width:0%"></div></div>
-    </div>`).join('');
+function buildBars(ps) {
+  document.getElementById('g-prog').innerHTML = ps.map(function(p, i) {
+    return '<div class="prog-row">' +
+      '<div class="prog-label"><span>' + p.name + '</span><span id="pct-' + p.uid + '">0%</span></div>' +
+      '<div class="prog-bar"><div class="prog-fill" id="bar-' + p.uid + '" style="width:0%;background:' + COLORS[i % 4] + '"></div></div>' +
+      '</div>';
+  }).join('');
 }
 
-function updateGameProgress(data, players) {
-  players.forEach(p => {
-    const fill = document.getElementById('pfill-' + p.uid);
-    const lbl = document.getElementById('ppct-' + p.uid);
-    if (fill) fill.style.width = Math.min(p.progress||0, 100) + '%';
-    if (lbl) lbl.textContent = Math.min(Math.round(p.progress||0), 100) + '%';
+function updateBars(ps) {
+  ps.forEach(function(p) {
+    var b = document.getElementById('bar-' + p.uid);
+    var l = document.getElementById('pct-' + p.uid);
+    if (b) b.style.width = Math.min(p.prog || 0, 100) + '%';
+    if (l) l.textContent = Math.min(Math.round(p.prog || 0), 100) + '%';
+  });
+}
+
+// ── 完成本題 ──
+function finishQ(wpm, acc) {
+  clearInterval(timerIv);
+  inputOn = false;
+  document.getElementById('g-input').disabled = true;
+
+  // done 存 curQ+1，代表「已完成前N題」，初始值 0 代表還沒完成任何題
+  db.ref('rooms/' + roomId + '/players/' + myUid).once('value', function(snap) {
+    var p = snap.val() || {};
+    db.ref('rooms/' + roomId + '/players/' + myUid).update({
+      prog: 100,
+      wpm: wpm,
+      done: curQ + 1,
+      totalWpm: (p.totalWpm || 0) + wpm,
+      totalAcc: (p.totalAcc || 0) + acc,
+      rounds: (p.rounds || 0) + 1
+    });
   });
 
-  // 判斷本題是否全員完成
-  const allDone = players.every(p => (p.finishedQ || -1) >= curQ);
-  if (allDone && isHost && data.status === 'playing') {
-    const nextQ = curQ + 1;
-    if (nextQ >= data.qcount) {
+  document.getElementById('g-fin').textContent = '✅ 完成！' + wpm + ' 字/分 ｜ 準確率 ' + acc + '%';
+  document.getElementById('g-fin').style.display = 'block';
+  document.getElementById('g-wait').style.display = 'block';
+}
+
+// ── 全員完成檢查（只有房主執行，避免重複寫入）──
+var advancing = false;
+function checkAllDone(d, ps) {
+  if (advancing) return;
+  if (d.status !== 'playing') return;
+  if (ps.length === 0) return;
+
+  // 所有人的 done > curQ 才算全員完成本題
+  var allDone = ps.every(function(p) { return (p.done || 0) > curQ; });
+  if (!allDone) return;
+
+  advancing = true;
+  var nextQ = curQ + 1;
+
+  setTimeout(function() {
+    if (nextQ >= d.qcount) {
       db.ref('rooms/' + roomId).update({ status: 'results' });
     } else {
-      // 重置進度，進下一題
-      const updates = {};
-      players.forEach(p => { updates[`players/${p.uid}/progress`] = 0; });
-      updates.currentQ = nextQ;
-      updates.roundStart = Date.now();
-      updates.status = 'countdown';
-      updates.countdownStart = Date.now();
+      var updates = { status: 'countdown', cdStart: Date.now(), q: nextQ, roundStart: 0 };
+      ps.forEach(function(p) { updates['players/' + p.uid + '/prog'] = 0; });
       db.ref('rooms/' + roomId).update(updates);
     }
-  }
+    setTimeout(function() { advancing = false; }, 3000);
+  }, 1500);
 }
 
-function humanFinishedQ(wpm, acc) {
-  clearInterval(timerInterval);
-  inputEnabled = false;
-  document.getElementById('g-input').disabled = true;
-  const secs = Math.round((Date.now() - startTime) / 1000);
+// ── 結算 ──
+function showResults(d, ps) {
+  clearInterval(timerIv);
+  go('s-result');
+  var medals = ['🥇','🥈','🥉','🏅'];
+  var ranked = ps.map(function(p) {
+    return {
+      name: p.name,
+      avgWpm: p.rounds > 0 ? Math.round(p.totalWpm / p.rounds) : 0,
+      avgAcc: p.rounds > 0 ? Math.round(p.totalAcc / p.rounds) : 0
+    };
+  }).sort(function(a, b) { return b.avgWpm - a.avgWpm; });
 
-  db.ref(`rooms/${roomId}/players/${myUid}`).update({
-    progress: 100,
-    wpm,
-    finishedQ: curQ,
-    totalWpm: (gameState.players[myUid].totalWpm || 0) + wpm,
-    totalAcc: (gameState.players[myUid].totalAcc || 0) + acc,
-    rounds: (gameState.players[myUid].rounds || 0) + 1
-  });
-
-  const players = gameState.players ? Object.values(gameState.players) : [];
-  const rank = players.filter(p => (p.finishedQ||0) >= curQ).length + 1;
-  const medals = ['🥇','🥈','🥉','🏅'];
-  document.getElementById('g-finish-banner').innerHTML = `${medals[rank-1]||'✅'} 完成！${wpm} 字/分 ｜ 準確率 ${acc}%`;
-  document.getElementById('g-finish-banner').style.display = 'block';
-  document.getElementById('g-waiting').style.display = 'block';
+  document.getElementById('res-list').innerHTML = ranked.map(function(p, i) {
+    return '<div class="result-row ' + (i === 0 ? 'gold' : '') + '">' +
+      '<div class="medal">' + (medals[i] || (i+1)) + '</div>' +
+      '<div class="rname">' + p.name + '</div>' +
+      '<div class="rstat">平均 <strong>' + p.avgWpm + '</strong> 字/分 &nbsp; 準確率 <strong>' + p.avgAcc + '%</strong></div>' +
+      '</div>';
+  }).join('');
+  document.getElementById('res-sum').textContent = '共完成 ' + d.qcount + ' 題';
 }
 
-function updateLiveStats(text) {
-  if (!startTime) return;
-  const secs = Math.round((Date.now() - startTime) / 1000);
-  document.getElementById('g-timer').textContent = '⏱ ' + secs + 's';
-  const wpm = calcWpm(myTyped.length, startTime);
-  document.getElementById('g-wpm').textContent = wpm + ' 字/分';
-}
-
-function calcWpm(chars, t) {
-  const mins = (Date.now() - t) / 60000;
-  return mins > 0 ? Math.round(chars / mins / 2) : 0;
-}
-
-// ── 顯示結果 ──
-function showResults(data, players) {
-  clearInterval(timerInterval);
-  showScreen('screen-results');
-  const ranked = players.map(p => ({
-    name: p.name,
-    avgWpm: p.rounds > 0 ? Math.round(p.totalWpm / p.rounds) : 0,
-    avgAcc: p.rounds > 0 ? Math.round(p.totalAcc / p.rounds) : 0
-  })).sort((a,b) => b.avgWpm - a.avgWpm);
-  const medals = ['🥇','🥈','🥉','🏅'];
-  document.getElementById('results-list').innerHTML = ranked.map((p,i) => `
-    <div class="result-row ${i===0?'gold':''}">
-      <div class="rank-medal">${medals[i]||i+1}</div>
-      <div class="rank-name">${p.name}</div>
-      <div class="rank-stats">平均 <strong>${p.avgWpm}</strong> 字/分 &nbsp; 準確率 <strong>${p.avgAcc}%</strong></div>
-    </div>`).join('');
-  document.getElementById('results-summary').textContent = `共完成 ${data.qcount} 題`;
-}
-
-// ── 離開房間 ──
+// ── 離開 / 重玩 ──
 async function leaveRoom() {
-  if (roomId) await db.ref(`rooms/${roomId}/players/${myUid}`).remove();
-  if (roomRef) roomRef.off('value', roomListener);
-  roomId = null; isHost = false; gameState = null;
-  backToMenu();
+  if (roomId) await db.ref('rooms/' + roomId + '/players/' + myUid).remove();
+  cleanup();
+  backMenu();
 }
 
-function backToMenu() {
-  clearInterval(timerInterval);
-  if (roomRef) roomRef.off('value', roomListener);
-  roomId = null; isHost = false; gameState = null;
-  showScreen('screen-menu');
+function backMenu() {
+  cleanup();
+  go('s-menu');
+}
+
+function cleanup() {
+  clearInterval(timerIv);
+  if (roomRef) { roomRef.off(); roomRef = null; }
+  roomId = null; isHost = false;
+  curQ = 0; curText = ''; lastStatus = ''; lastQ = -1;
+  typed = ''; doneThisQ = false; inputOn = false; advancing = false;
 }
 
 async function playAgain() {
-  if (!isHost) { showToast('只有房主可以重新開始'); return; }
-  const qcount = gameState.qcount;
-  const questions = shuffle(ALL_PASSAGES).slice(0, qcount).map((t,i)=>({id:i,text:t}));
-  const updates = { status:'waiting', questions, currentQ:0 };
-  // 重置玩家分數
-  const players = gameState.players ? Object.values(gameState.players) : [];
-  players.forEach(p => {
-    updates[`players/${p.uid}/totalWpm`] = 0;
-    updates[`players/${p.uid}/totalAcc`] = 0;
-    updates[`players/${p.uid}/rounds`] = 0;
-    updates[`players/${p.uid}/finishedQ`] = -1;
-    updates[`players/${p.uid}/progress`] = 0;
+  if (!isHost) { toast('只有房主可以重新開始'); return; }
+  var snap = await db.ref('rooms/' + roomId).once('value');
+  var d = snap.val();
+  var qs = shuffle(PASSAGES).slice(0, d.qcount).map(function(t, i) { return { i: i, t: t }; });
+  var updates = { status: 'waiting', qs: qs, q: 0, roundStart: 0 };
+  var ps = d.players ? Object.values(d.players) : [];
+  ps.forEach(function(p) {
+    updates['players/' + p.uid + '/totalWpm'] = 0;
+    updates['players/' + p.uid + '/totalAcc'] = 0;
+    updates['players/' + p.uid + '/rounds'] = 0;
+    updates['players/' + p.uid + '/done'] = 0;
+    updates['players/' + p.uid + '/prog'] = 0;
   });
+  lastStatus = ''; lastQ = -1; advancing = false;
   await db.ref('rooms/' + roomId).update(updates);
 }
 </script>
