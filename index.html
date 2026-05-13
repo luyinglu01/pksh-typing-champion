@@ -104,6 +104,15 @@ textarea:disabled { opacity: 0.6; }
 .rstat strong { color: var(--text); }
 .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); background: var(--red); color: #fff; padding: 10px 20px; border-radius: var(--radius); font-size: 14px; z-index: 999; opacity: 0; transition: opacity .3s; pointer-events: none; }
 .toast.show { opacity: 1; }
+.q-mode-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 0.5px solid var(--border); }
+.q-mode-btn { flex: 1; padding: 7px; border: 0.5px solid var(--border); border-radius: var(--radius); background: transparent; color: var(--text2); font-size: 13px; cursor: pointer; text-align: center; transition: all .15s; }
+.q-mode-btn.active { background: var(--purple-light); border-color: var(--purple); color: var(--purple-dark); font-weight: 500; }
+.q-select-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; }
+.q-check { display: flex; align-items: center; gap: 6px; padding: 7px 10px; border: 0.5px solid var(--border); border-radius: var(--radius); cursor: pointer; font-size: 13px; color: var(--text2); transition: all .15s; user-select: none; }
+.q-check.checked { background: var(--purple-light); border-color: var(--purple); color: var(--purple-dark); font-weight: 500; }
+.q-check-box { width: 14px; height: 14px; border: 1.5px solid var(--border); border-radius: 3px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+.q-check.checked .q-check-box { background: var(--purple); border-color: var(--purple); color: #fff; }
+.q-select-hint { font-size: 12px; color: var(--text2); margin-top: 6px; }
 </style>
 </head>
 <body>
@@ -119,17 +128,33 @@ textarea:disabled { opacity: 0.6; }
   </div>
   <div class="card">
     <div style="font-size:14px;font-weight:500;margin-bottom:10px">房間設定</div>
-    <div class="row row-between" style="margin-bottom:8px">
-      <span style="font-size:14px;color:var(--text2)">每局題數</span>
-      <select id="sel-q" style="width:auto;padding:6px 10px">
-        <option value="1">1 題（單題）</option>
-        <option value="3">3 題（快速）</option>
-        <option value="5" selected>5 題（標準）</option>
-        <option value="10">10 題（進階）</option>
-        <option value="15">15 題（全部）</option>
-      </select>
+    <div class="q-mode-row">
+      <div class="q-mode-btn active" id="mode-random" onclick="setQMode('random')">🎲 隨機題數</div>
+      <div class="q-mode-btn" id="mode-custom" onclick="setQMode('custom')">✏️ 自選題組</div>
     </div>
-    <div class="row row-between">
+
+    <!-- 隨機模式 -->
+    <div id="random-section" style="margin-top:10px">
+      <div class="row row-between">
+        <span style="font-size:14px;color:var(--text2)">每局題數</span>
+        <select id="sel-q" style="width:auto;padding:6px 10px">
+          <option value="1">1 題（單題）</option>
+          <option value="3">3 題（快速）</option>
+          <option value="5" selected>5 題（標準）</option>
+          <option value="10">10 題（進階）</option>
+          <option value="15">15 題（全部）</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 自選模式 -->
+    <div id="custom-section" style="display:none;margin-top:10px">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:6px">勾選要練習的題組：</div>
+      <div class="q-select-grid" id="q-checkboxes"></div>
+      <div class="q-select-hint" id="q-select-hint">已選 0 題</div>
+    </div>
+
+    <div class="row row-between" style="margin-top:10px">
       <span style="font-size:14px;color:var(--text2)">最少幾人開始</span>
       <select id="sel-min" style="width:auto;padding:6px 10px">
         <option value="1">1 人（單人）</option>
@@ -223,7 +248,7 @@ const PASSAGES = [
   "由此可知，Dell經營線上購物成功，是經過有效規劃，善用企業原本的優勢，契合市場機會，而非人云亦云、盲目上網。國內業者企圖經營線上購物業務時，不妨考慮是否也有相類似的條件或是其他利基。由藍色巨人IBM、媒體巨擘Time Warner集團與軟體霸主Microsoft經營線上購物中心Avenue、DreamShop與線上服務業務MSN的前例來看，僅憑藉大量資金、專業技術便想在線上購物市場大小通吃的作法不切實際，缺乏本業專門領域知識（Know-how）往往遭致失敗命運。",
   "然而令人頭疼的是，如果你用無線電來當傳輸介質的話，單單利用基本的調變方式，是沒有辦法在目前受限的頻帶下傳遞大量的資料。當然事情也沒有這麼糟糕，為了解決在無線電環境下頻寬過小的窘境，展頻（Spread Spectrum）技術自然而然就被提出來了。展頻技術的方法有兩種，一種叫做直接序列（Direct Sequence），另外一種叫做跳頻（Frequency Hopping）。這兩種技巧都是利用一個虛擬雜訊碼產生器（Pseudo Noise Code Generator），來產生虛擬雜訊碼，利用這個特殊的虛擬雜訊碼與原調變後的訊號相結合而達到展頻的目的。",
   "「行業萎縮」的效應若再加上我國加入WTO組織、市場開放的因素，便是加乘的效應，這些效應在過去可以看到的例子是保險業，外國的保險商在我國市場開放之後，這幾年挾其服務的效率與品質已搶佔了頗大的市場版圖。其他諸如貨運、金融、食品等行業不可避免地將迎戰另一波衝擊。跨國性的公司本來就有獨特的行業經營模式，若搭配Internet為工具，便更容易接觸到終端客戶，國內廠商若不能妥善因應，將可能出現我國中小廠商直接迎戰裝備優良的跨國企業的局面。",
-  "ANSI與ETSI已決定採用DMT（Discrete Multitone）為ADSL的調變方式，因此ANSIT 1.413的標準業已產生，各電話公司均已展開部署ADSL設備，唯恐在這場高速傳輸服務的競爭中缺席。ADSL的典型應用架構，由於同時提供語音與數據傳輸服務，須於用戶家中及電信機房中裝設分歧器（Splitter），將語音與數據傳輸信號分離，故導致ADSL設備成本上升，價格昂貴，且須由專業技術人員至用戶家中，將電話線重新佈線並裝置分歧器方可使用。在電話公司方面，亦須花費巨額投資。於各個電信機房加裝分歧器及DSLAM等設備。",
+  "ANSI與ETSI已決定採用DMT（Discrete Multitone）為ADSL的調變方式，因此ANSIT 1.413的標準業已產生，各電話公司均已展開部署ADSL設備，唯恐在這場高速傳輸服務的競爭中缺席。\nADSL的典型應用架構，由於同時提供語音與數據傳輸服務，須於用戶家中及電信機房中裝設分歧器（Splitter），將語音與數據傳輸信號分離，故導致ADSL設備成本上升，價格昂貴，且須由專業技術人員至用戶家中，將電話線重新佈線並裝置分歧器方可使用。在電話公司方面，亦須花費巨額投資。於各個電信機房加裝分歧器及DSLAM等設備。",
   "對於使用者而言，它不是完全透通的，有些程式應用很可能會莫名其妙地被阻擋在門外；當有新的程式應用或是TCP/IP的服務要增加時，必須要重新開發新的過濾器；使用者在網路上所能使用的程式應用數目，以及服務項目，受到代理器的數量限制，不能任意加添。以一個檔案傳輸（FTP）的相同實例來看，在應用程式層的過濾方式可以用應用程式閘通道（Application Gateway）來實現。比較先進的防火牆在這一方面都做了一些補強措施，只讓真正在檔案傳輸狀態的資料封包能通過防火牆。",
   "1997年8月28日，法國的Fernand Portela先生宣稱Netscape Communicator for Windows 95/NT 4.03版以前的軟體出現兩個JavaScript的嚴重缺陷，當使用者配置Netscape記憶電子郵件POP所需的密碼時，惡意的網站伺服器操作員即可劫取該密碼。是項安全漏洞已經告知Netscape並被立刻修正。1997年8月7日，Ben Mesander先生證實了微軟IE的Java安全漏洞。該漏洞可以讓網站伺服器的操作員用以竊取使用者的檔案，即使使用者有防火牆的安全防護亦不能倖免。這一個問題波及微軟IE 3.0與4.0的版本，Macintosh不受影響；Netscape瀏覽器如果設置HTTP Proxy Server也會受到影響。使用者可以取消Java的方式加以防堵。",
   "在全美各地大規模的測試實驗計畫中，有部分區域已進入商用階段，並且有巨額投資將現有網路升級成雙向HFC網路，用戶每月只要付US$40左右就可以快速連上網際網路。而在國內除了有寶福有線電視公司在台北萬華、中正區從事相關的實驗計畫，實驗規模為一百戶，採用的是3Com、Hybrid以及West End的有線電視數據機外，新竹的竹視有線電視公司在科學園區亦有實驗計畫，採用的是3Com、Hybrid以及LAN city的產品。這兩個實驗計畫都是由T1連上HiNet，以提供網際網路存取服務。",
@@ -263,32 +288,92 @@ let lastStatus = '';
 let lastQ = -1;
 
 // ── 配對 ──
+var qMode = 'random';
+var selectedQs = [];
+
+function setQMode(mode) {
+  qMode = mode;
+  document.getElementById('mode-random').classList.toggle('active', mode === 'random');
+  document.getElementById('mode-custom').classList.toggle('active', mode === 'custom');
+  document.getElementById('random-section').style.display = mode === 'random' ? 'block' : 'none';
+  document.getElementById('custom-section').style.display = mode === 'custom' ? 'block' : 'none';
+  if (mode === 'custom') {
+    var grid = document.getElementById('q-checkboxes');
+    if (grid && grid.innerHTML.trim() === '') {
+      initCheckboxes();
+    }
+  }
+}
+
+function initCheckboxes() {
+  const grid = document.getElementById('q-checkboxes');
+  grid.innerHTML = PASSAGES.map(function(_, i) {
+    return '<div class="q-check" id="qc-' + i + '" onclick="toggleQ(' + i + ')">' +
+      '<div class="q-check-box" id="qcb-' + i + '"></div>' +
+      '題組 ' + (i + 1) +
+      '</div>';
+  }).join('');
+}
+
+function toggleQ(i) {
+  var idx = selectedQs.indexOf(i);
+  if (idx === -1) {
+    selectedQs.push(i);
+    document.getElementById('qc-' + i).classList.add('checked');
+    document.getElementById('qcb-' + i).textContent = '✓';
+  } else {
+    selectedQs.splice(idx, 1);
+    document.getElementById('qc-' + i).classList.remove('checked');
+    document.getElementById('qcb-' + i).textContent = '';
+  }
+  document.getElementById('q-select-hint').textContent = '已選 ' + selectedQs.length + ' 題';
+}
+
 async function joinQueue() {
   myName = document.getElementById('inp-name').value.trim();
   if (!myName) { toast('請先輸入名字'); return; }
-  const qcount = parseInt(document.getElementById('sel-q').value);
   const minP = parseInt(document.getElementById('sel-min').value);
 
+  var pickedPassages;
+  if (qMode === 'custom') {
+    if (selectedQs.length === 0) { toast('請至少勾選一題！'); return; }
+    // 依照勾選順序排列
+    pickedPassages = selectedQs.sort(function(a,b){return a-b;}).map(function(i){ return PASSAGES[i]; });
+  } else {
+    pickedPassages = null; // 隨機，由 doCreate 處理
+  }
+
+  const qcount = qMode === 'custom' ? pickedPassages.length : parseInt(document.getElementById('sel-q').value);
+
+  // 單人模式直接建立新房間，不配對
+  if (minP === 1) {
+    await doCreate(qcount, minP, pickedPassages);
+    return;
+  }
+
+  // 多人模式：找符合條件的等待房間
   const snap = await db.ref('rooms').orderByChild('status').equalTo('waiting').once('value');
   let found = null;
   snap.forEach(c => {
     const r = c.val();
     const n = r.players ? Object.keys(r.players).length : 0;
-    if (n < 4 && !found) found = c.key;
+    // 只加入 minP 相同且未滿的房間
+    if (n < 4 && r.minP === minP && !found) found = c.key;
   });
 
   if (found) {
     await doJoin(found);
   } else {
-    await doCreate(qcount, minP);
+    await doCreate(qcount, minP, pickedPassages);
   }
 }
 
-async function doCreate(qcount, minP) {
+async function doCreate(qcount, minP, customPassages) {
   isHost = true;
   const code = rndCode();
   roomId = 'room_' + code;
-  const qs = shuffle(PASSAGES).slice(0, qcount).map((t, i) => ({ i: i, t: t }));
+  var sourceList = customPassages ? customPassages : shuffle(PASSAGES).slice(0, qcount);
+  const qs = sourceList.map((t, i) => ({ i: i, t: t }));
   await db.ref('rooms/' + roomId).set({
     code: code, status: 'waiting', host: myUid,
     qcount: qcount, minP: minP, qs: qs, q: 0, roundStart: 0,
@@ -367,12 +452,16 @@ function renderLobby(d, ps) {
       '</div>';
   }).join('');
   const canStart = ps.length >= d.minP;
+  const iAmHost = d.host === myUid;
   document.getElementById('lob-hint').style.display = canStart ? 'none' : 'block';
-  document.getElementById('lob-start-row').style.display = (isHost && canStart) ? 'flex' : 'none';
-  document.getElementById('lob-leave-row').style.display = (isHost && canStart) ? 'none' : 'flex';
+  document.getElementById('lob-start-row').style.display = (iAmHost && canStart) ? 'flex' : 'none';
+  document.getElementById('lob-leave-row').style.display = (iAmHost && canStart) ? 'none' : 'flex';
 }
 
 async function hostStart() {
+  // 再次確認是房主才能開始
+  const snap = await db.ref('rooms/' + roomId + '/host').once('value');
+  if (snap.val() !== myUid) { toast('只有房主可以開始遊戲'); return; }
   await db.ref('rooms/' + roomId).update({ status: 'countdown', cdStart: Date.now(), q: 0 });
 }
 
@@ -438,10 +527,12 @@ document.getElementById('g-input').addEventListener('input', function() {
   if (!inputOn || !curText) return;
   typed = this.value;
 
+  // 把 curText 的 \n 去掉來比對（使用者不需要打換行）
+  var compareText = curText.replace(/\n/g, '');
   renderPassage(typed, curText);
 
-  const correct = Array.from(typed).filter(function(c, i) { return c === curText[i]; }).length;
-  const pct = Math.round((typed.length / curText.length) * 100);
+  const correct = Array.from(typed).filter(function(c, i) { return c === compareText[i]; }).length;
+  const pct = Math.round((typed.length / compareText.length) * 100);
   const wpm = calcWpm(typed.length, startTime);
   const acc = typed.length > 0 ? Math.round((correct / typed.length) * 100) : 100;
 
@@ -450,21 +541,26 @@ document.getElementById('g-input').addEventListener('input', function() {
   document.getElementById('g-schar').textContent = typed.length;
   document.getElementById('g-wpm').textContent = wpm + ' 字/分';
 
-  if (pct % 2 === 0 || typed === curText) {
+  if (pct % 2 === 0 || typed === compareText) {
     db.ref('rooms/' + roomId + '/players/' + myUid).update({ prog: pct, wpm: wpm });
   }
 
-  if (typed === curText && !doneThisQ) {
+  if (typed === compareText && !doneThisQ) {
     doneThisQ = true;
     finishQ(wpm, acc);
   }
 });
 
 function renderPassage(ty, text) {
+  // 去掉換行符號後的對照文字
+  var compareText = text.replace(/\n/g, '');
+  var tyIdx = 0; // 追蹤 typed 的位置（不含換行）
   document.getElementById('g-passage').innerHTML = Array.from(text).map(function(c, i) {
+    if (c === '\n') return '<br>';
     var cls = 'c-dim';
-    if (i < ty.length) cls = ty[i] === c ? 'c-ok' : 'c-err';
-    if (i === ty.length) cls = 'c-cur';
+    if (tyIdx < ty.length) cls = ty[tyIdx] === c ? 'c-ok' : 'c-err';
+    if (tyIdx === ty.length) cls = 'c-cur';
+    tyIdx++;
     return '<span class="' + cls + '">' + (c === ' ' ? '&nbsp;' : c) + '</span>';
   }).join('');
 }
