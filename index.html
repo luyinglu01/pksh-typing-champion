@@ -138,9 +138,9 @@ textarea:disabled { opacity: 0.6; }
       <div class="row row-between">
         <span style="font-size:14px;color:var(--text2)">每局題數</span>
         <select id="sel-q" style="width:auto;padding:6px 10px">
-          <option value="1">1 題（單題）</option>
+          <option value="1" selected>1 題（單題）</option>
           <option value="3">3 題（快速）</option>
-          <option value="5" selected>5 題（標準）</option>
+          <option value="5">5 題（標準）</option>
           <option value="10">10 題（進階）</option>
           <option value="15">15 題（全部）</option>
         </select>
@@ -157,8 +157,8 @@ textarea:disabled { opacity: 0.6; }
     <div class="row row-between" style="margin-top:10px">
       <span style="font-size:14px;color:var(--text2)">最少幾人開始</span>
       <select id="sel-min" style="width:auto;padding:6px 10px">
-        <option value="1">1 人（單人）</option>
-        <option value="2" selected>2 人</option>
+        <option value="1" selected>1 人（單人）</option>
+        <option value="2">2 人</option>
         <option value="3">3 人</option>
         <option value="4">4 人</option>
       </select>
@@ -434,7 +434,7 @@ async function doJoin(rid) {
 }
 
 function mkPlayer() {
-  return { name: myName, uid: myUid, prog: 0, wpm: 0, done: 0, totalWpm: 0, totalAcc: 0, rounds: 0 };
+  return { name: myName, uid: myUid, prog: 0, wpm: 0, done: 0, totalWpm: 0, totalAcc: 0, rounds: 0, joinedAt: Date.now() };
 }
 
 // ── 監聽房間 ──
@@ -444,6 +444,17 @@ function listen() {
   roomRef.on('value', function(snap) {
     const d = snap.val();
     if (!d) { backMenu(); return; }
+    // 如果房主不在玩家列表裡，且我是最早加入的人，接手房主
+    if (d.status === 'waiting' && d.players) {
+      var playerList = Object.values(d.players);
+      var hostExists = playerList.some(function(p) { return p.uid === d.host; });
+      if (!hostExists && playerList.length > 0) {
+        var earliest = playerList.sort(function(a,b){ return (a.joinedAt||0)-(b.joinedAt||0); })[0];
+        if (earliest.uid === myUid) {
+          db.ref('rooms/' + roomId).update({ host: myUid });
+        }
+      }
+    }
     onRoom(d);
   });
 }
@@ -468,7 +479,7 @@ function onRoom(d) {
       startQ(d, ps);
     } else {
       updateBars(ps);
-      if (isHost) checkAllDone(d, ps);
+      if (d.host === myUid) checkAllDone(d, ps);
     }
 
   } else if (d.status === 'results') {
@@ -480,8 +491,20 @@ function onRoom(d) {
 }
 
 // ── 等候室 ──
+var lastLobbyHash = '';
 function renderLobby(d, ps) {
   go('s-lobby');
+  var hash = ps.map(function(p){ return p.uid + p.name; }).join(',') + d.host + ps.length;
+  var canStart = ps.length === d.minP;
+  var iAmHost = d.host === myUid;
+  // 人數或房主沒變就不重建 DOM
+  if (hash === lastLobbyHash) {
+    document.getElementById('lob-hint').style.display = canStart ? 'none' : 'block';
+    document.getElementById('lob-start-row').style.display = (iAmHost && canStart) ? 'flex' : 'none';
+    document.getElementById('lob-leave-row').style.display = (iAmHost && canStart) ? 'none' : 'flex';
+    return;
+  }
+  lastLobbyHash = hash;
   document.getElementById('lob-code').textContent = d.code || '----';
   document.getElementById('lob-count').textContent = ps.length + ' / 4';
   document.getElementById('lob-players').innerHTML = ps.map(function(p, i) {
@@ -491,8 +514,6 @@ function renderLobby(d, ps) {
       '<span class="badge ' + (p.uid === d.host ? 'badge-purple' : 'badge-gray') + '">' + (p.uid === d.host ? '房主' : '等待中') + '</span>' +
       '</div>';
   }).join('');
-  const canStart = ps.length === d.minP;
-  const iAmHost = d.host === myUid;
   document.getElementById('lob-hint').style.display = canStart ? 'none' : 'block';
   document.getElementById('lob-start-row').style.display = (iAmHost && canStart) ? 'flex' : 'none';
   document.getElementById('lob-leave-row').style.display = (iAmHost && canStart) ? 'none' : 'flex';
@@ -522,8 +543,13 @@ function doCountdown(t0, d) {
     if (n <= 0) {
       clearInterval(cdInterval);
       cdInterval = null;
-      if (isHost) {
-        db.ref('rooms/' + roomId).update({ status: 'playing', roundStart: Date.now() });
+      // 只有 Firebase host 才能推進，避免重複寫入
+      if (roomId) {
+        db.ref('rooms/' + roomId + '/host').once('value', function(s) {
+          if (s.val() === myUid && roomId) {
+            db.ref('rooms/' + roomId).update({ status: 'playing', roundStart: Date.now() });
+          }
+        });
       }
     } else {
       document.getElementById('cd-num').textContent = n;
@@ -581,10 +607,16 @@ document.getElementById('g-input').addEventListener('input', function() {
   document.getElementById('g-schar').textContent = typed.length;
   document.getElementById('g-wpm').textContent = wpm + ' 字/分';
 
+  // 自己的進度條即時更新，不等 Firebase
+  var myBar = document.getElementById('bar-' + myUid);
+  var myPct = document.getElementById('pct-' + myUid);
+  if (myBar) myBar.style.width = pct + '%';
+  if (myPct) myPct.textContent = pct + '%';
+
   // 節流：每 300ms 最多寫一次 Firebase，避免過度寫入
   var now = Date.now();
-  if (!window._lastProgUpdate || now - window._lastProgUpdate >= 300 || typed === compareText) {
-    window._lastProgUpdate = now;
+  if (now - lastProgUpdate >= 300 || typed === compareText) {
+    lastProgUpdate = now;
     db.ref('rooms/' + roomId + '/players/' + myUid).update({ prog: pct, wpm: wpm });
   }
 
@@ -619,6 +651,7 @@ function buildBars(ps) {
 
 function updateBars(ps) {
   ps.forEach(function(p) {
+    if (p.uid === myUid) return; // 自己的進度條由本地即時更新，不用 Firebase 覆蓋
     var b = document.getElementById('bar-' + p.uid);
     var l = document.getElementById('pct-' + p.uid);
     if (b) b.style.width = Math.min(p.prog || 0, 100) + '%';
@@ -627,22 +660,24 @@ function updateBars(ps) {
 }
 
 // ── 完成本題 ──
+var myTotalWpm = 0, myTotalAcc = 0, myRounds = 0; // 本地追蹤累計值，避免重複讀 Firebase
+
 function finishQ(wpm, acc) {
   clearInterval(timerIv);
   inputOn = false;
   document.getElementById('g-input').disabled = true;
 
-  // done 存 curQ+1，代表「已完成前N題」，初始值 0 代表還沒完成任何題
-  db.ref('rooms/' + roomId + '/players/' + myUid).once('value', function(snap) {
-    var p = snap.val() || {};
-    db.ref('rooms/' + roomId + '/players/' + myUid).update({
-      prog: 100,
-      wpm: wpm,
-      done: curQ + 1,
-      totalWpm: (p.totalWpm || 0) + wpm,
-      totalAcc: (p.totalAcc || 0) + acc,
-      rounds: (p.rounds || 0) + 1
-    });
+  myTotalWpm += wpm;
+  myTotalAcc += acc;
+  myRounds += 1;
+
+  db.ref('rooms/' + roomId + '/players/' + myUid).update({
+    prog: 100,
+    wpm: wpm,
+    done: curQ + 1,
+    totalWpm: myTotalWpm,
+    totalAcc: myTotalAcc,
+    rounds: myRounds
   });
 
   document.getElementById('g-fin').textContent = '✅ 完成！' + wpm + ' 字/分 ｜ 準確率 ' + acc + '%';
@@ -652,6 +687,7 @@ function finishQ(wpm, acc) {
 
 // ── 全員完成檢查（只有房主執行，避免重複寫入）──
 var advancing = false;
+var lastProgUpdate = 0;
 function checkAllDone(d, ps) {
   if (advancing) return;
   if (d.status !== 'playing') return;
@@ -718,13 +754,17 @@ function cleanup() {
   roomId = null; isHost = false;
   curQ = 0; curText = ''; lastStatus = ''; lastQ = -1;
   typed = ''; doneThisQ = false; inputOn = false; advancing = false;
+  myTotalWpm = 0; myTotalAcc = 0; myRounds = 0;
+  lastProgUpdate = 0; lastLobbyHash = '';
 }
 
 async function playAgain() {
-  if (!isHost) { toast('只有房主可以重新開始'); return; }
+  var hostSnap = await db.ref('rooms/' + roomId + '/host').once('value');
+  if (hostSnap.val() !== myUid) { toast('只有房主可以重新開始'); return; }
   var snap = await db.ref('rooms/' + roomId).once('value');
   var d = snap.val();
-  var qs = shuffle(PASSAGES).slice(0, d.qcount).map(function(t, i) { return { i: i, t: t }; });
+  // 保留原來的題組順序（自選或隨機都保持）
+  var qs = d.qs ? shuffle(d.qs).slice(0, d.qcount) : shuffle(PASSAGES).slice(0, d.qcount).map(function(t, i) { return { i: i, t: t }; });
   var updates = { status: 'waiting', qs: qs, q: 0, roundStart: 0 };
   var ps = d.players ? Object.values(d.players) : [];
   ps.forEach(function(p) {
