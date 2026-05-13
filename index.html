@@ -164,8 +164,22 @@ textarea:disabled { opacity: 0.6; }
       </select>
     </div>
   </div>
-  <div class="row row-end mt1">
+  <div class="row row-end mt1" style="gap:8px">
+    <button onclick="showJoinCode()">🔑 輸入房號加入</button>
     <button class="btn-p" onclick="joinQueue()">🔍 隨機配對加入</button>
+  </div>
+
+  <!-- 輸入房號 -->
+  <div id="join-code-section" style="display:none;margin-top:12px">
+    <div class="card" style="margin-bottom:0">
+      <div style="font-size:14px;font-weight:500;margin-bottom:10px">輸入房號</div>
+      <div class="row" style="gap:8px">
+        <input type="text" id="inp-code" placeholder="輸入 4 位房號" maxlength="4"
+          style="text-transform:uppercase;letter-spacing:4px;font-size:18px;font-weight:500;text-align:center"
+          oninput="this.value=this.value.toUpperCase()">
+        <button class="btn-p" onclick="joinByCode()" style="white-space:nowrap">加入</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -288,6 +302,32 @@ let lastStatus = '';
 let lastQ = -1;
 
 // ── 配對 ──
+function showJoinCode() {
+  var sec = document.getElementById('join-code-section');
+  sec.style.display = sec.style.display === 'none' ? 'block' : 'none';
+  if (sec.style.display === 'block') {
+    setTimeout(function() { document.getElementById('inp-code').focus(); }, 100);
+  }
+}
+
+async function joinByCode() {
+  myName = document.getElementById('inp-name').value.trim();
+  if (!myName) { toast('請先輸入名字'); return; }
+  var code = document.getElementById('inp-code').value.trim().toUpperCase();
+  if (code.length !== 4) { toast('請輸入 4 位房號'); return; }
+
+  var roomKey = 'room_' + code;
+  var snap = await db.ref('rooms/' + roomKey).once('value');
+  var room = snap.val();
+
+  if (!room) { toast('找不到房號 ' + code + '，請確認是否正確'); return; }
+  if (room.status !== 'waiting') { toast('該房間遊戲已開始，無法加入'); return; }
+  var playerCount = room.players ? Object.keys(room.players).length : 0;
+  if (playerCount >= 4) { toast('該房間已滿 4 人'); return; }
+
+  await doJoin(roomKey);
+}
+
 var qMode = 'random';
 var selectedQs = [];
 
@@ -351,14 +391,14 @@ async function joinQueue() {
     return;
   }
 
-  // 多人模式：找符合條件的等待房間
+  // 多人模式：找 minP 完全相同且人數未滿的等待房間
   const snap = await db.ref('rooms').orderByChild('status').equalTo('waiting').once('value');
   let found = null;
   snap.forEach(c => {
     const r = c.val();
     const n = r.players ? Object.keys(r.players).length : 0;
-    // 只加入 minP 相同且未滿的房間
-    if (n < 4 && r.minP === minP && !found) found = c.key;
+    // minP 必須完全一樣，且人數還未達到 minP
+    if (r.minP === minP && n < minP && !found) found = c.key;
   });
 
   if (found) {
@@ -451,7 +491,7 @@ function renderLobby(d, ps) {
       '<span class="badge ' + (p.uid === d.host ? 'badge-purple' : 'badge-gray') + '">' + (p.uid === d.host ? '房主' : '等待中') + '</span>' +
       '</div>';
   }).join('');
-  const canStart = ps.length >= d.minP;
+  const canStart = ps.length === d.minP;
   const iAmHost = d.host === myUid;
   document.getElementById('lob-hint').style.display = canStart ? 'none' : 'block';
   document.getElementById('lob-start-row').style.display = (iAmHost && canStart) ? 'flex' : 'none';
@@ -532,7 +572,7 @@ document.getElementById('g-input').addEventListener('input', function() {
   renderPassage(typed, curText);
 
   const correct = Array.from(typed).filter(function(c, i) { return c === compareText[i]; }).length;
-  const pct = Math.round((typed.length / compareText.length) * 100);
+  const pct = Math.min(100, Math.round((typed.length / compareText.length) * 100));
   const wpm = calcWpm(typed.length, startTime);
   const acc = typed.length > 0 ? Math.round((correct / typed.length) * 100) : 100;
 
@@ -541,7 +581,10 @@ document.getElementById('g-input').addEventListener('input', function() {
   document.getElementById('g-schar').textContent = typed.length;
   document.getElementById('g-wpm').textContent = wpm + ' 字/分';
 
-  if (pct % 2 === 0 || typed === compareText) {
+  // 節流：每 300ms 最多寫一次 Firebase，避免過度寫入
+  var now = Date.now();
+  if (!window._lastProgUpdate || now - window._lastProgUpdate >= 300 || typed === compareText) {
+    window._lastProgUpdate = now;
     db.ref('rooms/' + roomId + '/players/' + myUid).update({ prog: pct, wpm: wpm });
   }
 
