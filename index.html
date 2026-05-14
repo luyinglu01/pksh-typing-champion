@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>æ‰“å­—ç«¶é€Ÿ â€” å¤šäººé€£ç·šç‰ˆ</title>
+<title>¥´¦rÄv³t ¡X ¦h¤H³s½uª©</title>
 
-<!-- â˜…â˜…â˜… è«‹æŠŠä¸‹æ–¹æ›æˆä½ è‡ªå·±çš„ Firebase è¨­å®š â˜…â˜…â˜… -->
+<!-- ¡¹¡¹¡¹ ½Ğ§â¤U¤è´«¦¨§A¦Û¤vªº Firebase ³]©w ¡¹¡¹¡¹ -->
 <script>
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyB25e8VFzjneOwJ_0-xmlM3UA8-QF15KzM",
@@ -118,136 +118,136 @@ textarea:disabled { opacity: 0.6; }
 <body>
 <div class="wrap">
 
-<!-- ä¸»é¸å–® -->
+<!-- ¥D¿ï³æ -->
 <div id="s-menu" class="screen active">
-  <h1>æ‰“å­—ç«¶é€Ÿ <span class="badge badge-purple">é€£ç·šç‰ˆ</span></h1>
-  <p class="sub">éš¨æ©Ÿé…å°ï¼Œæœ€å¤š 4 äººåŒæ™‚å°æˆ°</p>
+  <h1>¥´¦rÄv³t <span class="badge badge-purple">³s½uª©</span></h1>
+  <p class="sub">ÀH¾÷°t¹ï¡A³Ì¦h 4 ¤H¦P®É¹ï¾Ô</p>
   <div class="card">
-    <div style="font-size:14px;font-weight:500;margin-bottom:10px">ä½ çš„åå­—</div>
-    <input type="text" id="inp-name" placeholder="è¼¸å…¥æš±ç¨±ï¼ˆæœ€å¤š 10 å­—ï¼‰" maxlength="10">
+    <div style="font-size:14px;font-weight:500;margin-bottom:10px">§Aªº¦W¦r</div>
+    <input type="text" id="inp-name" placeholder="¿é¤J¼ÊºÙ¡]³Ì¦h 10 ¦r¡^" maxlength="10">
   </div>
   <div class="card">
-    <div style="font-size:14px;font-weight:500;margin-bottom:10px">æˆ¿é–“è¨­å®š</div>
+    <div style="font-size:14px;font-weight:500;margin-bottom:10px">©Ğ¶¡³]©w</div>
     <div class="q-mode-row">
-      <div class="q-mode-btn active" id="mode-random" onclick="setQMode('random')">ğŸ² éš¨æ©Ÿé¡Œæ•¸</div>
-      <div class="q-mode-btn" id="mode-custom" onclick="setQMode('custom')">âœï¸ è‡ªé¸é¡Œçµ„</div>
+      <div class="q-mode-btn active" id="mode-random" onclick="setQMode('random')">?? ÀH¾÷ÃD¼Æ</div>
+      <div class="q-mode-btn" id="mode-custom" onclick="setQMode('custom')">?? ¦Û¿ïÃD²Õ</div>
     </div>
 
-    <!-- éš¨æ©Ÿæ¨¡å¼ -->
+    <!-- ÀH¾÷¼Ò¦¡ -->
     <div id="random-section" style="margin-top:10px">
       <div class="row row-between">
-        <span style="font-size:14px;color:var(--text2)">æ¯å±€é¡Œæ•¸</span>
+        <span style="font-size:14px;color:var(--text2)">¨C§½ÃD¼Æ</span>
         <select id="sel-q" style="width:auto;padding:6px 10px">
-          <option value="1" selected>1 é¡Œï¼ˆå–®é¡Œï¼‰</option>
-          <option value="3">3 é¡Œï¼ˆå¿«é€Ÿï¼‰</option>
-          <option value="5">5 é¡Œï¼ˆæ¨™æº–ï¼‰</option>
-          <option value="10">10 é¡Œï¼ˆé€²éšï¼‰</option>
-          <option value="15">15 é¡Œï¼ˆå…¨éƒ¨ï¼‰</option>
+          <option value="1" selected>1 ÃD¡]³æÃD¡^</option>
+          <option value="3">3 ÃD¡]§Ö³t¡^</option>
+          <option value="5">5 ÃD¡]¼Ğ·Ç¡^</option>
+          <option value="10">10 ÃD¡]¶i¶¥¡^</option>
+          <option value="15">15 ÃD¡]¥ş³¡¡^</option>
         </select>
       </div>
     </div>
 
-    <!-- è‡ªé¸æ¨¡å¼ -->
+    <!-- ¦Û¿ï¼Ò¦¡ -->
     <div id="custom-section" style="display:none;margin-top:10px">
-      <div style="font-size:13px;color:var(--text2);margin-bottom:6px">å‹¾é¸è¦ç·´ç¿’çš„é¡Œçµ„ï¼š</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:6px">¤Ä¿ï­n½m²ßªºÃD²Õ¡G</div>
       <div class="q-select-grid" id="q-checkboxes"></div>
-      <div class="q-select-hint" id="q-select-hint">å·²é¸ 0 é¡Œ</div>
+      <div class="q-select-hint" id="q-select-hint">¤w¿ï 0 ÃD</div>
     </div>
 
     <div class="row row-between" style="margin-top:10px">
-      <span style="font-size:14px;color:var(--text2)">æœ€å°‘å¹¾äººé–‹å§‹</span>
+      <span style="font-size:14px;color:var(--text2)">³Ì¤Ö´X¤H¶}©l</span>
       <select id="sel-min" style="width:auto;padding:6px 10px">
-        <option value="1" selected>1 äººï¼ˆå–®äººï¼‰</option>
-        <option value="2">2 äºº</option>
-        <option value="3">3 äºº</option>
-        <option value="4">4 äºº</option>
+        <option value="1" selected>1 ¤H¡]³æ¤H¡^</option>
+        <option value="2">2 ¤H</option>
+        <option value="3">3 ¤H</option>
+        <option value="4">4 ¤H</option>
       </select>
     </div>
   </div>
   <div class="row row-end mt1" style="gap:8px">
-    <button onclick="showJoinCode()">ğŸ”‘ è¼¸å…¥æˆ¿è™ŸåŠ å…¥</button>
-    <button class="btn-p" onclick="joinQueue()">ğŸ” éš¨æ©Ÿé…å°åŠ å…¥</button>
+    <button onclick="showJoinCode()">?? ¿é¤J©Ğ¸¹¥[¤J</button>
+    <button class="btn-p" onclick="joinQueue()">?? ÀH¾÷°t¹ï¥[¤J</button>
   </div>
 
-  <!-- è¼¸å…¥æˆ¿è™Ÿ -->
+  <!-- ¿é¤J©Ğ¸¹ -->
   <div id="join-code-section" style="display:none;margin-top:12px">
     <div class="card" style="margin-bottom:0">
-      <div style="font-size:14px;font-weight:500;margin-bottom:10px">è¼¸å…¥æˆ¿è™Ÿ</div>
+      <div style="font-size:14px;font-weight:500;margin-bottom:10px">¿é¤J©Ğ¸¹</div>
       <div class="row" style="gap:8px">
-        <input type="text" id="inp-code" placeholder="è¼¸å…¥ 4 ä½æˆ¿è™Ÿ" maxlength="4"
+        <input type="text" id="inp-code" placeholder="¿é¤J 4 ¦ì©Ğ¸¹" maxlength="4"
           style="text-transform:uppercase;letter-spacing:4px;font-size:18px;font-weight:500;text-align:center"
           oninput="this.value=this.value.toUpperCase()">
-        <button class="btn-p" onclick="joinByCode()" style="white-space:nowrap">åŠ å…¥</button>
+        <button class="btn-p" onclick="joinByCode()" style="white-space:nowrap">¥[¤J</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ç­‰å€™å®¤ -->
+<!-- µ¥­Ô«Ç -->
 <div id="s-lobby" class="screen">
-  <h2>ç­‰å€™å®¤</h2>
+  <h2>µ¥­Ô«Ç</h2>
   <div class="card">
-    <div style="font-size:13px;color:var(--text2);margin-bottom:4px">æˆ¿é–“ä»£ç¢¼ï¼ˆå¯åˆ†äº«çµ¦æœ‹å‹ï¼‰</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:4px">©Ğ¶¡¥N½X¡]¥i¤À¨Éµ¹ªB¤Í¡^</div>
     <div class="code-box" id="lob-code">----</div>
   </div>
   <div class="card">
     <div class="row row-between" style="margin-bottom:10px">
-      <span style="font-size:14px;font-weight:500">ç›®å‰ç©å®¶</span>
+      <span style="font-size:14px;font-weight:500">¥Ø«eª±®a</span>
       <span id="lob-count" style="font-size:13px;color:var(--text2)">0 / 4</span>
     </div>
     <div id="lob-players"></div>
-    <div class="hint" id="lob-hint">ç­‰å¾…å…¶ä»–ç©å®¶åŠ å…¥<span class="dots"></span></div>
+    <div class="hint" id="lob-hint">µ¥«İ¨ä¥Lª±®a¥[¤J<span class="dots"></span></div>
   </div>
   <div id="lob-start-row" style="display:none" class="row row-end gap8">
-    <button onclick="leaveRoom()">é›¢é–‹</button>
-    <button class="btn-p" id="btn-start" onclick="hostStart()">é–‹å§‹éŠæˆ²</button>
+    <button onclick="leaveRoom()">Â÷¶}</button>
+    <button class="btn-p" id="btn-start" onclick="hostStart()">¶}©l¹CÀ¸</button>
   </div>
   <div id="lob-leave-row" class="row row-end">
-    <button onclick="leaveRoom()">é›¢é–‹æˆ¿é–“</button>
+    <button onclick="leaveRoom()">Â÷¶}©Ğ¶¡</button>
   </div>
 </div>
 
-<!-- å€’æ•¸ -->
+<!-- ­Ë¼Æ -->
 <div id="s-cd" class="screen">
   <div class="cd-wrap">
     <div class="cd-num" id="cd-num">3</div>
-    <div style="font-size:16px;color:var(--text2);margin-top:12px">æº–å‚™å¥½äº†å—ï¼Ÿ</div>
+    <div style="font-size:16px;color:var(--text2);margin-top:12px">·Ç³Æ¦n¤F¶Ü¡H</div>
   </div>
 </div>
 
-<!-- éŠæˆ² -->
+<!-- ¹CÀ¸ -->
 <div id="s-game" class="screen">
   <div class="game-top">
-    <span id="g-qinfo" style="font-size:13px;color:var(--text2)">ç¬¬ 1 / 5 é¡Œ</span>
+    <span id="g-qinfo" style="font-size:13px;color:var(--text2)">²Ä 1 / 5 ÃD</span>
     <div class="row gap12" style="font-size:13px">
-      <span id="g-timer">â± 0s</span>
-      <span id="g-wpm" style="color:var(--purple);font-weight:500">0 å­—/åˆ†</span>
+      <span id="g-timer">? 0s</span>
+      <span id="g-wpm" style="color:var(--purple);font-weight:500">0 ¦r/¤À</span>
     </div>
   </div>
   <div id="g-qtitle" class="q-label"></div>
   <div class="passage" id="g-passage"></div>
-  <textarea id="g-input" placeholder="åœ¨æ­¤è¼¸å…¥æ–‡å­—â€¦"
+  <textarea id="g-input" placeholder="¦b¦¹¿é¤J¤å¦r¡K"
     autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
     onpaste="return false;" ondrop="return false;"></textarea>
   <div class="stats">
-    <div class="stat"><div class="stat-v" id="g-swpm">0</div><div class="stat-l">å­—/åˆ†</div></div>
-    <div class="stat"><div class="stat-v" id="g-sacc">100%</div><div class="stat-l">æº–ç¢ºç‡</div></div>
-    <div class="stat"><div class="stat-v" id="g-schar">0</div><div class="stat-l">å·²è¼¸å…¥</div></div>
+    <div class="stat"><div class="stat-v" id="g-swpm">0</div><div class="stat-l">¦r/¤À</div></div>
+    <div class="stat"><div class="stat-v" id="g-sacc">100%</div><div class="stat-l">·Ç½T²v</div></div>
+    <div class="stat"><div class="stat-v" id="g-schar">0</div><div class="stat-l">¤w¿é¤J</div></div>
   </div>
   <div id="g-prog"></div>
   <div class="fin-banner" id="g-fin" style="display:none"></div>
-  <div class="wait-msg" id="g-wait" style="display:none">ç­‰å¾…å…¶ä»–ç©å®¶å®Œæˆ<span class="dots"></span></div>
+  <div class="wait-msg" id="g-wait" style="display:none">µ¥«İ¨ä¥Lª±®a§¹¦¨<span class="dots"></span></div>
 </div>
 
-<!-- çµæœ -->
+<!-- µ²ªG -->
 <div id="s-result" class="screen">
-  <h2>ğŸ† æœ€çµ‚æ’å</h2>
+  <h2>?? ³Ì²×±Æ¦W</h2>
   <div id="res-list"></div>
   <hr class="divider">
   <div id="res-sum" style="font-size:13px;color:var(--text2)"></div>
   <div class="row row-end gap8 mt1">
-    <button onclick="backMenu()">å›ä¸»é¸å–®</button>
-    <button class="btn-p" onclick="playAgain()">å†ç©ä¸€å±€</button>
+    <button onclick="backMenu()">¦^¥D¿ï³æ</button>
+    <button class="btn-p" onclick="playAgain()">¦Aª±¤@§½</button>
   </div>
 </div>
 
@@ -259,33 +259,33 @@ firebase.initializeApp(FIREBASE_CONFIG);
 const db = firebase.database();
 
 const PASSAGES = [
-  "ç”±æ­¤å¯çŸ¥ï¼ŒDellç¶“ç‡Ÿç·šä¸Šè³¼ç‰©æˆåŠŸï¼Œæ˜¯ç¶“éæœ‰æ•ˆè¦åŠƒï¼Œå–„ç”¨ä¼æ¥­åŸæœ¬çš„å„ªå‹¢ï¼Œå¥‘åˆå¸‚å ´æ©Ÿæœƒï¼Œè€Œéäººäº‘äº¦äº‘ã€ç›²ç›®ä¸Šç¶²ã€‚åœ‹å…§æ¥­è€…ä¼åœ–ç¶“ç‡Ÿç·šä¸Šè³¼ç‰©æ¥­å‹™æ™‚ï¼Œä¸å¦¨è€ƒæ…®æ˜¯å¦ä¹Ÿæœ‰ç›¸é¡ä¼¼çš„æ¢ä»¶æˆ–æ˜¯å…¶ä»–åˆ©åŸºã€‚ç”±è—è‰²å·¨äººIBMã€åª’é«”å·¨æ“˜Time Warneré›†åœ˜èˆ‡è»Ÿé«”éœ¸ä¸»Microsoftç¶“ç‡Ÿç·šä¸Šè³¼ç‰©ä¸­å¿ƒAvenueã€DreamShopèˆ‡ç·šä¸Šæœå‹™æ¥­å‹™MSNçš„å‰ä¾‹ä¾†çœ‹ï¼Œåƒ…æ†‘è—‰å¤§é‡è³‡é‡‘ã€å°ˆæ¥­æŠ€è¡“ä¾¿æƒ³åœ¨ç·šä¸Šè³¼ç‰©å¸‚å ´å¤§å°é€šåƒçš„ä½œæ³•ä¸åˆ‡å¯¦éš›ï¼Œç¼ºä¹æœ¬æ¥­å°ˆé–€é ˜åŸŸçŸ¥è­˜ï¼ˆKnow-howï¼‰å¾€å¾€é­è‡´å¤±æ•—å‘½é‹ã€‚",
-  "ç„¶è€Œä»¤äººé ­ç–¼çš„æ˜¯ï¼Œå¦‚æœä½ ç”¨ç„¡ç·šé›»ä¾†ç•¶å‚³è¼¸ä»‹è³ªçš„è©±ï¼Œå–®å–®åˆ©ç”¨åŸºæœ¬çš„èª¿è®Šæ–¹å¼ï¼Œæ˜¯æ²’æœ‰è¾¦æ³•åœ¨ç›®å‰å—é™çš„é »å¸¶ä¸‹å‚³éå¤§é‡çš„è³‡æ–™ã€‚ç•¶ç„¶äº‹æƒ…ä¹Ÿæ²’æœ‰é€™éº¼ç³Ÿç³•ï¼Œç‚ºäº†è§£æ±ºåœ¨ç„¡ç·šé›»ç’°å¢ƒä¸‹é »å¯¬éå°çš„çª˜å¢ƒï¼Œå±•é »ï¼ˆSpread Spectrumï¼‰æŠ€è¡“è‡ªç„¶è€Œç„¶å°±è¢«æå‡ºä¾†äº†ã€‚å±•é »æŠ€è¡“çš„æ–¹æ³•æœ‰å…©ç¨®ï¼Œä¸€ç¨®å«åšç›´æ¥åºåˆ—ï¼ˆDirect Sequenceï¼‰ï¼Œå¦å¤–ä¸€ç¨®å«åšè·³é »ï¼ˆFrequency Hoppingï¼‰ã€‚é€™å…©ç¨®æŠ€å·§éƒ½æ˜¯åˆ©ç”¨ä¸€å€‹è™›æ“¬é›œè¨Šç¢¼ç”¢ç”Ÿå™¨ï¼ˆPseudo Noise Code Generatorï¼‰ï¼Œä¾†ç”¢ç”Ÿè™›æ“¬é›œè¨Šç¢¼ï¼Œåˆ©ç”¨é€™å€‹ç‰¹æ®Šçš„è™›æ“¬é›œè¨Šç¢¼èˆ‡åŸèª¿è®Šå¾Œçš„è¨Šè™Ÿç›¸çµåˆè€Œé”åˆ°å±•é »çš„ç›®çš„ã€‚",
-  "ã€Œè¡Œæ¥­èç¸®ã€çš„æ•ˆæ‡‰è‹¥å†åŠ ä¸Šæˆ‘åœ‹åŠ å…¥WTOçµ„ç¹”ã€å¸‚å ´é–‹æ”¾çš„å› ç´ ï¼Œä¾¿æ˜¯åŠ ä¹˜çš„æ•ˆæ‡‰ï¼Œé€™äº›æ•ˆæ‡‰åœ¨éå»å¯ä»¥çœ‹åˆ°çš„ä¾‹å­æ˜¯ä¿éšªæ¥­ï¼Œå¤–åœ‹çš„ä¿éšªå•†åœ¨æˆ‘åœ‹å¸‚å ´é–‹æ”¾ä¹‹å¾Œï¼Œé€™å¹¾å¹´æŒ¾å…¶æœå‹™çš„æ•ˆç‡èˆ‡å“è³ªå·²æ¶ä½”äº†é —å¤§çš„å¸‚å ´ç‰ˆåœ–ã€‚å…¶ä»–è«¸å¦‚è²¨é‹ã€é‡‘èã€é£Ÿå“ç­‰è¡Œæ¥­ä¸å¯é¿å…åœ°å°‡è¿æˆ°å¦ä¸€æ³¢è¡æ“Šã€‚è·¨åœ‹æ€§çš„å…¬å¸æœ¬ä¾†å°±æœ‰ç¨ç‰¹çš„è¡Œæ¥­ç¶“ç‡Ÿæ¨¡å¼ï¼Œè‹¥æ­é…Internetç‚ºå·¥å…·ï¼Œä¾¿æ›´å®¹æ˜“æ¥è§¸åˆ°çµ‚ç«¯å®¢æˆ¶ï¼Œåœ‹å…§å» å•†è‹¥ä¸èƒ½å¦¥å–„å› æ‡‰ï¼Œå°‡å¯èƒ½å‡ºç¾æˆ‘åœ‹ä¸­å°å» å•†ç›´æ¥è¿æˆ°è£å‚™å„ªè‰¯çš„è·¨åœ‹ä¼æ¥­çš„å±€é¢ã€‚",
-  "ANSIèˆ‡ETSIå·²æ±ºå®šæ¡ç”¨DMTï¼ˆDiscrete Multitoneï¼‰ç‚ºADSLçš„èª¿è®Šæ–¹å¼ï¼Œå› æ­¤ANSIT 1.413çš„æ¨™æº–æ¥­å·²ç”¢ç”Ÿï¼Œå„é›»è©±å…¬å¸å‡å·²å±•é–‹éƒ¨ç½²ADSLè¨­å‚™ï¼Œå”¯æåœ¨é€™å ´é«˜é€Ÿå‚³è¼¸æœå‹™çš„ç«¶çˆ­ä¸­ç¼ºå¸­ã€‚\nADSLçš„å…¸å‹æ‡‰ç”¨æ¶æ§‹ï¼Œç”±æ–¼åŒæ™‚æä¾›èªéŸ³èˆ‡æ•¸æ“šå‚³è¼¸æœå‹™ï¼Œé ˆæ–¼ç”¨æˆ¶å®¶ä¸­åŠé›»ä¿¡æ©Ÿæˆ¿ä¸­è£è¨­åˆ†æ­§å™¨ï¼ˆSplitterï¼‰ï¼Œå°‡èªéŸ³èˆ‡æ•¸æ“šå‚³è¼¸ä¿¡è™Ÿåˆ†é›¢ï¼Œæ•…å°è‡´ADSLè¨­å‚™æˆæœ¬ä¸Šå‡ï¼Œåƒ¹æ ¼æ˜‚è²´ï¼Œä¸”é ˆç”±å°ˆæ¥­æŠ€è¡“äººå“¡è‡³ç”¨æˆ¶å®¶ä¸­ï¼Œå°‡é›»è©±ç·šé‡æ–°ä½ˆç·šä¸¦è£ç½®åˆ†æ­§å™¨æ–¹å¯ä½¿ç”¨ã€‚åœ¨é›»è©±å…¬å¸æ–¹é¢ï¼Œäº¦é ˆèŠ±è²»å·¨é¡æŠ•è³‡ã€‚æ–¼å„å€‹é›»ä¿¡æ©Ÿæˆ¿åŠ è£åˆ†æ­§å™¨åŠDSLAMç­‰è¨­å‚™ã€‚",
-  "å°æ–¼ä½¿ç”¨è€…è€Œè¨€ï¼Œå®ƒä¸æ˜¯å®Œå…¨é€é€šçš„ï¼Œæœ‰äº›ç¨‹å¼æ‡‰ç”¨å¾ˆå¯èƒ½æœƒè«åå…¶å¦™åœ°è¢«é˜»æ“‹åœ¨é–€å¤–ï¼›ç•¶æœ‰æ–°çš„ç¨‹å¼æ‡‰ç”¨æˆ–æ˜¯TCP/IPçš„æœå‹™è¦å¢åŠ æ™‚ï¼Œå¿…é ˆè¦é‡æ–°é–‹ç™¼æ–°çš„éæ¿¾å™¨ï¼›ä½¿ç”¨è€…åœ¨ç¶²è·¯ä¸Šæ‰€èƒ½ä½¿ç”¨çš„ç¨‹å¼æ‡‰ç”¨æ•¸ç›®ï¼Œä»¥åŠæœå‹™é …ç›®ï¼Œå—åˆ°ä»£ç†å™¨çš„æ•¸é‡é™åˆ¶ï¼Œä¸èƒ½ä»»æ„åŠ æ·»ã€‚ä»¥ä¸€å€‹æª”æ¡ˆå‚³è¼¸ï¼ˆFTPï¼‰çš„ç›¸åŒå¯¦ä¾‹ä¾†çœ‹ï¼Œåœ¨æ‡‰ç”¨ç¨‹å¼å±¤çš„éæ¿¾æ–¹å¼å¯ä»¥ç”¨æ‡‰ç”¨ç¨‹å¼é–˜é€šé“ï¼ˆApplication Gatewayï¼‰ä¾†å¯¦ç¾ã€‚æ¯”è¼ƒå…ˆé€²çš„é˜²ç«ç‰†åœ¨é€™ä¸€æ–¹é¢éƒ½åšäº†ä¸€äº›è£œå¼·æªæ–½ï¼Œåªè®“çœŸæ­£åœ¨æª”æ¡ˆå‚³è¼¸ç‹€æ…‹çš„è³‡æ–™å°åŒ…èƒ½é€šéé˜²ç«ç‰†ã€‚",
-  "1997å¹´8æœˆ28æ—¥ï¼Œæ³•åœ‹çš„Fernand Portelaå…ˆç”Ÿå®£ç¨±Netscape Communicator for Windows 95/NT 4.03ç‰ˆä»¥å‰çš„è»Ÿé«”å‡ºç¾å…©å€‹JavaScriptçš„åš´é‡ç¼ºé™·ï¼Œç•¶ä½¿ç”¨è€…é…ç½®Netscapeè¨˜æ†¶é›»å­éƒµä»¶POPæ‰€éœ€çš„å¯†ç¢¼æ™‚ï¼Œæƒ¡æ„çš„ç¶²ç«™ä¼ºæœå™¨æ“ä½œå“¡å³å¯åŠ«å–è©²å¯†ç¢¼ã€‚æ˜¯é …å®‰å…¨æ¼æ´å·²ç¶“å‘ŠçŸ¥Netscapeä¸¦è¢«ç«‹åˆ»ä¿®æ­£ã€‚1997å¹´8æœˆ7æ—¥ï¼ŒBen Mesanderå…ˆç”Ÿè­‰å¯¦äº†å¾®è»ŸIEçš„Javaå®‰å…¨æ¼æ´ã€‚è©²æ¼æ´å¯ä»¥è®“ç¶²ç«™ä¼ºæœå™¨çš„æ“ä½œå“¡ç”¨ä»¥ç«Šå–ä½¿ç”¨è€…çš„æª”æ¡ˆï¼Œå³ä½¿ä½¿ç”¨è€…æœ‰é˜²ç«ç‰†çš„å®‰å…¨é˜²è­·äº¦ä¸èƒ½å€–å…ã€‚é€™ä¸€å€‹å•é¡Œæ³¢åŠå¾®è»ŸIE 3.0èˆ‡4.0çš„ç‰ˆæœ¬ï¼ŒMacintoshä¸å—å½±éŸ¿ï¼›Netscapeç€è¦½å™¨å¦‚æœè¨­ç½®HTTP Proxy Serverä¹Ÿæœƒå—åˆ°å½±éŸ¿ã€‚ä½¿ç”¨è€…å¯ä»¥å–æ¶ˆJavaçš„æ–¹å¼åŠ ä»¥é˜²å µã€‚",
-  "åœ¨å…¨ç¾å„åœ°å¤§è¦æ¨¡çš„æ¸¬è©¦å¯¦é©—è¨ˆç•«ä¸­ï¼Œæœ‰éƒ¨åˆ†å€åŸŸå·²é€²å…¥å•†ç”¨éšæ®µï¼Œä¸¦ä¸”æœ‰å·¨é¡æŠ•è³‡å°‡ç¾æœ‰ç¶²è·¯å‡ç´šæˆé›™å‘HFCç¶²è·¯ï¼Œç”¨æˆ¶æ¯æœˆåªè¦ä»˜US$40å·¦å³å°±å¯ä»¥å¿«é€Ÿé€£ä¸Šç¶²éš›ç¶²è·¯ã€‚è€Œåœ¨åœ‹å…§é™¤äº†æœ‰å¯¶ç¦æœ‰ç·šé›»è¦–å…¬å¸åœ¨å°åŒ—è¬è¯ã€ä¸­æ­£å€å¾äº‹ç›¸é—œçš„å¯¦é©—è¨ˆç•«ï¼Œå¯¦é©—è¦æ¨¡ç‚ºä¸€ç™¾æˆ¶ï¼Œæ¡ç”¨çš„æ˜¯3Comã€Hybridä»¥åŠWest Endçš„æœ‰ç·šé›»è¦–æ•¸æ“šæ©Ÿå¤–ï¼Œæ–°ç«¹çš„ç«¹è¦–æœ‰ç·šé›»è¦–å…¬å¸åœ¨ç§‘å­¸åœ’å€äº¦æœ‰å¯¦é©—è¨ˆç•«ï¼Œæ¡ç”¨çš„æ˜¯3Comã€Hybridä»¥åŠLAN cityçš„ç”¢å“ã€‚é€™å…©å€‹å¯¦é©—è¨ˆç•«éƒ½æ˜¯ç”±T1é€£ä¸ŠHiNetï¼Œä»¥æä¾›ç¶²éš›ç¶²è·¯å­˜å–æœå‹™ã€‚",
-  "æœ‰ç·šé›»çºœç¶²è·¯ç³»çµ±å°±æ˜¯æä¾›é ­ç«¯èˆ‡ç”¨æˆ¶ç«¯ä¹‹é–“é›™å‘å‚³è¼¸çš„åŠŸèƒ½ï¼Œä¸¦å°‡æ•¸ä½è³‡æ–™ç¶“éèª¿è®Šï¼ˆModulationï¼‰ä¹‹å¾Œä»¥é¡æ¯”è¨Šè™Ÿå‚³é€ã€‚ç‚ºäº†åœ¨æ­¤ç³»çµ±ä¸­æä¾›é›™å‘çš„è³‡è¨Šå­˜å–æœå‹™ï¼Œé ­ç«¯é™¤äº†è¦é…å‚™å…‰è¨Šè™Ÿæ¥æ”¶å™¨ä»¥æ¥æ”¶ç”¨æˆ¶ç«¯åœ¨ä¸Šè¡Œï¼ˆç”±ç”¨æˆ¶ç«¯è‡³é ­ç«¯ï¼‰é »é“å‚³éçš„è¨Šè™Ÿï¼Œä¸”æ ¹æ“šç”¨æˆ¶éœ€æ±‚åˆ†é…åˆç†çš„é »å¯¬å¤–ï¼ŒåŒæ™‚é ˆå…·å‚™è§£æ±ºç¢°æ’çš„æ©Ÿåˆ¶ï¼Œä¸¦å°‡ç›¸é—œæ§åˆ¶è³‡è¨Šç”±ä¸‹è¡Œï¼ˆé ­ç«¯å¾€ç”¨æˆ¶ç«¯ï¼‰é »é“å‚³çµ¦ç”¨æˆ¶ç«¯ã€‚æ­¤å¤–ï¼Œåœ¨é ­ç«¯æ¶è¨­è·¯ç”±å™¨èˆ‡ç¶²éš›ç¶²è·¯ç›¸é€£ï¼ŒåŠè¨­ç½®WWWå¿«å–ä¼ºæœå™¨ï¼Œå¯ä»¥ä½¿ç”¨æˆ¶ç«¯é€éæœ‰ç·šé›»è¦–æ•¸æ“šæ©Ÿé€²è¡Œç¶²éš›ç¶²è·¯å­˜å–ï¼Œç„¡éœ€æ‰“é›»è©±æ’¥æ¥ï¼Œä¹Ÿç„¡é€£ç·šæ™‚é–“éé•·çš„é¡§å¿Œã€‚",
-  "Internet Phoneçš„å‡ºç¾å¯ä»¥èªªæ˜¯çœŸæ­£é–‹å§‹è®“äººæ„Ÿå—åˆ°ç¶²éš›ç¶²è·¯ä¹Ÿå¯ä»¥æä¾›åŸæœ¬é€šä¿¡ç¶²è·¯çš„æœå‹™ï¼Œè€Œä¸”æˆæœ¬ä½å»‰ã€‚æ¯”å¦‚åœ¨å­¸è¡“ç¶²è·¯ä¸Šçš„å…©å€‹ä½¿ç”¨è€…åªè¦é€éå…©å°é€£æ¥æ–¼ç¶²éš›ç¶²è·¯çš„é›»è…¦å°±å¯ä»¥é€²è¡Œäº¤è«‡ï¼Œä¸è«–ç›¸éš”å¤šé éƒ½åªè¦ä»˜å¸‚å…§é›»è©±çš„éŒ¢å³å¯ï¼Œå¦‚æœé›»è…¦æ˜¯ç›´æ¥é€£ä¸Šç¶²éš›ç¶²è·¯ï¼Œè€Œä¸æ˜¯æ’¥æ¥ä¸Šç¶²ï¼Œå‰‡é€£ä¸€æ¯›éŒ¢éƒ½ä¸ç”¨ä»˜ï¼Œæƒ³èŠå¤šä¹…å°±èŠå¤šä¹…ï¼é€™ç¨®åˆ©ç”¨åˆ†å°æŠ€è¡“ç‚ºåŸºç¤çš„ç¶²è·¯é›»è©±ç›®å‰é›–å—é™æ–¼é »å¯¬çš„ä¸è¶³è€Œå½±éŸ¿èªéŸ³çš„å“è³ªï¼Œä½†æ˜¯ç¶²è·¯æŠ€è¡“çš„é€²æ­¥çµ‚å°‡æœƒå…‹æœé€™é …ç“¶é ¸ã€‚ç›®å‰è¨±å¤šå» å•†å·²çœ‹å¥½é€™å€‹æ–°èˆˆçš„å¸‚å ´ï¼Œè€Œç´›ç´›æŠ•å…¥ç™¼å±•ç¶²è·¯é›»ä¿¡çš„ç›¸é—œæŠ€è¡“ã€‚",
-  "ç•¶ç„¶ä½¿ç”¨æ­¤ä¸€æ–¹å¼ï¼Œéœ€è¦å¤©æ™‚ã€åœ°åˆ©ã€äººå’Œçš„é…åˆï¼Œå†åŠ ä¸Šé§­å®¢é«˜è¶…çš„æŠ€è¡“ï¼Œç¼ºä¸€ä¸å¯ï¼Œä½†ä¸¦éäººäººçš†æœ‰æ­¤èƒ½åŠ›å¯ä»¥æˆªå–åˆ°è³‡æ–™ï¼Œå› æ­¤ç­†è€…è¦ªè‡ªä¸Šç¶²ç”³è«‹èªè­‰ï¼Œåœ¨ç”³è«‹æ†‘è­‰çš„éç¨‹ä¸­ï¼ŒåŸæƒ³ä½¿ç”¨å‡IPæ”»æ“Šæ³•ä¾†è©¦è©¦ï¼Œä½†æ­¤è¡Œç‚ºå»æœƒè§¸çŠ¯æ³•å¾‹ç¯„åœï¼ˆåˆ¥å› å°å°çš„å¥½å¥‡è€Œè®“æ‚¨æ·±é™·å›¹åœ„ï¼Œç•¢ç«ŸHackerèˆ‡Crackeråªæœ‰ä¸€ç·šä¹‹éš”ï¼‰ï¼Œæ‰€ä»¥åªèƒ½ä»¥æ­£å¸¸ç¨‹åºç”³è«‹ï¼Œå¡«å¯«å„é …è³‡æ–™ï¼ŒåŒæ™‚ç›£æ§è³‡æ–™å°åŒ…ï¼Œé€™æ™‚ç™¼ç¾äº†ä¸€å€‹å¾ä»¥å‰å°±å­˜åœ¨çš„æœ‰è¶£è­°é¡Œï¼Œåªæ˜¯è¨±å¤šäººæœƒå¿½ç•¥äº†å®ƒï¼Œæ‰€ä»¥åœ¨æ­¤æå‡ºèˆ‡å„ä½å…±åŒä¾†è¨è«–ã€‚",
-  "éš¨è‘—å…¬å¸æ¥­å‹™çš„æˆé•·ï¼Œè¾¦å…¬å®¤æ“´å¼µï¼Œå…¬å¸å…§éƒ¨çš„ç¶²è·¯ç³»çµ±ä¹Ÿåƒå°æ¨¹è‹—æ¼¸æ¼¸æˆé•·èŒå£¯ä¸€æ¨£è¶Šä¾†è¶Šå¤§ï¼Œåˆ°äº†ä¸€å®šçš„ç¨‹åº¦å¾Œï¼Œé‚„æœƒé–‹èŠ±çµæœï¼Œåˆ†æ ªå½¢æˆå¦å¤–ä¸€æ£µæ¨¹ï¼Œä¹Ÿå°±æ˜¯ç”¢ç”Ÿäº†åˆ†æè¾¦å…¬å®¤ï¼ˆBranch Officeï¼‰ã€‚å…©å€‹è¾¦å…¬å®¤ç›¸éš”äº†ä¸€æ®µè·é›¢ï¼Œåˆ†å±¬å…©æ£Ÿè¾¦å…¬å¤§æ¨“ï¼Œå¦‚ä½•è®“å…©å€‹è¾¦å…¬å®¤å…§çš„ç¶²è·¯äº’é€šæœ‰ç„¡ï¼Œå°±æ˜¯éš¨ä¹‹è€Œä¾†çš„æŒ‘æˆ°ã€‚ç¶“éä¸€æ®µæ™‚é–“çš„å˜—è©¦å¾Œï¼Œç­†è€…åœ¨æ­¤æä¾›ä¸€å€‹èŠ±è²»ä¸å¤šçš„æ–¹å¼ï¼Œè®“æ‚¨ä¸ç”¨è³¼è²·æ˜‚è²´çš„è·¯ç”±å™¨ï¼Œå¤§è²»å‘¨ç« åœ°å†ä½ˆç·šé€£çµå…©å€‹è¾¦å…¬å®¤ã€‚å¦‚æœæ‚¨ç”¨çš„ç¶²è·¯ä½œæ¥­ç³»çµ±æ˜¯Windows NTçš„è©±ï¼Œåªè¦ä½¿ç”¨æ•¸æ“šæ©Ÿï¼Œé€éé›»è©±ç·šï¼Œå°±å¯ä»¥é€£æ¥å…©å€‹ç¶²è·¯ã€‚",
-  "ä¸€èˆ¬è€Œè¨€ï¼Œä¸€å€‹å€åŸŸå…§æ‰€éœ€è€ƒæ…®çš„é »å¯¬éœ€æ±‚æœ‰å¹¾é¡ã€‚ä»¥ä¸‹å°‡å¾å•é¡Œè€ƒé‡ç‚ºå‡ºç™¼é»ï¼Œå†é‡å°å•é¡Œåšåˆ†æèˆ‡è§£ç­”ï¼Œä»¥é€²ä¸€æ­¥æœ‰æ•ˆçš„è¦åŠƒå‡ºé »å¯¬çš„éœ€æ±‚èˆ‡æ“´å……çš„èƒ½é‡ã€‚ç‰¹æ®Šèˆ‡ä¸€èˆ¬çš„æ‡‰ç”¨ç¨‹å¼ï¼šä¸€èˆ¬çš„æ–‡å­—ã€æª”æ¡ˆçš„æ›´æ–°ã€åˆªé™¤ã€å¢åŠ ä¸¦ä¸éœ€è¦ç‰¹åˆ¥çš„é »å¯¬ï¼ŒEthernetçš„10Mbpsæˆ–token Ringçš„16Mbpsæ‡‰ç¶½ç¶½æœ‰é¤˜ï¼Œåªè¦åœ¨ä¸€å€‹ç¶²è·¯å€æ®µçš„nodeæ•¸ä¸è¦å¤ªå¤šï¼ˆä¸€èˆ¬ä»¥ä¸è¶…é30å€‹nodeç‚ºé™ï¼‰ã€‚ç„¶è€Œç‰¹æ®Šæ‡‰ç”¨çš„è»Ÿé«”ï¼Œå¦‚æ±½è»Šé¢¨å‹•ã€èˆªå¤ªå·¥æ¥­ã€æ°£è±¡é å ±ç­‰å‰‡å¾ˆæœ‰å¯èƒ½åœ¨ä¸€å€‹ç¶²è·¯å€æ®µä¸­åªæœ‰ä¸€åˆ°äºŒå€‹nodesã€‚",
-  "æ•´åˆæœå‹™ï¼ˆIntegrationï¼‰çš„ä¸»è¦å·¥ä½œï¼Œæ˜¯è¦ä½¿åˆ†æ•£ç³»çµ±èˆ‡ç¾æœ‰çš„æœ‰ç·šç¶²è·¯èƒ½ä½œè¨Šæ¯äº¤æ›ï¼Œå³ä½œå‚³è¼¸åª’ä»‹èˆ‡ä½å€çš„è½‰æ›ã€‚æ­¤å·¥ä½œä¸»è§’ï¼Œä½¿è½åœ¨åŸ æ¥å™¨ï¼ˆPortalï¼‰ä¸Šã€‚åˆ†é€æœå‹™ï¼ˆDistributionï¼‰çš„ä¸»è¦å·¥ä½œï¼Œæ˜¯å°‡åˆ†æ•£ç³»çµ±å…§çš„è³‡æ–™é€è‡³æ­£ç¢ºçš„ä½å€ä¸Šã€‚åœ¨IEEE 802.11æ¨™æº–ä¸Šï¼Œä¸¦æœªè¨‚å‡ºæ­¤æœå‹™è¦å¦‚ä½•å°‡åˆ†æ•£ç³»çµ±å…§çš„è³‡æ–™é€è‡³æ­£ç¢ºçš„ä½å€ä¸Šï¼Œä½†èªªæ˜äº†è¦é”æˆæ­¤å·¥ä½œæ‰€éœ€å¿…è¦è³‡è¨Šï¼Œé€™äº›è³‡è¨Šå°‡ç”±è¯çµæœå‹™ï¼ˆAssociationï¼‰ã€å–æ¶ˆè¯çµæœå‹™ï¼ˆDisassociationï¼‰ã€é‡æ–°è¯çµæœå‹™ï¼ˆReassociationï¼‰ç­‰ä¾†æä¾›ã€‚",
-  "ä¸€èˆ¬å¤§çœ¾èªç‚ºï¼Œå‚³çµ±çš„ä¼æ¥­é‹ç®—ç’°å¢ƒï¼Œå¾€å¾€æœ‰ä»¥ä¸‹ç¼ºé»ï¼šå¤ªéæ–¼è¤‡é›œã€å®‰å…¨æ€§åŠç©©å®šæ€§ä¸å¤ ã€æ‡‰ç”¨è»Ÿé«”çš„ç‰¹æ€§ã€åŠŸèƒ½ã€ä»¥åŠæ‡‰ç”¨ç³»çµ±ä¸¦ä¸èƒ½è¢«æ¯ä¸€å€‹ä½¿ç”¨è€…æ‰€é‹ç”¨ã€å°æ–¼æ¡Œä¸Šå‹ç³»çµ±çš„ç®¡ç†åŠå‡ç´šçš„è²»ç”¨éé«˜ã€è¦é–‹ç™¼ä¸¦ä¸”ä½ˆç½²ä¸€å€‹æ‡‰ç”¨ç³»çµ±æ‰€éœ€çš„æ™‚é–“éé•·ã€‚é€™äº›ç¼ºé»éƒ½å¯åœ¨Javaçš„é‹ç®—ç’°å¢ƒä¸­ç²å¾—è§£æ±ºï¼é€™ä¸ä½†æ˜¯Javaè¢«æ¡ç”¨ç‚ºä½ˆç½²æ‡‰ç”¨ç³»çµ±æœ€æ–°æ–¹å¼çš„åŸå› ä¹‹ä¸€ï¼Œæ›´é‡è¦çš„æ˜¯ï¼Œç”±æ–¼Javaå…·æœ‰è·¨å·¥ä½œå¹³è‡ºä½œæ¥­çš„ç‰¹æ€§ï¼Œå› æ­¤å·²æˆç‚ºä¼æ¥­æ¡ç”¨çš„æœ€ä½³è€ƒæ…®å› ç´ ï¼Œä½¿ç”¨è€…ä¹Ÿä¸è‡´æµªè²»äº†åŸæœ¬åœ¨è»Ÿç¡¬é«”ä¸Šçš„æŠ•è³‡ã€‚",
-  "Microsoft for NetWareç›®éŒ„æœå‹™ç®¡ç†å“¡æ˜¯å¾®è»ŸNT Serverä¸Šçš„å¤–æ›æœå‹™ç”¢å“ï¼Œå®ƒæä¾›äº†NTç¶²åŸŸä¸Šçš„ä¸»è¦ç¶²åŸŸå»åŒæ­¥ä¸¦ç®¡ç†NetWare 3.x Binderyç‚ºä¸»çš„Serverä¸Šçš„å¸³è™Ÿè³‡æ–™åº«ï¼Œå®‰è£å¾Œåƒ…æä¾›å–®å‘åŒæ­¥ï¼Œä¹Ÿå°±æ˜¯ç”±PDCä¸Šå»åŒæ­¥NetWareï¼Œåœ¨NetWare Serverä¸Šæ‰€å»ºçš„å¸³è™Ÿä¸¦ä¸æœƒåŒæ­¥åˆ°NTä¾†ã€‚å®‰è£NT Server PDCä¸Šé ˆæœ‰NWLink IPX/SPXå‚³è¼¸å”å®šå’ŒGSNWï¼Œä¸”æœ€å¥½èƒ½å®‰è£NT 4.0 Service Pack 2ä»¥ä¸Šï¼Œå®‰è£æ™‚å‡ºç¾çš„äºŒå€‹é¸é …DSMNåŠDSMNçš„ç®¡ç†å·¥å…·ï¼Œèªªæ˜äº†DSMNçš„ç®¡ç†å·¥ä½œå¯åœ¨ç¶²åŸŸçš„ä»»ä¸€æˆå“¡ä¸Šå®‰è£ï¼Œè€ŒDSMNç•¶ç„¶ä¸€å®šè¦åœ¨PDCä¸Šã€‚"
+  "¥Ñ¦¹¥iª¾¡ADell¸gÀç½u¤WÁÊª«¦¨¥\¡A¬O¸g¹L¦³®Ä³W¹º¡Aµ½¥Î¥ø·~­ì¥»ªºÀu¶Õ¡A«´¦X¥«³õ¾÷·|¡A¦Ó«D¤H¤ª¥ç¤ª¡Bª¼¥Ø¤Wºô¡C°ê¤º·~ªÌ¥ø¹Ï¸gÀç½u¤WÁÊª«·~°È®É¡A¤£§«¦Ò¼{¬O§_¤]¦³¬ÛÃş¦üªº±ø¥ó©Î¬O¨ä¥L§Q°ò¡C¥ÑÂÅ¦â¥¨¤HIBM¡B´CÅé¥¨À¼Time Warner¶°¹Î»P³nÅéÅQ¥DMicrosoft¸gÀç½u¤WÁÊª«¤¤¤ßAvenue¡BDreamShop»P½u¤WªA°È·~°ÈMSNªº«e¨Ò¨Ó¬İ¡A¶È¾ÌÂÇ¤j¶q¸êª÷¡B±M·~§Ş³N«K·Q¦b½u¤WÁÊª«¥«³õ¤j¤p³q¦Yªº§@ªk¤£¤Á¹ê»Ú¡A¯Ê¥F¥»·~±Mªù»â°ìª¾ÃÑ¡]Know-how¡^©¹©¹¾D­P¥¢±Ñ©R¹B¡C",
+  "µM¦Ó¥O¤HÀY¯kªº¬O¡A¦pªG§A¥ÎµL½u¹q¨Ó·í¶Ç¿é¤¶½èªº¸Ü¡A³æ³æ§Q¥Î°ò¥»ªº½ÕÅÜ¤è¦¡¡A¬O¨S¦³¿ìªk¦b¥Ø«e¨ü­­ªºÀW±a¤U¶Ç»¼¤j¶qªº¸ê®Æ¡C·íµM¨Æ±¡¤]¨S¦³³o»òÁV¿|¡A¬°¤F¸Ñ¨M¦bµL½u¹qÀô¹Ò¤UÀW¼e¹L¤pªºµ~¹Ò¡A®iÀW¡]Spread Spectrum¡^§Ş³N¦ÛµM¦ÓµM´N³Q´£¥X¨Ó¤F¡C®iÀW§Ş³Nªº¤èªk¦³¨âºØ¡A¤@ºØ¥s°µª½±µ§Ç¦C¡]Direct Sequence¡^¡A¥t¥~¤@ºØ¥s°µ¸õÀW¡]Frequency Hopping¡^¡C³o¨âºØ§Ş¥©³£¬O§Q¥Î¤@­ÓµêÀÀÂø°T½X²£¥Í¾¹¡]Pseudo Noise Code Generator¡^¡A¨Ó²£¥ÍµêÀÀÂø°T½X¡A§Q¥Î³o­Ó¯S®íªºµêÀÀÂø°T½X»P­ì½ÕÅÜ«áªº°T¸¹¬Ûµ²¦X¦Ó¹F¨ì®iÀWªº¥Øªº¡C",
+  "¡u¦æ·~µäÁY¡vªº®ÄÀ³­Y¦A¥[¤W§Ú°ê¥[¤JWTO²ÕÂ´¡B¥«³õ¶}©ñªº¦]¯À¡A«K¬O¥[­¼ªº®ÄÀ³¡A³o¨Ç®ÄÀ³¦b¹L¥h¥i¥H¬İ¨ìªº¨Ò¤l¬O«OÀI·~¡A¥~°êªº«OÀI°Ó¦b§Ú°ê¥«³õ¶}©ñ¤§«á¡A³o´X¦~®µ¨äªA°Èªº®Ä²v»P«~½è¤w·m¦û¤F»á¤jªº¥«³õª©¹Ï¡C¨ä¥L½Ñ¦p³f¹B¡Bª÷¿Ä¡B­¹«~µ¥¦æ·~¤£¥iÁ×§K¦a±Nªï¾Ô¥t¤@ªi½ÄÀ»¡C¸ó°ê©Êªº¤½¥q¥»¨Ó´N¦³¿W¯Sªº¦æ·~¸gÀç¼Ò¦¡¡A­Y·f°tInternet¬°¤u¨ã¡A«K§ó®e©ö±µÄ²¨ì²×ºİ«È¤á¡A°ê¤º¼t°Ó­Y¤£¯à§´µ½¦]À³¡A±N¥i¯à¥X²{§Ú°ê¤¤¤p¼t°Óª½±µªï¾Ô¸Ë³ÆÀu¨}ªº¸ó°ê¥ø·~ªº§½­±¡C",
+  "ANSI»PETSI¤w¨M©w±Ä¥ÎDMT¡]Discrete Multitone¡^¬°ADSLªº½ÕÅÜ¤è¦¡¡A¦]¦¹ANSIT 1.413ªº¼Ğ·Ç·~¤w²£¥Í¡A¦U¹q¸Ü¤½¥q§¡¤w®i¶}³¡¸pADSL³]³Æ¡A°ß®£¦b³o³õ°ª³t¶Ç¿éªA°ÈªºÄvª§¤¤¯Ê®u¡C\nADSLªº¨å«¬À³¥Î¬[ºc¡A¥Ñ©ó¦P®É´£¨Ñ»y­µ»P¼Æ¾Ú¶Ç¿éªA°È¡A¶·©ó¥Î¤á®a¤¤¤Î¹q«H¾÷©Ğ¤¤¸Ë³]¤Àª[¾¹¡]Splitter¡^¡A±N»y­µ»P¼Æ¾Ú¶Ç¿é«H¸¹¤ÀÂ÷¡A¬G¾É­PADSL³]³Æ¦¨¥»¤W¤É¡A»ù®æ©ù¶Q¡A¥B¶·¥Ñ±M·~§Ş³N¤H­û¦Ü¥Î¤á®a¤¤¡A±N¹q¸Ü½u­«·s§G½u¨Ã¸Ë¸m¤Àª[¾¹¤è¥i¨Ï¥Î¡C¦b¹q¸Ü¤½¥q¤è­±¡A¥ç¶·ªá¶O¥¨ÃB§ë¸ê¡C©ó¦U­Ó¹q«H¾÷©Ğ¥[¸Ë¤Àª[¾¹¤ÎDSLAMµ¥³]³Æ¡C",
+  "¹ï©ó¨Ï¥ÎªÌ¦Ó¨¥¡A¥¦¤£¬O§¹¥ş³z³qªº¡A¦³¨Çµ{¦¡À³¥Î«Ü¥i¯à·|²ö¦W¨ä§®¦a³Qªı¾×¦bªù¥~¡F·í¦³·sªºµ{¦¡À³¥Î©Î¬OTCP/IPªºªA°È­n¼W¥[®É¡A¥²¶·­n­«·s¶}µo·sªº¹LÂo¾¹¡F¨Ï¥ÎªÌ¦bºô¸ô¤W©Ò¯à¨Ï¥Îªºµ{¦¡À³¥Î¼Æ¥Ø¡A¥H¤ÎªA°È¶µ¥Ø¡A¨ü¨ì¥N²z¾¹ªº¼Æ¶q­­¨î¡A¤£¯à¥ô·N¥[²K¡C¥H¤@­ÓÀÉ®×¶Ç¿é¡]FTP¡^ªº¬Û¦P¹ê¨Ò¨Ó¬İ¡A¦bÀ³¥Îµ{¦¡¼hªº¹LÂo¤è¦¡¥i¥H¥ÎÀ³¥Îµ{¦¡¹h³q¹D¡]Application Gateway¡^¨Ó¹ê²{¡C¤ñ¸û¥ı¶iªº¨¾¤õÀğ¦b³o¤@¤è­±³£°µ¤F¤@¨Ç¸É±j±¹¬I¡A¥uÅı¯u¥¿¦bÀÉ®×¶Ç¿éª¬ºAªº¸ê®Æ«Ê¥]¯à³q¹L¨¾¤õÀğ¡C",
+  "1997¦~8¤ë28¤é¡Aªk°êªºFernand Portela¥ı¥Í«ÅºÙNetscape Communicator for Windows 95/NT 4.03ª©¥H«eªº³nÅé¥X²{¨â­ÓJavaScriptªºÄY­«¯Ê³´¡A·í¨Ï¥ÎªÌ°t¸mNetscape°O¾Ğ¹q¤l¶l¥óPOP©Ò»İªº±K½X®É¡A´c·Nªººô¯¸¦øªA¾¹¾Ş§@­û§Y¥i§T¨ú¸Ó±K½X¡C¬O¶µ¦w¥şº|¬}¤w¸g§iª¾Netscape¨Ã³Q¥ß¨è­×¥¿¡C1997¦~8¤ë7¤é¡ABen Mesander¥ı¥ÍÃÒ¹ê¤F·L³nIEªºJava¦w¥şº|¬}¡C¸Óº|¬}¥i¥HÅıºô¯¸¦øªA¾¹ªº¾Ş§@­û¥Î¥HÅÑ¨ú¨Ï¥ÎªÌªºÀÉ®×¡A§Y¨Ï¨Ï¥ÎªÌ¦³¨¾¤õÀğªº¦w¥ş¨¾Å@¥ç¤£¯à­Æ§K¡C³o¤@­Ó°İÃDªi¤Î·L³nIE 3.0»P4.0ªºª©¥»¡AMacintosh¤£¨ü¼vÅT¡FNetscapeÂsÄı¾¹¦pªG³]¸mHTTP Proxy Server¤]·|¨ü¨ì¼vÅT¡C¨Ï¥ÎªÌ¥i¥H¨ú®øJavaªº¤è¦¡¥[¥H¨¾°ô¡C",
+  "¦b¥ş¬ü¦U¦a¤j³W¼Òªº´ú¸Õ¹êÅç­pµe¤¤¡A¦³³¡¤À°Ï°ì¤w¶i¤J°Ó¥Î¶¥¬q¡A¨Ã¥B¦³¥¨ÃB§ë¸ê±N²{¦³ºô¸ô¤É¯Å¦¨Âù¦VHFCºô¸ô¡A¥Î¤á¨C¤ë¥u­n¥IUS$40¥ª¥k´N¥i¥H§Ö³t³s¤Wºô»Úºô¸ô¡C¦Ó¦b°ê¤º°£¤F¦³Ä_ºÖ¦³½u¹qµø¤½¥q¦b¥x¥_¸UµØ¡B¤¤¥¿°Ï±q¨Æ¬ÛÃöªº¹êÅç­pµe¡A¹êÅç³W¼Ò¬°¤@¦Ê¤á¡A±Ä¥Îªº¬O3Com¡BHybrid¥H¤ÎWest Endªº¦³½u¹qµø¼Æ¾Ú¾÷¥~¡A·s¦Ëªº¦Ëµø¦³½u¹qµø¤½¥q¦b¬ì¾Ç¶é°Ï¥ç¦³¹êÅç­pµe¡A±Ä¥Îªº¬O3Com¡BHybrid¥H¤ÎLAN cityªº²£«~¡C³o¨â­Ó¹êÅç­pµe³£¬O¥ÑT1³s¤WHiNet¡A¥H´£¨Ñºô»Úºô¸ô¦s¨úªA°È¡C",
+  "¦³½u¹qÆlºô¸ô¨t²Î´N¬O´£¨ÑÀYºİ»P¥Î¤áºİ¤§¶¡Âù¦V¶Ç¿éªº¥\¯à¡A¨Ã±N¼Æ¦ì¸ê®Æ¸g¹L½ÕÅÜ¡]Modulation¡^¤§«á¥HÃş¤ñ°T¸¹¶Ç°e¡C¬°¤F¦b¦¹¨t²Î¤¤´£¨ÑÂù¦Vªº¸ê°T¦s¨úªA°È¡AÀYºİ°£¤F­n°t³Æ¥ú°T¸¹±µ¦¬¾¹¥H±µ¦¬¥Î¤áºİ¦b¤W¦æ¡]¥Ñ¥Î¤áºİ¦ÜÀYºİ¡^ÀW¹D¶Ç»¼ªº°T¸¹¡A¥B®Ú¾Ú¥Î¤á»İ¨D¤À°t¦X²zªºÀW¼e¥~¡A¦P®É¶·¨ã³Æ¸Ñ¨M¸I¼²ªº¾÷¨î¡A¨Ã±N¬ÛÃö±±¨î¸ê°T¥Ñ¤U¦æ¡]ÀYºİ©¹¥Î¤áºİ¡^ÀW¹D¶Çµ¹¥Î¤áºİ¡C¦¹¥~¡A¦bÀYºİ¬[³]¸ô¥Ñ¾¹»Pºô»Úºô¸ô¬Û³s¡A¤Î³]¸mWWW§Ö¨ú¦øªA¾¹¡A¥i¥H¨Ï¥Î¤áºİ³z¹L¦³½u¹qµø¼Æ¾Ú¾÷¶i¦æºô»Úºô¸ô¦s¨ú¡AµL»İ¥´¹q¸Ü¼·±µ¡A¤]µL³s½u®É¶¡¹LªøªºÅU§Ò¡C",
+  "Internet Phoneªº¥X²{¥i¥H»¡¬O¯u¥¿¶}©lÅı¤H·P¨ü¨ìºô»Úºô¸ô¤]¥i¥H´£¨Ñ­ì¥»³q«Hºô¸ôªºªA°È¡A¦Ó¥B¦¨¥»§C·G¡C¤ñ¦p¦b¾Ç³Nºô¸ô¤Wªº¨â­Ó¨Ï¥ÎªÌ¥u­n³z¹L¨â¥x³s±µ©óºô»Úºô¸ôªº¹q¸£´N¥i¥H¶i¦æ¥æ½Í¡A¤£½×¬Û¹j¦h»·³£¥u­n¥I¥«¤º¹q¸Üªº¿ú§Y¥i¡A¦pªG¹q¸£¬Oª½±µ³s¤Wºô»Úºô¸ô¡A¦Ó¤£¬O¼·±µ¤Wºô¡A«h³s¤@¤ò¿ú³£¤£¥Î¥I¡A·Q²á¦h¤[´N²á¦h¤[¡I³oºØ§Q¥Î¤À«Ê§Ş³N¬°°òÂ¦ªººô¸ô¹q¸Ü¥Ø«eÁö¨ü­­©óÀW¼eªº¤£¨¬¦Ó¼vÅT»y­µªº«~½è¡A¦ı¬Oºô¸ô§Ş³Nªº¶i¨B²×±N·|§JªA³o¶µ²~ÀV¡C¥Ø«e³\¦h¼t°Ó¤w¬İ¦n³o­Ó·s¿³ªº¥«³õ¡A¦Ó¯É¯É§ë¤Jµo®iºô¸ô¹q«Hªº¬ÛÃö§Ş³N¡C",
+  "·íµM¨Ï¥Î¦¹¤@¤è¦¡¡A»İ­n¤Ñ®É¡B¦a§Q¡B¤H©Mªº°t¦X¡A¦A¥[¤WÀb«È°ª¶Wªº§Ş³N¡A¯Ê¤@¤£¥i¡A¦ı¨Ã«D¤H¤H¬Ò¦³¦¹¯à¤O¥i¥HºI¨ú¨ì¸ê®Æ¡A¦]¦¹µ§ªÌ¿Ë¦Û¤Wºô¥Ó½Ğ»{ÃÒ¡A¦b¥Ó½Ğ¾ÌÃÒªº¹Lµ{¤¤¡A­ì·Q¨Ï¥Î°²IP§ğÀ»ªk¨Ó¸Õ¸Õ¡A¦ı¦¹¦æ¬°«o·|Ä²¥Çªk«ß½d³ò¡]§O¦]¤p¤pªº¦n©_¦ÓÅı±z²`³´Ëñ®F¡A²¦³ºHacker»PCracker¥u¦³¤@½u¤§¹j¡^¡A©Ò¥H¥u¯à¥H¥¿±`µ{§Ç¥Ó½Ğ¡A¶ñ¼g¦U¶µ¸ê®Æ¡A¦P®ÉºÊ±±¸ê®Æ«Ê¥]¡A³o®Éµo²{¤F¤@­Ó±q¥H«e´N¦s¦bªº¦³½ìÄ³ÃD¡A¥u¬O³\¦h¤H·|©¿²¤¤F¥¦¡A©Ò¥H¦b¦¹´£¥X»P¦U¦ì¦@¦P¨Ó°Q½×¡C",
+  "ÀHµÛ¤½¥q·~°Èªº¦¨ªø¡A¿ì¤½«ÇÂX±i¡A¤½¥q¤º³¡ªººô¸ô¨t²Î¤]¹³¤p¾ğ­]º¥º¥¦¨ªø­_§§¤@¼Ë¶V¨Ó¶V¤j¡A¨ì¤F¤@©wªºµ{«×«á¡AÁÙ·|¶}ªáµ²ªG¡A¤À®è§Î¦¨¥t¥~¤@´Ê¾ğ¡A¤]´N¬O²£¥Í¤F¤ÀªK¿ì¤½«Ç¡]Branch Office¡^¡C¨â­Ó¿ì¤½«Ç¬Û¹j¤F¤@¬q¶ZÂ÷¡A¤ÀÄİ¨â´É¿ì¤½¤j¼Ó¡A¦p¦óÅı¨â­Ó¿ì¤½«Ç¤ºªººô¸ô¤¬³q¦³µL¡A´N¬OÀH¤§¦Ó¨Óªº¬D¾Ô¡C¸g¹L¤@¬q®É¶¡ªº¹Á¸Õ«á¡Aµ§ªÌ¦b¦¹´£¨Ñ¤@­Óªá¶O¤£¦hªº¤è¦¡¡AÅı±z¤£¥ÎÁÊ¶R©ù¶Qªº¸ô¥Ñ¾¹¡A¤j¶O©P³¹¦a¦A§G½u³sµ²¨â­Ó¿ì¤½«Ç¡C¦pªG±z¥Îªººô¸ô§@·~¨t²Î¬OWindows NTªº¸Ü¡A¥u­n¨Ï¥Î¼Æ¾Ú¾÷¡A³z¹L¹q¸Ü½u¡A´N¥i¥H³s±µ¨â­Óºô¸ô¡C",
+  "¤@¯ë¦Ó¨¥¡A¤@­Ó°Ï°ì¤º©Ò»İ¦Ò¼{ªºÀW¼e»İ¨D¦³´XÃş¡C¥H¤U±N±q°İÃD¦Ò¶q¬°¥XµoÂI¡A¦A°w¹ï°İÃD°µ¤ÀªR»P¸Ñµª¡A¥H¶i¤@¨B¦³®Äªº³W¹º¥XÀW¼eªº»İ¨D»PÂX¥Rªº¯à¶q¡C¯S®í»P¤@¯ëªºÀ³¥Îµ{¦¡¡G¤@¯ëªº¤å¦r¡BÀÉ®×ªº§ó·s¡B§R°£¡B¼W¥[¨Ã¤£»İ­n¯S§OªºÀW¼e¡AEthernetªº10Mbps©Îtoken Ringªº16MbpsÀ³ºïºï¦³¾l¡A¥u­n¦b¤@­Óºô¸ô°Ï¬qªºnode¼Æ¤£­n¤Ó¦h¡]¤@¯ë¥H¤£¶W¹L30­Ónode¬°­­¡^¡CµM¦Ó¯S®íÀ³¥Îªº³nÅé¡A¦p¨T¨®­·°Ê¡B¯è¤Ó¤u·~¡B®ğ¶H¹w³øµ¥«h«Ü¦³¥i¯à¦b¤@­Óºô¸ô°Ï¬q¤¤¥u¦³¤@¨ì¤G­Ónodes¡C",
+  "¾ã¦XªA°È¡]Integration¡^ªº¥D­n¤u§@¡A¬O­n¨Ï¤À´²¨t²Î»P²{¦³ªº¦³½uºô¸ô¯à§@°T®§¥æ´«¡A§Y§@¶Ç¿é´C¤¶»P¦ì§}ªºÂà´«¡C¦¹¤u§@¥D¨¤¡A¨Ï¸¨¦b°ğ±µ¾¹¡]Portal¡^¤W¡C¤À°eªA°È¡]Distribution¡^ªº¥D­n¤u§@¡A¬O±N¤À´²¨t²Î¤ºªº¸ê®Æ°e¦Ü¥¿½Tªº¦ì§}¤W¡C¦bIEEE 802.11¼Ğ·Ç¤W¡A¨Ã¥¼­q¥X¦¹ªA°È­n¦p¦ó±N¤À´²¨t²Î¤ºªº¸ê®Æ°e¦Ü¥¿½Tªº¦ì§}¤W¡A¦ı»¡©ú¤F­n¹F¦¨¦¹¤u§@©Ò»İ¥²­n¸ê°T¡A³o¨Ç¸ê°T±N¥ÑÁpµ²ªA°È¡]Association¡^¡B¨ú®øÁpµ²ªA°È¡]Disassociation¡^¡B­«·sÁpµ²ªA°È¡]Reassociation¡^µ¥¨Ó´£¨Ñ¡C",
+  "¤@¯ë¤j²³»{¬°¡A¶Ç²Îªº¥ø·~¹BºâÀô¹Ò¡A©¹©¹¦³¥H¤U¯ÊÂI¡G¤Ó¹L©ó½ÆÂø¡B¦w¥ş©Ê¤ÎÃ­©w©Ê¤£°÷¡BÀ³¥Î³nÅéªº¯S©Ê¡B¥\¯à¡B¥H¤ÎÀ³¥Î¨t²Î¨Ã¤£¯à³Q¨C¤@­Ó¨Ï¥ÎªÌ©Ò¹B¥Î¡B¹ï©ó®à¤W«¬¨t²ÎªººŞ²z¤Î¤É¯Åªº¶O¥Î¹L°ª¡B­n¶}µo¨Ã¥B§G¸p¤@­ÓÀ³¥Î¨t²Î©Ò»İªº®É¶¡¹Lªø¡C³o¨Ç¯ÊÂI³£¥i¦bJavaªº¹BºâÀô¹Ò¤¤Àò±o¸Ñ¨M¡I³o¤£¦ı¬OJava³Q±Ä¥Î¬°§G¸pÀ³¥Î¨t²Î³Ì·s¤è¦¡ªº­ì¦]¤§¤@¡A§ó­«­nªº¬O¡A¥Ñ©óJava¨ã¦³¸ó¤u§@¥­»O§@·~ªº¯S©Ê¡A¦]¦¹¤w¦¨¬°¥ø·~±Ä¥Îªº³Ì¨Î¦Ò¼{¦]¯À¡A¨Ï¥ÎªÌ¤]¤£­P®ö¶O¤F­ì¥»¦b³nµwÅé¤Wªº§ë¸ê¡C",
+  "Microsoft for NetWare¥Ø¿ıªA°ÈºŞ²z­û¬O·L³nNT Server¤Wªº¥~±¾ªA°È²£«~¡A¥¦´£¨Ñ¤FNTºô°ì¤Wªº¥D­nºô°ì¥h¦P¨B¨ÃºŞ²zNetWare 3.x Bindery¬°¥DªºServer¤Wªº±b¸¹¸ê®Æ®w¡A¦w¸Ë«á¶È´£¨Ñ³æ¦V¦P¨B¡A¤]´N¬O¥ÑPDC¤W¥h¦P¨BNetWare¡A¦bNetWare Server¤W©Ò«Øªº±b¸¹¨Ã¤£·|¦P¨B¨ìNT¨Ó¡C¦w¸ËNT Server PDC¤W¶·¦³NWLink IPX/SPX¶Ç¿é¨ó©w©MGSNW¡A¥B³Ì¦n¯à¦w¸ËNT 4.0 Service Pack 2¥H¤W¡A¦w¸Ë®É¥X²{ªº¤G­Ó¿ï¶µDSMN¤ÎDSMNªººŞ²z¤u¨ã¡A»¡©ú¤FDSMNªººŞ²z¤u§@¥i¦bºô°ìªº¥ô¤@¦¨­û¤W¦w¸Ë¡A¦ÓDSMN·íµM¤@©w­n¦bPDC¤W¡C"
 ];
 
 const COLORS = ['#7F77DD','#1D9E75','#D85A30','#D4537E'];
 
-// â”€â”€ å·¥å…· â”€â”€
+// ¢w¢w ¤u¨ã ¢w¢w
 function shuffle(a) { return [...a].sort(() => Math.random() - .5); }
 function rndCode() { return Math.random().toString(36).slice(2,6).toUpperCase(); }
 function go(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
 function calcWpm(chars, t0) { const m = (Date.now() - t0) / 60000; return m > 0 ? Math.round(chars / m / 2) : 0; }
 
-// â”€â”€ ç‹€æ…‹ â”€â”€
+// ¢w¢w ª¬ºA ¢w¢w
 const myUid = 'u' + Date.now() + Math.random().toString(36).slice(2,5);
 let myName = '';
 let roomId = null;
@@ -301,7 +301,7 @@ let doneThisQ = false;
 let lastStatus = '';
 let lastQ = -1;
 
-// â”€â”€ é…å° â”€â”€
+// ¢w¢w °t¹ï ¢w¢w
 function showJoinCode() {
   var sec = document.getElementById('join-code-section');
   sec.style.display = sec.style.display === 'none' ? 'block' : 'none';
@@ -312,18 +312,19 @@ function showJoinCode() {
 
 async function joinByCode() {
   myName = document.getElementById('inp-name').value.trim();
-  if (!myName) { toast('è«‹å…ˆè¼¸å…¥åå­—'); return; }
+  if (!myName) { toast('½Ğ¥ı¿é¤J¦W¦r'); return; }
   var code = document.getElementById('inp-code').value.trim().toUpperCase();
-  if (code.length !== 4) { toast('è«‹è¼¸å…¥ 4 ä½æˆ¿è™Ÿ'); return; }
+  if (code.length !== 4) { toast('½Ğ¿é¤J 4 ¦ì©Ğ¸¹'); return; }
 
   var roomKey = 'room_' + code;
   var snap = await db.ref('rooms/' + roomKey).once('value');
   var room = snap.val();
 
-  if (!room) { toast('æ‰¾ä¸åˆ°æˆ¿è™Ÿ ' + code + 'ï¼Œè«‹ç¢ºèªæ˜¯å¦æ­£ç¢º'); return; }
-  if (room.status !== 'waiting') { toast('è©²æˆ¿é–“éŠæˆ²å·²é–‹å§‹ï¼Œç„¡æ³•åŠ å…¥'); return; }
+  if (!room) { toast('§ä¤£¨ì©Ğ¸¹ ' + code + '¡A½Ğ½T»{¬O§_¥¿½T'); return; }
+  if (room.status !== 'waiting') { toast('¸Ó©Ğ¶¡¹CÀ¸¤w¶}©l¡AµLªk¥[¤J'); return; }
   var playerCount = room.players ? Object.keys(room.players).length : 0;
-  if (playerCount >= 4) { toast('è©²æˆ¿é–“å·²æ»¿ 4 äºº'); return; }
+  if (playerCount >= 4) { toast('¸Ó©Ğ¶¡¤wº¡ 4 ¤H'); return; }
+  if (playerCount >= room.minP) { toast('¸Ó©Ğ¶¡¤H¼Æ¤wº¡¡]' + room.minP + ' ¤H¡^¡AµLªk¥[¤J'); return; }
 
   await doJoin(roomKey);
 }
@@ -350,7 +351,7 @@ function initCheckboxes() {
   grid.innerHTML = PASSAGES.map(function(_, i) {
     return '<div class="q-check" id="qc-' + i + '" onclick="toggleQ(' + i + ')">' +
       '<div class="q-check-box" id="qcb-' + i + '"></div>' +
-      'é¡Œçµ„ ' + (i + 1) +
+      'ÃD²Õ ' + (i + 1) +
       '</div>';
   }).join('');
 }
@@ -360,44 +361,44 @@ function toggleQ(i) {
   if (idx === -1) {
     selectedQs.push(i);
     document.getElementById('qc-' + i).classList.add('checked');
-    document.getElementById('qcb-' + i).textContent = 'âœ“';
+    document.getElementById('qcb-' + i).textContent = '?';
   } else {
     selectedQs.splice(idx, 1);
     document.getElementById('qc-' + i).classList.remove('checked');
     document.getElementById('qcb-' + i).textContent = '';
   }
-  document.getElementById('q-select-hint').textContent = 'å·²é¸ ' + selectedQs.length + ' é¡Œ';
+  document.getElementById('q-select-hint').textContent = '¤w¿ï ' + selectedQs.length + ' ÃD';
 }
 
 async function joinQueue() {
   myName = document.getElementById('inp-name').value.trim();
-  if (!myName) { toast('è«‹å…ˆè¼¸å…¥åå­—'); return; }
+  if (!myName) { toast('½Ğ¥ı¿é¤J¦W¦r'); return; }
   const minP = parseInt(document.getElementById('sel-min').value);
 
   var pickedPassages;
   if (qMode === 'custom') {
-    if (selectedQs.length === 0) { toast('è«‹è‡³å°‘å‹¾é¸ä¸€é¡Œï¼'); return; }
-    // ä¾ç…§å‹¾é¸é †åºæ’åˆ—
+    if (selectedQs.length === 0) { toast('½Ğ¦Ü¤Ö¤Ä¿ï¤@ÃD¡I'); return; }
+    // ¨Ì·Ó¤Ä¿ï¶¶§Ç±Æ¦C
     pickedPassages = selectedQs.sort(function(a,b){return a-b;}).map(function(i){ return PASSAGES[i]; });
   } else {
-    pickedPassages = null; // éš¨æ©Ÿï¼Œç”± doCreate è™•ç†
+    pickedPassages = null; // ÀH¾÷¡A¥Ñ doCreate ³B²z
   }
 
   const qcount = qMode === 'custom' ? pickedPassages.length : parseInt(document.getElementById('sel-q').value);
 
-  // å–®äººæ¨¡å¼ç›´æ¥å»ºç«‹æ–°æˆ¿é–“ï¼Œä¸é…å°
+  // ³æ¤H¼Ò¦¡ª½±µ«Ø¥ß·s©Ğ¶¡¡A¤£°t¹ï
   if (minP === 1) {
     await doCreate(qcount, minP, pickedPassages);
     return;
   }
 
-  // å¤šäººæ¨¡å¼ï¼šæ‰¾ minP å®Œå…¨ç›¸åŒä¸”äººæ•¸æœªæ»¿çš„ç­‰å¾…æˆ¿é–“
+  // ¦h¤H¼Ò¦¡¡G§ä minP §¹¥ş¬Û¦P¥B¤H¼Æ¥¼º¡ªºµ¥«İ©Ğ¶¡
   const snap = await db.ref('rooms').orderByChild('status').equalTo('waiting').once('value');
   let found = null;
   snap.forEach(c => {
     const r = c.val();
     const n = r.players ? Object.keys(r.players).length : 0;
-    // minP å¿…é ˆå®Œå…¨ä¸€æ¨£ï¼Œä¸”äººæ•¸é‚„æœªé”åˆ° minP
+    // minP ¥²¶·§¹¥ş¤@¼Ë¡A¥B¤H¼ÆÁÙ¥¼¹F¨ì minP
     if (r.minP === minP && n < minP && !found) found = c.key;
   });
 
@@ -437,14 +438,14 @@ function mkPlayer() {
   return { name: myName, uid: myUid, prog: 0, wpm: 0, done: 0, totalWpm: 0, totalAcc: 0, rounds: 0, joinedAt: Date.now() };
 }
 
-// â”€â”€ ç›£è½æˆ¿é–“ â”€â”€
+// ¢w¢w ºÊÅ¥©Ğ¶¡ ¢w¢w
 function listen() {
   if (roomRef) roomRef.off();
   roomRef = db.ref('rooms/' + roomId);
   roomRef.on('value', function(snap) {
     const d = snap.val();
     if (!d) { backMenu(); return; }
-    // å¦‚æœæˆ¿ä¸»ä¸åœ¨ç©å®¶åˆ—è¡¨è£¡ï¼Œä¸”æˆ‘æ˜¯æœ€æ—©åŠ å…¥çš„äººï¼Œæ¥æ‰‹æˆ¿ä¸»
+    // ¦pªG©Ğ¥D¤£¦bª±®a¦Cªí¸Ì¡A¥B§Ú¬O³Ì¦­¥[¤Jªº¤H¡A±µ¤â©Ğ¥D
     if (d.status === 'waiting' && d.players) {
       var playerList = Object.values(d.players);
       var hostExists = playerList.some(function(p) { return p.uid === d.host; });
@@ -468,7 +469,7 @@ function onRoom(d) {
   } else if (d.status === 'countdown') {
     if (lastStatus !== 'countdown' || lastQ !== d.q) {
       lastStatus = 'countdown';
-      // æ³¨æ„ï¼šä¸åœ¨é€™è£¡è¨­ lastQï¼Œè®“ playing ç‹€æ…‹æ™‚ä¸€å®šè§¸ç™¼ startQ
+      // ª`·N¡G¤£¦b³o¸Ì³] lastQ¡AÅı playing ª¬ºA®É¤@©wÄ²µo startQ
       doCountdown(d.cdStart || Date.now(), d);
     }
 
@@ -490,14 +491,14 @@ function onRoom(d) {
   }
 }
 
-// â”€â”€ ç­‰å€™å®¤ â”€â”€
+// ¢w¢w µ¥­Ô«Ç ¢w¢w
 var lastLobbyHash = '';
 function renderLobby(d, ps) {
   go('s-lobby');
   var hash = ps.map(function(p){ return p.uid + p.name; }).join(',') + d.host + ps.length;
   var canStart = ps.length === d.minP;
   var iAmHost = d.host === myUid;
-  // äººæ•¸æˆ–æˆ¿ä¸»æ²’è®Šå°±ä¸é‡å»º DOM
+  // ¤H¼Æ©Î©Ğ¥D¨SÅÜ´N¤£­««Ø DOM
   if (hash === lastLobbyHash) {
     document.getElementById('lob-hint').style.display = canStart ? 'none' : 'block';
     document.getElementById('lob-start-row').style.display = (iAmHost && canStart) ? 'flex' : 'none';
@@ -511,7 +512,7 @@ function renderLobby(d, ps) {
     return '<div class="player-item">' +
       '<div class="avatar" style="background:' + COLORS[i] + '22;color:' + COLORS[i] + '">' + p.name.slice(0,2) + '</div>' +
       '<div style="flex:1">' + p.name + '</div>' +
-      '<span class="badge ' + (p.uid === d.host ? 'badge-purple' : 'badge-gray') + '">' + (p.uid === d.host ? 'æˆ¿ä¸»' : 'ç­‰å¾…ä¸­') + '</span>' +
+      '<span class="badge ' + (p.uid === d.host ? 'badge-purple' : 'badge-gray') + '">' + (p.uid === d.host ? '©Ğ¥D' : 'µ¥«İ¤¤') + '</span>' +
       '</div>';
   }).join('');
   document.getElementById('lob-hint').style.display = canStart ? 'none' : 'block';
@@ -520,13 +521,13 @@ function renderLobby(d, ps) {
 }
 
 async function hostStart() {
-  // å†æ¬¡ç¢ºèªæ˜¯æˆ¿ä¸»æ‰èƒ½é–‹å§‹
+  // ¦A¦¸½T»{¬O©Ğ¥D¤~¯à¶}©l
   const snap = await db.ref('rooms/' + roomId + '/host').once('value');
-  if (snap.val() !== myUid) { toast('åªæœ‰æˆ¿ä¸»å¯ä»¥é–‹å§‹éŠæˆ²'); return; }
+  if (snap.val() !== myUid) { toast('¥u¦³©Ğ¥D¥i¥H¶}©l¹CÀ¸'); return; }
   await db.ref('rooms/' + roomId).update({ status: 'countdown', cdStart: Date.now(), q: 0 });
 }
 
-// â”€â”€ å€’æ•¸ â”€â”€
+// ¢w¢w ­Ë¼Æ ¢w¢w
 var cdInterval = null;
 function doCountdown(t0, d) {
   go('s-cd');
@@ -543,7 +544,7 @@ function doCountdown(t0, d) {
     if (n <= 0) {
       clearInterval(cdInterval);
       cdInterval = null;
-      // åªæœ‰ Firebase host æ‰èƒ½æ¨é€²ï¼Œé¿å…é‡è¤‡å¯«å…¥
+      // ¥u¦³ Firebase host ¤~¯à±À¶i¡AÁ×§K­«½Æ¼g¤J
       if (roomId) {
         db.ref('rooms/' + roomId + '/host').once('value', function(s) {
           if (s.val() === myUid && roomId) {
@@ -557,7 +558,7 @@ function doCountdown(t0, d) {
   }, 300);
 }
 
-// â”€â”€ é–‹å§‹æ–°é¡Œ â”€â”€
+// ¢w¢w ¶}©l·sÃD ¢w¢w
 function startQ(d, ps) {
   curQ = d.q;
   curText = d.qs[curQ].t;
@@ -565,8 +566,8 @@ function startQ(d, ps) {
   doneThisQ = false;
   startTime = d.roundStart || Date.now();
 
-  document.getElementById('g-qinfo').textContent = 'ç¬¬ ' + (curQ + 1) + ' / ' + d.qcount + ' é¡Œ';
-  document.getElementById('g-qtitle').textContent = 'é¡Œç›® ' + (curQ + 1) + 'ï¼š';
+  document.getElementById('g-qinfo').textContent = '²Ä ' + (curQ + 1) + ' / ' + d.qcount + ' ÃD';
+  document.getElementById('g-qtitle').textContent = 'ÃD¥Ø ' + (curQ + 1) + '¡G';
   document.getElementById('g-fin').style.display = 'none';
   document.getElementById('g-wait').style.display = 'none';
   renderPassage('', curText);
@@ -580,20 +581,20 @@ function startQ(d, ps) {
   if (timerIv) clearInterval(timerIv);
   timerIv = setInterval(function() {
     const s = Math.round((Date.now() - startTime) / 1000);
-    document.getElementById('g-timer').textContent = 'â± ' + s + 's';
-    document.getElementById('g-wpm').textContent = calcWpm(typed.length, startTime) + ' å­—/åˆ†';
+    document.getElementById('g-timer').textContent = '? ' + s + 's';
+    document.getElementById('g-wpm').textContent = calcWpm(typed.length, startTime) + ' ¦r/¤À';
   }, 400);
 
   go('s-game');
   setTimeout(function() { inp.focus(); }, 100);
 }
 
-// â”€â”€ æ‰“å­—è¼¸å…¥ â”€â”€
+// ¢w¢w ¥´¦r¿é¤J ¢w¢w
 document.getElementById('g-input').addEventListener('input', function() {
   if (!inputOn || !curText) return;
   typed = this.value;
 
-  // æŠŠ curText çš„ \n å»æ‰ä¾†æ¯”å°ï¼ˆä½¿ç”¨è€…ä¸éœ€è¦æ‰“æ›è¡Œï¼‰
+  // §â curText ªº \n ¥h±¼¨Ó¤ñ¹ï¡]¨Ï¥ÎªÌ¤£»İ­n¥´´«¦æ¡^
   var compareText = curText.replace(/\n/g, '');
   renderPassage(typed, curText);
 
@@ -605,15 +606,15 @@ document.getElementById('g-input').addEventListener('input', function() {
   document.getElementById('g-swpm').textContent = wpm;
   document.getElementById('g-sacc').textContent = acc + '%';
   document.getElementById('g-schar').textContent = typed.length;
-  document.getElementById('g-wpm').textContent = wpm + ' å­—/åˆ†';
+  document.getElementById('g-wpm').textContent = wpm + ' ¦r/¤À';
 
-  // è‡ªå·±çš„é€²åº¦æ¢å³æ™‚æ›´æ–°ï¼Œä¸ç­‰ Firebase
+  // ¦Û¤vªº¶i«×±ø§Y®É§ó·s¡A¤£µ¥ Firebase
   var myBar = document.getElementById('bar-' + myUid);
   var myPct = document.getElementById('pct-' + myUid);
   if (myBar) myBar.style.width = pct + '%';
   if (myPct) myPct.textContent = pct + '%';
 
-  // ç¯€æµï¼šæ¯ 300ms æœ€å¤šå¯«ä¸€æ¬¡ Firebaseï¼Œé¿å…éåº¦å¯«å…¥
+  // ¸`¬y¡G¨C 300ms ³Ì¦h¼g¤@¦¸ Firebase¡AÁ×§K¹L«×¼g¤J
   var now = Date.now();
   if (now - lastProgUpdate >= 300 || typed === compareText) {
     lastProgUpdate = now;
@@ -627,9 +628,9 @@ document.getElementById('g-input').addEventListener('input', function() {
 });
 
 function renderPassage(ty, text) {
-  // å»æ‰æ›è¡Œç¬¦è™Ÿå¾Œçš„å°ç…§æ–‡å­—
+  // ¥h±¼´«¦æ²Å¸¹«áªº¹ï·Ó¤å¦r
   var compareText = text.replace(/\n/g, '');
-  var tyIdx = 0; // è¿½è¹¤ typed çš„ä½ç½®ï¼ˆä¸å«æ›è¡Œï¼‰
+  var tyIdx = 0; // °lÂÜ typed ªº¦ì¸m¡]¤£§t´«¦æ¡^
   document.getElementById('g-passage').innerHTML = Array.from(text).map(function(c, i) {
     if (c === '\n') return '<br>';
     var cls = 'c-dim';
@@ -651,7 +652,7 @@ function buildBars(ps) {
 
 function updateBars(ps) {
   ps.forEach(function(p) {
-    if (p.uid === myUid) return; // è‡ªå·±çš„é€²åº¦æ¢ç”±æœ¬åœ°å³æ™‚æ›´æ–°ï¼Œä¸ç”¨ Firebase è¦†è“‹
+    if (p.uid === myUid) return; // ¦Û¤vªº¶i«×±ø¥Ñ¥»¦a§Y®É§ó·s¡A¤£¥Î Firebase ÂĞ»\
     var b = document.getElementById('bar-' + p.uid);
     var l = document.getElementById('pct-' + p.uid);
     if (b) b.style.width = Math.min(p.prog || 0, 100) + '%';
@@ -659,8 +660,8 @@ function updateBars(ps) {
   });
 }
 
-// â”€â”€ å®Œæˆæœ¬é¡Œ â”€â”€
-var myTotalWpm = 0, myTotalAcc = 0, myRounds = 0; // æœ¬åœ°è¿½è¹¤ç´¯è¨ˆå€¼ï¼Œé¿å…é‡è¤‡è®€ Firebase
+// ¢w¢w §¹¦¨¥»ÃD ¢w¢w
+var myTotalWpm = 0, myTotalAcc = 0, myRounds = 0; // ¥»¦a°lÂÜ²Ö­p­È¡AÁ×§K­«½ÆÅª Firebase
 
 function finishQ(wpm, acc) {
   clearInterval(timerIv);
@@ -680,12 +681,12 @@ function finishQ(wpm, acc) {
     rounds: myRounds
   });
 
-  document.getElementById('g-fin').textContent = 'âœ… å®Œæˆï¼' + wpm + ' å­—/åˆ† ï½œ æº–ç¢ºç‡ ' + acc + '%';
+  document.getElementById('g-fin').textContent = '? §¹¦¨¡I' + wpm + ' ¦r/¤À ¡U ·Ç½T²v ' + acc + '%';
   document.getElementById('g-fin').style.display = 'block';
   document.getElementById('g-wait').style.display = 'block';
 }
 
-// â”€â”€ å…¨å“¡å®Œæˆæª¢æŸ¥ï¼ˆåªæœ‰æˆ¿ä¸»åŸ·è¡Œï¼Œé¿å…é‡è¤‡å¯«å…¥ï¼‰â”€â”€
+// ¢w¢w ¥ş­û§¹¦¨ÀË¬d¡]¥u¦³©Ğ¥D°õ¦æ¡AÁ×§K­«½Æ¼g¤J¡^¢w¢w
 var advancing = false;
 var lastProgUpdate = 0;
 function checkAllDone(d, ps) {
@@ -693,7 +694,7 @@ function checkAllDone(d, ps) {
   if (d.status !== 'playing') return;
   if (ps.length === 0) return;
 
-  // æ‰€æœ‰äººçš„ done > curQ æ‰ç®—å…¨å“¡å®Œæˆæœ¬é¡Œ
+  // ©Ò¦³¤Hªº done > curQ ¤~ºâ¥ş­û§¹¦¨¥»ÃD
   var allDone = ps.every(function(p) { return (p.done || 0) > curQ; });
   if (!allDone) return;
 
@@ -712,11 +713,11 @@ function checkAllDone(d, ps) {
   }, 1500);
 }
 
-// â”€â”€ çµç®— â”€â”€
+// ¢w¢w µ²ºâ ¢w¢w
 function showResults(d, ps) {
   clearInterval(timerIv);
   go('s-result');
-  var medals = ['ğŸ¥‡','ğŸ¥ˆ','ğŸ¥‰','ğŸ…'];
+  var medals = ['??','??','??','??'];
   var ranked = ps.map(function(p) {
     return {
       name: p.name,
@@ -729,13 +730,13 @@ function showResults(d, ps) {
     return '<div class="result-row ' + (i === 0 ? 'gold' : '') + '">' +
       '<div class="medal">' + (medals[i] || (i+1)) + '</div>' +
       '<div class="rname">' + p.name + '</div>' +
-      '<div class="rstat">å¹³å‡ <strong>' + p.avgWpm + '</strong> å­—/åˆ† &nbsp; æº–ç¢ºç‡ <strong>' + p.avgAcc + '%</strong></div>' +
+      '<div class="rstat">¥­§¡ <strong>' + p.avgWpm + '</strong> ¦r/¤À &nbsp; ·Ç½T²v <strong>' + p.avgAcc + '%</strong></div>' +
       '</div>';
   }).join('');
-  document.getElementById('res-sum').textContent = 'å…±å®Œæˆ ' + d.qcount + ' é¡Œ';
+  document.getElementById('res-sum').textContent = '¦@§¹¦¨ ' + d.qcount + ' ÃD';
 }
 
-// â”€â”€ é›¢é–‹ / é‡ç© â”€â”€
+// ¢w¢w Â÷¶} / ­«ª± ¢w¢w
 async function leaveRoom() {
   if (roomId) await db.ref('rooms/' + roomId + '/players/' + myUid).remove();
   cleanup();
@@ -760,10 +761,10 @@ function cleanup() {
 
 async function playAgain() {
   var hostSnap = await db.ref('rooms/' + roomId + '/host').once('value');
-  if (hostSnap.val() !== myUid) { toast('åªæœ‰æˆ¿ä¸»å¯ä»¥é‡æ–°é–‹å§‹'); return; }
+  if (hostSnap.val() !== myUid) { toast('¥u¦³©Ğ¥D¥i¥H­«·s¶}©l'); return; }
   var snap = await db.ref('rooms/' + roomId).once('value');
   var d = snap.val();
-  // ä¿ç•™åŸä¾†çš„é¡Œçµ„é †åºï¼ˆè‡ªé¸æˆ–éš¨æ©Ÿéƒ½ä¿æŒï¼‰
+  // «O¯d­ì¨ÓªºÃD²Õ¶¶§Ç¡]¦Û¿ï©ÎÀH¾÷³£«O«ù¡^
   var qs = d.qs ? shuffle(d.qs).slice(0, d.qcount) : shuffle(PASSAGES).slice(0, d.qcount).map(function(t, i) { return { i: i, t: t }; });
   var updates = { status: 'waiting', qs: qs, q: 0, roundStart: 0 };
   var ps = d.players ? Object.values(d.players) : [];
