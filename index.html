@@ -41,17 +41,18 @@ const FIREBASE_CONFIG = {
     --purple-light: #26215C; --green-light: #173404; --red-light: #501313;
   }
 }
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-.wrap { max-width: 680px; margin: 0 auto; padding: 2rem 1rem; }
-h1 { font-size: 22px; font-weight: 500; margin-bottom: 6px; }
-h2 { font-size: 18px; font-weight: 500; margin-bottom: 12px; }
-.sub { font-size: 14px; color: var(--text2); margin-bottom: 1.5rem; }
+/* ── 基礎 ── */
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; min-height: 100dvh; }
+.wrap { max-width: 680px; margin: 0 auto; padding: 1.5rem 1rem; padding-bottom: env(safe-area-inset-bottom, 1rem); }
+h1 { font-size: 20px; font-weight: 500; margin-bottom: 6px; }
+h2 { font-size: 17px; font-weight: 500; margin-bottom: 12px; }
+.sub { font-size: 13px; color: var(--text2); margin-bottom: 1.25rem; }
 .card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 12px; }
-input[type=text], select { width: 100%; padding: 9px 12px; border: 0.5px solid var(--border); border-radius: var(--radius); font-size: 15px; background: var(--bg); color: var(--text); outline: none; transition: border-color .15s; }
+input[type=text], select { width: 100%; padding: 9px 12px; border: 0.5px solid var(--border); border-radius: var(--radius); font-size: 16px; /* 16px 防止 iOS 自動縮放 */ background: var(--bg); color: var(--text); outline: none; transition: border-color .15s; -webkit-appearance: none; appearance: none; }
 input:focus, select:focus { border-color: var(--purple); box-shadow: 0 0 0 3px var(--purple-light); }
-button { padding: 9px 18px; border: 0.5px solid var(--border); border-radius: var(--radius); background: transparent; color: var(--text); font-size: 14px; cursor: pointer; transition: background .15s, transform .1s; }
+button { padding: 10px 18px; border: 0.5px solid var(--border); border-radius: var(--radius); background: transparent; color: var(--text); font-size: 14px; cursor: pointer; transition: background .15s, transform .1s; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 button:hover { background: var(--bg2); }
-button:active { transform: scale(0.98); }
+button:active { transform: scale(0.97); }
 button:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn-p { background: var(--purple); color: #fff; border-color: var(--purple); }
 .btn-p:hover { background: var(--purple-dark); border-color: var(--purple-dark); }
@@ -69,36 +70,78 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .badge-gray { background: var(--bg3); color: var(--text2); }
 .dots::after { content: ''; animation: dots 1.5s infinite; }
 @keyframes dots { 0%{content:''} 33%{content:'.'} 66%{content:'..'} 100%{content:'...'} }
-.code-box { font-size: 42px; font-weight: 500; letter-spacing: 10px; color: var(--purple); text-align: center; padding: 1.5rem; background: var(--purple-light); border-radius: var(--radius); margin: 1rem 0; }
+
+/* ── 等候室 ── */
+.code-box { font-size: 36px; font-weight: 500; letter-spacing: 8px; color: var(--purple); text-align: center; padding: 1.2rem; background: var(--purple-light); border-radius: var(--radius); margin: 1rem 0; }
 .player-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--bg2); border-radius: var(--radius); border: 0.5px solid var(--border); margin-bottom: 8px; }
 .avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500; flex-shrink: 0; }
 .hint { text-align: center; color: var(--text2); font-size: 14px; padding: 1rem; }
+
+/* ── 倒數 ── */
 .cd-wrap { text-align: center; padding: 4rem 0; }
 .cd-num { font-size: 96px; font-weight: 500; color: var(--purple); animation: pop .4s ease; }
 @keyframes pop { from{transform:scale(1.4);opacity:0} to{transform:scale(1);opacity:1} }
+
+/* ── 遊戲畫面（手機鍵盤優化）── */
+#s-game { display: none; }
+#s-game.active {
+  display: flex;
+  flex-direction: column;
+  /* 手機上用 dvh 讓畫面不被鍵盤壓縮 */
+  height: 100dvh;
+  height: 100vh;
+  overflow: hidden;
+}
+#s-game .wrap-inner {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1rem 0;
+  -webkit-overflow-scrolling: touch;
+}
+#s-game .bottom-bar {
+  padding: 8px 1rem;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  background: var(--bg);
+  border-top: 0.5px solid var(--border);
+  flex-shrink: 0;
+}
 .game-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
 .q-label { font-size: 12px; color: var(--text2); font-weight: 500; margin-bottom: 4px; }
-.passage { font-size: 16px; line-height: 1.9; padding: 1rem 1.2rem; background: var(--bg2); border-radius: var(--radius); margin-bottom: 10px; min-height: 80px; letter-spacing: 0.02em; }
+.passage { font-size: 15px; line-height: 1.85; padding: 0.8rem 1rem; background: var(--bg2); border-radius: var(--radius); margin-bottom: 8px; min-height: 60px; letter-spacing: 0.02em; }
 .c-ok { color: var(--green); }
 .c-err { color: var(--red); background: var(--red-light); border-radius: 2px; }
 .c-dim { color: var(--text2); }
 .c-cur { border-bottom: 2px solid var(--purple); }
-textarea { width: 100%; height: 90px; padding: 10px 14px; font-size: 16px; border: 0.5px solid var(--border); border-radius: var(--radius); background: var(--bg); color: var(--text); resize: none; font-family: inherit; outline: none; transition: border-color .15s; line-height: 1.6; }
+textarea { width: 100%; height: 70px; padding: 10px 14px; font-size: 16px; border: 0.5px solid var(--border); border-radius: var(--radius); background: var(--bg); color: var(--text); resize: none; font-family: inherit; outline: none; transition: border-color .15s; line-height: 1.6; }
 textarea:focus { border-color: var(--purple); box-shadow: 0 0 0 3px var(--purple-light); }
 textarea:disabled { opacity: 0.6; }
-.stats { display: flex; gap: 10px; margin: 10px 0; }
-.stat { flex: 1; padding: 10px; background: var(--bg2); border-radius: var(--radius); text-align: center; }
-.stat-v { font-size: 22px; font-weight: 500; color: var(--purple); }
-.stat-l { font-size: 11px; color: var(--text2); margin-top: 2px; }
-.prog-row { margin-bottom: 9px; }
-.prog-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--text2); margin-bottom: 3px; }
-.prog-bar { height: 8px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
+.stats { display: flex; gap: 8px; margin: 8px 0; }
+.stat { flex: 1; padding: 8px 6px; background: var(--bg2); border-radius: var(--radius); text-align: center; }
+.stat-v { font-size: 18px; font-weight: 500; color: var(--purple); }
+.stat-l { font-size: 10px; color: var(--text2); margin-top: 2px; }
+.prog-row { margin-bottom: 7px; }
+.prog-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text2); margin-bottom: 3px; }
+.prog-bar { height: 7px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
 .prog-fill { height: 100%; border-radius: 4px; transition: width .4s ease; }
-.fin-banner { text-align: center; padding: 12px; background: var(--green-light); border-radius: var(--radius); margin: 8px 0; color: var(--green); font-size: 15px; font-weight: 500; }
-.wait-msg { text-align: center; padding: 10px; color: var(--text2); font-size: 14px; }
+.fin-banner { text-align: center; padding: 10px; background: var(--green-light); border-radius: var(--radius); margin: 6px 0; color: var(--green); font-size: 14px; font-weight: 500; }
+.wait-msg { text-align: center; padding: 8px; color: var(--text2); font-size: 13px; }
+
+/* ── 結果 ── */
 .result-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--radius); margin-bottom: 8px; background: var(--bg2); border: 0.5px solid var(--border); }
 .result-row.gold { background: var(--purple-light); border-color: #AFA9EC; }
 .medal { font-size: 24px; width: 32px; text-align: center; }
+
+/* ── 手機響應式 ── */
+@media (max-width: 480px) {
+  .wrap { padding: 1rem 0.75rem; }
+  .code-box { font-size: 28px; letter-spacing: 6px; }
+  h1 { font-size: 18px; }
+  .q-mode-btn { font-size: 12px; padding: 6px; }
+  .q-check { font-size: 12px; padding: 6px 8px; }
+  .q-select-grid { grid-template-columns: repeat(3, 1fr); gap: 5px; }
+  .stat-v { font-size: 16px; }
+  button { padding: 10px 12px; font-size: 13px; }
+}
 .rname { flex: 1; font-weight: 500; }
 .rstat { font-size: 13px; color: var(--text2); text-align: right; }
 .rstat strong { color: var(--text); }
@@ -218,26 +261,30 @@ textarea:disabled { opacity: 0.6; }
 
 <!-- 遊戲 -->
 <div id="s-game" class="screen">
-  <div class="game-top">
-    <span id="g-qinfo" style="font-size:13px;color:var(--text2)">第 1 / 5 題</span>
-    <div class="row gap12" style="font-size:13px">
-      <span id="g-timer">⏱ 0s</span>
-      <span id="g-wpm" style="color:var(--purple);font-weight:500">0 字/分</span>
+  <div class="wrap-inner">
+    <div class="game-top">
+      <span id="g-qinfo" style="font-size:13px;color:var(--text2)">第 1 / 5 題</span>
+      <div class="row gap12" style="font-size:13px">
+        <span id="g-timer">⏱ 0s</span>
+        <span id="g-wpm" style="color:var(--purple);font-weight:500">0 字/分</span>
+      </div>
     </div>
+    <div id="g-qtitle" class="q-label"></div>
+    <div class="passage" id="g-passage"></div>
+    <div class="stats">
+      <div class="stat"><div class="stat-v" id="g-swpm">0</div><div class="stat-l">字/分</div></div>
+      <div class="stat"><div class="stat-v" id="g-sacc">100%</div><div class="stat-l">準確率</div></div>
+      <div class="stat"><div class="stat-v" id="g-schar">0</div><div class="stat-l">已輸入</div></div>
+    </div>
+    <div id="g-prog"></div>
+    <div class="fin-banner" id="g-fin" style="display:none"></div>
+    <div class="wait-msg" id="g-wait" style="display:none">等待其他玩家完成<span class="dots"></span></div>
   </div>
-  <div id="g-qtitle" class="q-label"></div>
-  <div class="passage" id="g-passage"></div>
-  <textarea id="g-input" placeholder="在此輸入文字…"
-    autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-    onpaste="return false;" ondrop="return false;" oncut="return false;"></textarea>
-  <div class="stats">
-    <div class="stat"><div class="stat-v" id="g-swpm">0</div><div class="stat-l">字/分</div></div>
-    <div class="stat"><div class="stat-v" id="g-sacc">100%</div><div class="stat-l">準確率</div></div>
-    <div class="stat"><div class="stat-v" id="g-schar">0</div><div class="stat-l">已輸入</div></div>
+  <div class="bottom-bar">
+    <textarea id="g-input" placeholder="在此輸入文字…"
+      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+      onpaste="return false;" ondrop="return false;" oncut="return false;"></textarea>
   </div>
-  <div id="g-prog"></div>
-  <div class="fin-banner" id="g-fin" style="display:none"></div>
-  <div class="wait-msg" id="g-wait" style="display:none">等待其他玩家完成<span class="dots"></span></div>
 </div>
 
 <!-- 結果 -->
@@ -433,9 +480,14 @@ async function doCreate(qcount, minP, customPassages) {
   await db.ref('rooms/' + roomId).set({
     code: code, status: 'waiting', host: myUid,
     qcount: qcount, minP: minP, qs: qs, q: 0, roundStart: 0,
+    createdAt: Date.now(),
     players: { [myUid]: mkPlayer() }
   });
   db.ref('rooms/' + roomId).onDisconnect().remove();
+  // 30分鐘後自動清除房間
+  setTimeout(function() {
+    if (roomId) db.ref('rooms/' + roomId).remove();
+  }, 30 * 60 * 1000);
   listen();
   go('s-lobby');
 }
@@ -454,6 +506,37 @@ function mkPlayer() {
 }
 
 // ── 監聽房間 ──
+var reconnectTimer = null;
+var isOnline = true;
+
+// 監聽網路連線狀態
+db.ref('.info/connected').on('value', function(snap) {
+  var connected = snap.val();
+  if (connected && !isOnline) {
+    // 重新連線
+    isOnline = true;
+    if (roomId) {
+      // 重新加入房間（更新 onDisconnect）
+      db.ref('rooms/' + roomId + '/players/' + myUid).onDisconnect().remove();
+      showToastReconnect('網路已重新連線 ✅');
+    }
+  } else if (!connected && isOnline) {
+    isOnline = false;
+    if (roomId) showToastReconnect('網路連線中斷，嘗試重新連線...');
+  }
+});
+
+function showToastReconnect(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = msg.includes('✅') ? 'var(--green)' : 'var(--amber)';
+  t.classList.add('show');
+  setTimeout(function() {
+    t.classList.remove('show');
+    t.style.background = '';
+  }, 3000);
+}
+
 function listen() {
   if (roomRef) roomRef.off();
   roomRef = db.ref('rooms/' + roomId);
@@ -472,6 +555,12 @@ function listen() {
       }
     }
     onRoom(d);
+  }, function(error) {
+    // Firebase 監聽錯誤時自動重連
+    console.error('Firebase listen error:', error);
+    if (roomId) {
+      setTimeout(function() { listen(); }, 3000);
+    }
   });
 }
 
@@ -790,6 +879,7 @@ function backMenu() {
 function cleanup() {
   clearInterval(timerIv);
   if (cdInterval) { clearInterval(cdInterval); cdInterval = null; }
+  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
   if (roomRef) { roomRef.off(); roomRef = null; }
   roomId = null; isHost = false;
   curQ = 0; curText = ''; lastStatus = ''; lastQ = -1;
