@@ -398,8 +398,8 @@ async function joinQueue() {
   snap.forEach(c => {
     const r = c.val();
     const n = r.players ? Object.keys(r.players).length : 0;
-    // minP 必須完全一樣，且人數還未達到 minP
-    if (r.minP === minP && n < minP && !found) found = c.key;
+    // minP 必須完全一樣，且人數還未達到 minP（排除單人房）
+    if (r.minP === minP && r.minP > 1 && n < minP && !found) found = c.key;
   });
 
   if (found) {
