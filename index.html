@@ -228,7 +228,7 @@ textarea:disabled { opacity: 0.6; }
   <div class="passage" id="g-passage"></div>
   <textarea id="g-input" placeholder="在此輸入文字…"
     autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-    onpaste="return false;" ondrop="return false;"></textarea>
+    onpaste="return false;" ondrop="return false;" oncut="return false;"></textarea>
   <div class="stats">
     <div class="stat"><div class="stat-v" id="g-swpm">0</div><div class="stat-l">字/分</div></div>
     <div class="stat"><div class="stat-v" id="g-sacc">100%</div><div class="stat-l">準確率</div></div>
@@ -577,6 +577,7 @@ function startQ(d, ps) {
   inp.value = '';
   inp.disabled = false;
   inputOn = true;
+  lastTypedLen = 0;
 
   if (timerIv) clearInterval(timerIv);
   timerIv = setInterval(function() {
@@ -590,6 +591,29 @@ function startQ(d, ps) {
 }
 
 // ── 打字輸入 ──
+// 防複製貼上（手機 + 桌機）
+var gInput = document.getElementById('g-input');
+['paste','drop','cut'].forEach(function(ev) {
+  gInput.addEventListener(ev, function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  });
+});
+
+// 偵測貼上行為（輸入量突然大幅增加）
+var lastTypedLen = 0;
+gInput.addEventListener('input', function() {
+  var diff = this.value.length - lastTypedLen;
+  if (diff > 2) {
+    // 一次增加超過2個字，判定為貼上，清空並提示
+    this.value = this.value.slice(0, lastTypedLen);
+    toast('不允許複製貼上，請手動輸入！');
+    return;
+  }
+  lastTypedLen = this.value.length;
+});
+
 document.getElementById('g-input').addEventListener('input', function() {
   if (!inputOn || !curText) return;
   typed = this.value;
