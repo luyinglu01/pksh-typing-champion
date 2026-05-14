@@ -507,7 +507,7 @@ function renderLobby(d, ps) {
   }
   lastLobbyHash = hash;
   document.getElementById('lob-code').textContent = d.code || '----';
-  document.getElementById('lob-count').textContent = ps.length + ' / 4';
+  document.getElementById('lob-count').textContent = ps.length + ' / ' + d.minP;
   document.getElementById('lob-players').innerHTML = ps.map(function(p, i) {
     return '<div class="player-item">' +
       '<div class="avatar" style="background:' + COLORS[i] + '22;color:' + COLORS[i] + '">' + p.name.slice(0,2) + '</div>' +
