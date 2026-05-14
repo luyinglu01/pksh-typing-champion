@@ -511,7 +511,7 @@ var lastLobbyHash = '';
 function renderLobby(d, ps) {
   go('s-lobby');
   var hash = ps.map(function(p){ return p.uid + p.name; }).join(',') + d.host + ps.length;
-  var canStart = ps.length === d.minP;
+  var canStart = ps.length >= d.minP;
   var iAmHost = d.host === myUid;
   // 人數或房主沒變就不重建 DOM
   if (hash === lastLobbyHash) {
