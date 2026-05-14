@@ -164,9 +164,10 @@ textarea:disabled { opacity: 0.6; }
       </select>
     </div>
   </div>
-  <div class="row row-end mt1" style="gap:8px">
-    <button onclick="showJoinCode()">🔑 輸入房號加入</button>
-    <button class="btn-p" onclick="joinQueue()">🔍 隨機配對加入</button>
+  <div class="row mt1" style="gap:8px;justify-content:stretch;flex-wrap:wrap">
+    <button style="flex:1" onclick="showJoinCode()">🔑 輸入房號</button>
+    <button style="flex:1" onclick="joinQueue()">🔍 隨機配對</button>
+    <button class="btn-p" style="flex:1" onclick="createNewRoom()">➕ 建立新房間</button>
   </div>
 
   <!-- 輸入房號 -->
@@ -302,6 +303,20 @@ let lastStatus = '';
 let lastQ = -1;
 
 // ── 配對 ──
+async function createNewRoom() {
+  myName = document.getElementById('inp-name').value.trim();
+  if (!myName) { toast('請先輸入名字'); return; }
+  const qcount = qMode === 'custom'
+    ? (selectedQs.length > 0 ? selectedQs.length : 1)
+    : parseInt(document.getElementById('sel-q').value);
+  const minP = parseInt(document.getElementById('sel-min').value);
+  var pickedPassages = null;
+  if (qMode === 'custom' && selectedQs.length > 0) {
+    pickedPassages = selectedQs.slice().sort(function(a,b){return a-b;}).map(function(i){ return PASSAGES[i]; });
+  }
+  await doCreate(qcount, minP, pickedPassages);
+}
+
 function showJoinCode() {
   var sec = document.getElementById('join-code-section');
   sec.style.display = sec.style.display === 'none' ? 'block' : 'none';
