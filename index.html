@@ -104,7 +104,7 @@ textarea:disabled { opacity: 0.6; }
 .fin-banner { text-align: center; padding: 10px; background: var(--green-light); border-radius: var(--radius); margin: 6px 0; color: var(--green); font-size: 14px; font-weight: 500; }
 .wait-msg { text-align: center; padding: 8px; color: var(--text2); font-size: 13px; }
 
-/* ── 電腦版遊戲（左右分割，769px 以上）── */
+/* ── 電腦版遊戲（上下分割，769px 以上）── */
 @media (min-width: 769px) {
   #s-game { display: none; }
   #s-game.active {
@@ -113,8 +113,9 @@ textarea:disabled { opacity: 0.6; }
     height: 100vh;
     overflow: hidden;
   }
+  /* 頂部標題列 */
   #s-game .game-header {
-    padding: 10px 1.5rem;
+    padding: 10px 2rem;
     border-bottom: 0.5px solid var(--border);
     background: var(--bg);
     display: flex;
@@ -122,28 +123,38 @@ textarea:disabled { opacity: 0.6; }
     justify-content: space-between;
     flex-shrink: 0;
   }
+  /* 上方：文章區（可捲動） */
   #s-game .game-body {
     flex: 1;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
+    max-width: 860px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 2rem;
   }
   #s-game .game-left {
-    padding: 1.25rem 1.5rem;
+    flex: 1;
     overflow-y: auto;
-    border-right: 0.5px solid var(--border);
+    padding: 1.25rem 0 0.5rem;
   }
+  #s-game .game-left .passage { font-size: 16px; line-height: 2; }
+  /* 下方：輸入區（固定） */
   #s-game .game-right {
-    padding: 1.25rem 1.5rem;
+    flex-shrink: 0;
+    padding: 0.75rem 0 1rem;
+    border-top: 0.5px solid var(--border);
     display: flex;
     flex-direction: column;
     gap: 10px;
-    overflow-y: auto;
   }
   #s-game .game-right textarea {
-    height: 120px;
-    flex-shrink: 0;
+    height: 90px;
+    font-size: 16px;
+  }
+  #s-game .game-right .stats {
+    margin: 0;
   }
   #s-game .wrap-inner { display: none; }
   #s-game .bottom-bar { display: none; }
@@ -794,16 +805,37 @@ function startQ(d, ps) {
 // ── 打字輸入 ──
 // 防複製貼上 + 輸入事件（手機版 + 電腦版 textarea 都綁定）
 var lastTypedLen = 0;
+var isComposing = false; // 追蹤輸入法組字狀態
+
 function setupInput(inputEl) {
   if (!inputEl) return;
+
+  // 封鎖貼上、拖曳、剪下
   ['paste','drop','cut'].forEach(function(ev) {
     inputEl.addEventListener(ev, function(e) {
       e.preventDefault(); e.stopPropagation(); return false;
     });
   });
+
+  // 輸入法開始組字（注音/倉頡/拼音）
+  inputEl.addEventListener('compositionstart', function() {
+    isComposing = true;
+  });
+
+  // 輸入法組字結束，才更新 lastTypedLen
+  inputEl.addEventListener('compositionend', function() {
+    isComposing = false;
+    lastTypedLen = this.value.length;
+    handleTyping(this.value);
+  });
+
   inputEl.addEventListener('input', function() {
+    // 組字中不做任何判斷，等 compositionend
+    if (isComposing) return;
+
     var diff = this.value.length - lastTypedLen;
-    if (diff > 2) {
+    // 只有非組字狀態下一次增加超過3個字才判定為貼上
+    if (diff > 3) {
       this.value = this.value.slice(0, lastTypedLen);
       toast('不允許複製貼上，請手動輸入！');
       return;
