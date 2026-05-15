@@ -152,7 +152,7 @@ textarea:disabled { opacity: 0.6; }
     min-height: unset;
   }
   #s-game .game-left #g-prog-d { margin-top: 8px; }
-  /* 底部：輸入區固定 */
+  /* 底部：輸入區固定（上下分割時 game-right 在下方） */
   #s-game .game-right {
     flex-shrink: 0;
     padding: 0.75rem 0 1.25rem;
@@ -442,6 +442,10 @@ function rndCode() { return Math.random().toString(36).slice(2,6).toUpperCase();
 function go(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
 function calcWpm(chars, t0) { const m = (Date.now() - t0) / 60000; return m > 0 ? Math.round(chars / m / 2) : 0; }
+// 同時更新多個同功能元素（手機版 + 電腦版）
+function syncEl(ids, prop, val, isStyle) {
+  ids.forEach(id => { const el = document.getElementById(id); if (!el) return; isStyle ? el.style[prop] = val : el[prop] = val; });
+}
 
 // ── 狀態 ──
 const myUid = 'u' + Date.now() + Math.random().toString(36).slice(2,5);
@@ -460,18 +464,27 @@ let lastStatus = '';
 let lastQ = -1;
 
 // ── 配對 ──
-async function createNewRoom() {
-  myName = document.getElementById('inp-name').value.trim();
-  if (!myName) { toast('請先輸入名字'); return; }
-  const qcount = qMode === 'custom'
-    ? (selectedQs.length > 0 ? selectedQs.length : 1)
-    : parseInt(document.getElementById('sel-q').value);
+
+// 從表單取得共用設定值
+function getFormValues() {
+  const name = document.getElementById('inp-name').value.trim();
   const minP = parseInt(document.getElementById('sel-min').value);
-  var pickedPassages = null;
-  if (qMode === 'custom' && selectedQs.length > 0) {
-    pickedPassages = selectedQs.slice().sort(function(a,b){return a-b;}).map(function(i){ return PASSAGES[i]; });
-  }
-  await doCreate(qcount, minP, pickedPassages);
+  const isCustom = qMode === 'custom';
+  const picked = isCustom
+    ? selectedQs.slice().sort((a,b) => a-b).map(i => PASSAGES[i])
+    : null;
+  const qcount = isCustom
+    ? (picked ? picked.length : 1)
+    : parseInt(document.getElementById('sel-q').value);
+  return { name, minP, qcount, picked };
+}
+
+async function createNewRoom() {
+  const { name, minP, qcount, picked } = getFormValues();
+  if (!name) { toast('請先輸入名字'); return; }
+  if (qMode === 'custom' && (!picked || picked.length === 0)) { toast('請至少勾選一題！'); return; }
+  myName = name;
+  await doCreate(qcount, minP, picked);
 }
 
 function showJoinCode() {
@@ -543,42 +556,23 @@ function toggleQ(i) {
 }
 
 async function joinQueue() {
-  myName = document.getElementById('inp-name').value.trim();
-  if (!myName) { toast('請先輸入名字'); return; }
-  const minP = parseInt(document.getElementById('sel-min').value);
+  const { name, minP, qcount, picked } = getFormValues();
+  if (!name) { toast('請先輸入名字'); return; }
+  if (qMode === 'custom' && (!picked || picked.length === 0)) { toast('請至少勾選一題！'); return; }
+  myName = name;
 
-  var pickedPassages;
-  if (qMode === 'custom') {
-    if (selectedQs.length === 0) { toast('請至少勾選一題！'); return; }
-    // 依照勾選順序排列
-    pickedPassages = selectedQs.sort(function(a,b){return a-b;}).map(function(i){ return PASSAGES[i]; });
-  } else {
-    pickedPassages = null; // 隨機，由 doCreate 處理
-  }
+  // 單人模式直接建房，不配對
+  if (minP === 1) { await doCreate(qcount, minP, picked); return; }
 
-  const qcount = qMode === 'custom' ? pickedPassages.length : parseInt(document.getElementById('sel-q').value);
-
-  // 單人模式直接建立新房間，不配對
-  if (minP === 1) {
-    await doCreate(qcount, minP, pickedPassages);
-    return;
-  }
-
-  // 多人模式：找 minP 完全相同且人數未滿的等待房間
+  // 多人模式：找相同 minP 且未滿的房間
   const snap = await db.ref('rooms').orderByChild('status').equalTo('waiting').once('value');
   let found = null;
   snap.forEach(c => {
     const r = c.val();
     const n = r.players ? Object.keys(r.players).length : 0;
-    // minP 必須完全一樣，且人數還未達到 minP（排除單人房）
     if (r.minP === minP && r.minP > 1 && n < minP && !found) found = c.key;
   });
-
-  if (found) {
-    await doJoin(found);
-  } else {
-    await doCreate(qcount, minP, pickedPassages);
-  }
+  found ? await doJoin(found) : await doCreate(qcount, minP, picked);
 }
 
 async function doCreate(qcount, minP, customPassages) {
@@ -784,18 +778,19 @@ function startQ(d, ps) {
   var qText = '第 ' + (curQ + 1) + ' / ' + d.qcount + ' 題';
   var qtTitle = '題目 ' + (curQ + 1) + '：';
 
-  // 兩套元素都更新
-  ['g-qinfo','g-qinfo-d'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=qText; });
-  ['g-qtitle','g-qtitle-d'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=qtTitle; });
-  ['g-fin','g-fin-d'].forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display='none'; });
-  ['g-wait','g-wait-d'].forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display='none'; });
+  // 兩套元素同步更新
+  syncEl(['g-qinfo','g-qinfo-d'], 'textContent', qText);
+  syncEl(['g-qtitle','g-qtitle-d'], 'textContent', qtTitle);
+  syncEl(['g-fin','g-fin-d'], 'display', 'none', true);
+  syncEl(['g-wait','g-wait-d'], 'display', 'none', true);
 
   renderPassage('', curText);
   buildBars(ps);
 
   // 根據螢幕大小決定用哪個 textarea
   // 兩個都重置，確保狀態乾淨
-  ['g-input','g-input-d'].forEach(function(id){ var el=document.getElementById(id); if(el){ el.value=''; el.disabled=false; } });
+  syncEl(['g-input','g-input-d'], 'value', '');
+  syncEl(['g-input','g-input-d'], 'disabled', false);
   var inp = document.getElementById(isDesktop ? 'g-input-d' : 'g-input');
   inputOn = true;
   lastTypedLen = 0;
@@ -805,8 +800,8 @@ function startQ(d, ps) {
     var s = Math.round((Date.now() - startTime) / 1000);
     var wpmStr = calcWpm(typed.length, startTime) + ' 字/分';
     var timerStr = '⏱ ' + s + 's';
-    ['g-timer','g-timer-d'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=timerStr; });
-    ['g-wpm','g-wpm-d'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=wpmStr; });
+    syncEl(['g-timer','g-timer-d'], 'textContent', timerStr);
+    syncEl(['g-wpm','g-wpm-d'], 'textContent', wpmStr);
   }, 400);
 
   go('s-game');
@@ -871,10 +866,10 @@ function handleTyping(val) {
   const wpm = calcWpm(typed.length, startTime);
   const acc = typed.length > 0 ? Math.round((correct / typed.length) * 100) : 100;
 
-  ['g-swpm','g-swpm-d'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=wpm; });
-  ['g-sacc','g-sacc-d'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=acc+'%'; });
-  ['g-schar','g-schar-d'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=typed.length; });
-  ['g-wpm','g-wpm-d'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=wpm+' 字/分'; });
+  syncEl(['g-swpm','g-swpm-d'], 'textContent', wpm);
+  syncEl(['g-sacc','g-sacc-d'], 'textContent', acc+'%');
+  syncEl(['g-schar','g-schar-d'], 'textContent', typed.length);
+  syncEl(['g-wpm','g-wpm-d'], 'textContent', wpm+' 字/分');
 
   // 自己的進度條即時更新，不等 Firebase
   var myBar = document.getElementById('bar-' + myUid);
@@ -907,7 +902,7 @@ function renderPassage(ty, text) {
     return '<span class="' + cls + '">' + (c === ' ' ? '&nbsp;' : c) + '</span>';
   }).join('');
   // 同時更新手機版和電腦版的 passage
-  ['g-passage','g-passage-d'].forEach(function(id){ var el=document.getElementById(id); if(el) el.innerHTML=html; });
+  syncEl(['g-passage','g-passage-d'], 'innerHTML', html);
 }
 
 function buildBars(ps) {
@@ -917,7 +912,7 @@ function buildBars(ps) {
       '<div class="prog-bar"><div class="prog-fill" id="bar-' + p.uid + '" style="width:0%;background:' + COLORS[i % 4] + '"></div></div>' +
       '</div>';
   }).join('');
-  ['g-prog','g-prog-d'].forEach(function(id){ var el=document.getElementById(id); if(el) el.innerHTML=html; });
+  syncEl(['g-prog','g-prog-d'], 'innerHTML', html);
 }
 
 function updateBars(ps) {
@@ -936,7 +931,8 @@ var myTotalWpm = 0, myTotalAcc = 0, myRounds = 0; // 本地追蹤累計值，避
 function finishQ(wpm, acc) {
   clearInterval(timerIv);
   inputOn = false;
-  ['g-input','g-input-d'].forEach(function(id){ var el=document.getElementById(id); if(el){ el.disabled=true; el.value=typed; } });
+  syncEl(['g-input','g-input-d'], 'disabled', true);
+  syncEl(['g-input','g-input-d'], 'value', typed);
 
   myTotalWpm += wpm;
   myTotalAcc += acc;
@@ -952,8 +948,9 @@ function finishQ(wpm, acc) {
   });
 
   var finText = '✅ 完成！' + wpm + ' 字/分 ｜ 準確率 ' + acc + '%';
-  ['g-fin','g-fin-d'].forEach(function(id){ var el=document.getElementById(id); if(el){ el.textContent=finText; el.style.display='block'; }});
-  ['g-wait','g-wait-d'].forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display='block'; });
+  syncEl(['g-fin','g-fin-d'], 'textContent', finText);
+  syncEl(['g-fin','g-fin-d'], 'display', 'block', true);
+  syncEl(['g-wait','g-wait-d'], 'display', 'block', true);
 }
 
 // ── 全員完成檢查（只有房主執行，避免重複寫入）──
