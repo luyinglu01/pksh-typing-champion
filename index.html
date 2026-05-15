@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
@@ -82,37 +82,15 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .cd-num { font-size: 96px; font-weight: 500; color: var(--purple); animation: pop .4s ease; }
 @keyframes pop { from{transform:scale(1.4);opacity:0} to{transform:scale(1);opacity:1} }
 
-/* ── 遊戲畫面（手機鍵盤優化）── */
-#s-game { display: none; }
-#s-game.active {
-  display: flex;
-  flex-direction: column;
-  /* 手機上用 dvh 讓畫面不被鍵盤壓縮 */
-  height: 100dvh;
-  height: 100vh;
-  overflow: hidden;
-}
-#s-game .wrap-inner {
-  flex: 1;
-  overflow-y: auto;
-  padding: 1rem 1rem 0;
-  -webkit-overflow-scrolling: touch;
-}
-#s-game .bottom-bar {
-  padding: 8px 1rem;
-  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
-  background: var(--bg);
-  border-top: 0.5px solid var(--border);
-  flex-shrink: 0;
-}
+/* ── 共用遊戲元素 ── */
 .game-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
 .q-label { font-size: 12px; color: var(--text2); font-weight: 500; margin-bottom: 4px; }
-.passage { font-size: 15px; line-height: 1.85; padding: 0.8rem 1rem; background: var(--bg2); border-radius: var(--radius); margin-bottom: 8px; min-height: 60px; letter-spacing: 0.02em; }
+.passage { font-size: 15px; line-height: 1.85; padding: 0.8rem 1rem; background: var(--bg2); border-radius: var(--radius); margin-bottom: 8px; letter-spacing: 0.02em; }
 .c-ok { color: var(--green); }
 .c-err { color: var(--red); background: var(--red-light); border-radius: 2px; }
 .c-dim { color: var(--text2); }
 .c-cur { border-bottom: 2px solid var(--purple); }
-textarea { width: 100%; height: 70px; padding: 10px 14px; font-size: 16px; border: 0.5px solid var(--border); border-radius: var(--radius); background: var(--bg); color: var(--text); resize: none; font-family: inherit; outline: none; transition: border-color .15s; line-height: 1.6; }
+textarea { width: 100%; padding: 10px 14px; font-size: 16px; border: 0.5px solid var(--border); border-radius: var(--radius); background: var(--bg); color: var(--text); resize: none; font-family: inherit; outline: none; transition: border-color .15s; line-height: 1.6; }
 textarea:focus { border-color: var(--purple); box-shadow: 0 0 0 3px var(--purple-light); }
 textarea:disabled { opacity: 0.6; }
 .stats { display: flex; gap: 8px; margin: 8px 0; }
@@ -125,6 +103,79 @@ textarea:disabled { opacity: 0.6; }
 .prog-fill { height: 100%; border-radius: 4px; transition: width .4s ease; }
 .fin-banner { text-align: center; padding: 10px; background: var(--green-light); border-radius: var(--radius); margin: 6px 0; color: var(--green); font-size: 14px; font-weight: 500; }
 .wait-msg { text-align: center; padding: 8px; color: var(--text2); font-size: 13px; }
+
+/* ── 電腦版遊戲（左右分割，769px 以上）── */
+@media (min-width: 769px) {
+  #s-game { display: none; }
+  #s-game.active {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+  #s-game .game-header {
+    padding: 10px 1.5rem;
+    border-bottom: 0.5px solid var(--border);
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  #s-game .game-body {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    overflow: hidden;
+  }
+  #s-game .game-left {
+    padding: 1.25rem 1.5rem;
+    overflow-y: auto;
+    border-right: 0.5px solid var(--border);
+  }
+  #s-game .game-right {
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+  }
+  #s-game .game-right textarea {
+    height: 120px;
+    flex-shrink: 0;
+  }
+  #s-game .wrap-inner { display: none; }
+  #s-game .bottom-bar { display: none; }
+}
+
+/* ── 手機版遊戲（固定底部，768px 以下）── */
+@media (max-width: 768px) {
+  #s-game { display: none; }
+  #s-game.active {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    height: 100vh;
+    overflow: hidden;
+  }
+  #s-game .game-header { display: none; }
+  #s-game .game-body { display: none; }
+  #s-game .wrap-inner {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 1rem 0;
+    -webkit-overflow-scrolling: touch;
+  }
+  #s-game .bottom-bar {
+    padding: 8px 1rem;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    background: var(--bg);
+    border-top: 0.5px solid var(--border);
+    flex-shrink: 0;
+  }
+  #s-game .bottom-bar textarea { height: 70px; }
+}
 
 /* ── 結果 ── */
 .result-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--radius); margin-bottom: 8px; background: var(--bg2); border: 0.5px solid var(--border); }
@@ -261,6 +312,40 @@ textarea:disabled { opacity: 0.6; }
 
 <!-- 遊戲 -->
 <div id="s-game" class="screen">
+
+  <!-- 電腦版：頂部標題列 -->
+  <div class="game-header">
+    <span id="g-qinfo-d" style="font-size:14px;color:var(--text2);font-weight:500">第 1 / 5 題</span>
+    <div class="row gap12" style="font-size:14px">
+      <span id="g-timer-d">⏱ 0s</span>
+      <span id="g-wpm-d" style="color:var(--purple);font-weight:500">0 字/分</span>
+    </div>
+  </div>
+
+  <!-- 電腦版：左右分割 -->
+  <div class="game-body">
+    <!-- 左欄：文章 -->
+    <div class="game-left">
+      <div id="g-qtitle-d" class="q-label"></div>
+      <div class="passage" id="g-passage-d"></div>
+      <div class="fin-banner" id="g-fin-d" style="display:none"></div>
+      <div class="wait-msg" id="g-wait-d" style="display:none">等待其他玩家完成<span class="dots"></span></div>
+    </div>
+    <!-- 右欄：輸入 + 統計 + 進度 -->
+    <div class="game-right">
+      <textarea id="g-input-d" placeholder="在此輸入文字…"
+        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+        onpaste="return false;" ondrop="return false;" oncut="return false;"></textarea>
+      <div class="stats">
+        <div class="stat"><div class="stat-v" id="g-swpm-d">0</div><div class="stat-l">字/分</div></div>
+        <div class="stat"><div class="stat-v" id="g-sacc-d">100%</div><div class="stat-l">準確率</div></div>
+        <div class="stat"><div class="stat-v" id="g-schar-d">0</div><div class="stat-l">已輸入</div></div>
+      </div>
+      <div id="g-prog-d"></div>
+    </div>
+  </div>
+
+  <!-- 手機版：可捲動區域 -->
   <div class="wrap-inner">
     <div class="game-top">
       <span id="g-qinfo" style="font-size:13px;color:var(--text2)">第 1 / 5 題</span>
@@ -280,11 +365,14 @@ textarea:disabled { opacity: 0.6; }
     <div class="fin-banner" id="g-fin" style="display:none"></div>
     <div class="wait-msg" id="g-wait" style="display:none">等待其他玩家完成<span class="dots"></span></div>
   </div>
+
+  <!-- 手機版：固定底部輸入框 -->
   <div class="bottom-bar">
     <textarea id="g-input" placeholder="在此輸入文字…"
       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
       onpaste="return false;" ondrop="return false;" oncut="return false;"></textarea>
   </div>
+
 </div>
 
 <!-- 結果 -->
@@ -670,14 +758,21 @@ function startQ(d, ps) {
   doneThisQ = false;
   startTime = d.roundStart || Date.now();
 
-  document.getElementById('g-qinfo').textContent = '第 ' + (curQ + 1) + ' / ' + d.qcount + ' 題';
-  document.getElementById('g-qtitle').textContent = '題目 ' + (curQ + 1) + '：';
-  document.getElementById('g-fin').style.display = 'none';
-  document.getElementById('g-wait').style.display = 'none';
+  var isDesktop = window.innerWidth >= 769;
+  var qText = '第 ' + (curQ + 1) + ' / ' + d.qcount + ' 題';
+  var qtTitle = '題目 ' + (curQ + 1) + '：';
+
+  // 兩套元素都更新
+  ['g-qinfo','g-qinfo-d'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=qText; });
+  ['g-qtitle','g-qtitle-d'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=qtTitle; });
+  ['g-fin','g-fin-d'].forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display='none'; });
+  ['g-wait','g-wait-d'].forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display='none'; });
+
   renderPassage('', curText);
   buildBars(ps);
 
-  const inp = document.getElementById('g-input');
+  // 根據螢幕大小決定用哪個 textarea
+  var inp = document.getElementById(isDesktop ? 'g-input-d' : 'g-input');
   inp.value = '';
   inp.disabled = false;
   inputOn = true;
@@ -685,9 +780,11 @@ function startQ(d, ps) {
 
   if (timerIv) clearInterval(timerIv);
   timerIv = setInterval(function() {
-    const s = Math.round((Date.now() - startTime) / 1000);
-    document.getElementById('g-timer').textContent = '⏱ ' + s + 's';
-    document.getElementById('g-wpm').textContent = calcWpm(typed.length, startTime) + ' 字/分';
+    var s = Math.round((Date.now() - startTime) / 1000);
+    var wpmStr = calcWpm(typed.length, startTime) + ' 字/分';
+    var timerStr = '⏱ ' + s + 's';
+    ['g-timer','g-timer-d'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=timerStr; });
+    ['g-wpm','g-wpm-d'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=wpmStr; });
   }, 400);
 
   go('s-game');
@@ -695,30 +792,30 @@ function startQ(d, ps) {
 }
 
 // ── 打字輸入 ──
-// 防複製貼上（手機 + 桌機）
-var gInput = document.getElementById('g-input');
-['paste','drop','cut'].forEach(function(ev) {
-  gInput.addEventListener(ev, function(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    return false;
-  });
-});
-
-// 偵測貼上行為（輸入量突然大幅增加）
+// 防複製貼上 + 輸入事件（手機版 + 電腦版 textarea 都綁定）
 var lastTypedLen = 0;
-gInput.addEventListener('input', function() {
-  var diff = this.value.length - lastTypedLen;
-  if (diff > 2) {
-    // 一次增加超過2個字，判定為貼上，清空並提示
-    this.value = this.value.slice(0, lastTypedLen);
-    toast('不允許複製貼上，請手動輸入！');
-    return;
-  }
-  lastTypedLen = this.value.length;
-});
+function setupInput(inputEl) {
+  if (!inputEl) return;
+  ['paste','drop','cut'].forEach(function(ev) {
+    inputEl.addEventListener(ev, function(e) {
+      e.preventDefault(); e.stopPropagation(); return false;
+    });
+  });
+  inputEl.addEventListener('input', function() {
+    var diff = this.value.length - lastTypedLen;
+    if (diff > 2) {
+      this.value = this.value.slice(0, lastTypedLen);
+      toast('不允許複製貼上，請手動輸入！');
+      return;
+    }
+    lastTypedLen = this.value.length;
+    handleTyping(this.value);
+  });
+}
+setupInput(document.getElementById('g-input'));
+setupInput(document.getElementById('g-input-d'));
 
-document.getElementById('g-input').addEventListener('input', function() {
+function handleTyping(val) {
   if (!inputOn || !curText) return;
   typed = this.value;
 
@@ -731,10 +828,10 @@ document.getElementById('g-input').addEventListener('input', function() {
   const wpm = calcWpm(typed.length, startTime);
   const acc = typed.length > 0 ? Math.round((correct / typed.length) * 100) : 100;
 
-  document.getElementById('g-swpm').textContent = wpm;
-  document.getElementById('g-sacc').textContent = acc + '%';
-  document.getElementById('g-schar').textContent = typed.length;
-  document.getElementById('g-wpm').textContent = wpm + ' 字/分';
+  ['g-swpm','g-swpm-d'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=wpm; });
+  ['g-sacc','g-sacc-d'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=acc+'%'; });
+  ['g-schar','g-schar-d'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=typed.length; });
+  ['g-wpm','g-wpm-d'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=wpm+' 字/分'; });
 
   // 自己的進度條即時更新，不等 Firebase
   var myBar = document.getElementById('bar-' + myUid);
@@ -753,13 +850,12 @@ document.getElementById('g-input').addEventListener('input', function() {
     doneThisQ = true;
     finishQ(wpm, acc);
   }
-});
+}
 
 function renderPassage(ty, text) {
-  // 去掉換行符號後的對照文字
   var compareText = text.replace(/\n/g, '');
-  var tyIdx = 0; // 追蹤 typed 的位置（不含換行）
-  document.getElementById('g-passage').innerHTML = Array.from(text).map(function(c, i) {
+  var tyIdx = 0;
+  var html = Array.from(text).map(function(c) {
     if (c === '\n') return '<br>';
     var cls = 'c-dim';
     if (tyIdx < ty.length) cls = ty[tyIdx] === c ? 'c-ok' : 'c-err';
@@ -767,15 +863,18 @@ function renderPassage(ty, text) {
     tyIdx++;
     return '<span class="' + cls + '">' + (c === ' ' ? '&nbsp;' : c) + '</span>';
   }).join('');
+  // 同時更新手機版和電腦版的 passage
+  ['g-passage','g-passage-d'].forEach(function(id){ var el=document.getElementById(id); if(el) el.innerHTML=html; });
 }
 
 function buildBars(ps) {
-  document.getElementById('g-prog').innerHTML = ps.map(function(p, i) {
+  var html = ps.map(function(p, i) {
     return '<div class="prog-row">' +
       '<div class="prog-label"><span>' + p.name + '</span><span id="pct-' + p.uid + '">0%</span></div>' +
       '<div class="prog-bar"><div class="prog-fill" id="bar-' + p.uid + '" style="width:0%;background:' + COLORS[i % 4] + '"></div></div>' +
       '</div>';
   }).join('');
+  ['g-prog','g-prog-d'].forEach(function(id){ var el=document.getElementById(id); if(el) el.innerHTML=html; });
 }
 
 function updateBars(ps) {
@@ -809,9 +908,9 @@ function finishQ(wpm, acc) {
     rounds: myRounds
   });
 
-  document.getElementById('g-fin').textContent = '✅ 完成！' + wpm + ' 字/分 ｜ 準確率 ' + acc + '%';
-  document.getElementById('g-fin').style.display = 'block';
-  document.getElementById('g-wait').style.display = 'block';
+  var finText = '✅ 完成！' + wpm + ' 字/分 ｜ 準確率 ' + acc + '%';
+  ['g-fin','g-fin-d'].forEach(function(id){ var el=document.getElementById(id); if(el){ el.textContent=finText; el.style.display='block'; }});
+  ['g-wait','g-wait-d'].forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display='block'; });
 }
 
 // ── 全員完成檢查（只有房主執行，避免重複寫入）──
