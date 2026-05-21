@@ -348,8 +348,12 @@ textarea:disabled { opacity: 0.6; }
     </div>
     <div id="lb-detail-list"></div>
   </div>
-  <!-- inp-name 隱藏，由 currentUser.name 自動填入 -->
   <input type="hidden" id="inp-name">
+  <div class="card">
+    <div style="font-size:14px;font-weight:500;margin-bottom:8px">遊戲暱稱</div>
+    <input type="text" id="inp-nickname" placeholder="輸入暱稱（預設為真實姓名）" maxlength="10">
+    <div style="font-size:11px;color:var(--text2);margin-top:5px">暱稱只在遊戲對戰中顯示，老師管理頁面仍顯示真實姓名</div>
+  </div>
   <div class="card">
     <div style="font-size:14px;font-weight:500;margin-bottom:10px">房間設定</div>
     <div class="q-mode-row">
@@ -608,6 +612,11 @@ function enterMenu() {
   go('s-menu');
   updateUserBar();
   loadLeaderboard();
+  // 預填暱稱為真實姓名（若尚未填過）
+  var nickInp = document.getElementById('inp-nickname');
+  if (nickInp && currentUser && !currentUser.isGuest && !nickInp.value) {
+    nickInp.value = currentUser.name;
+  }
 }
 
 function guestLogin() {
@@ -796,7 +805,8 @@ let lastQ = -1;
 
 // 從表單取得共用設定值
 function getFormValues() {
-  const name = currentUser ? currentUser.name : '';
+  var nickInp = document.getElementById('inp-nickname');
+  var nickname = (nickInp && nickInp.value.trim()) ? nickInp.value.trim() : (currentUser ? currentUser.name : '訪客');
   const minP = parseInt(document.getElementById('sel-min').value);
   const isCustom = qMode === 'custom';
   const picked = isCustom
@@ -805,14 +815,14 @@ function getFormValues() {
   const qcount = isCustom
     ? (picked ? picked.length : 1)
     : parseInt(document.getElementById('sel-q').value);
-  return { name, minP, qcount, picked };
+  return { name: nickname, minP, qcount, picked };
 }
 
 async function createNewRoom() {
   const { name, minP, qcount, picked } = getFormValues();
   if (!currentUser) { toast('請先登入！'); go('s-auth'); return; }
   if (qMode === 'custom' && (!picked || picked.length === 0)) { toast('請至少勾選一題！'); return; }
-  myName = currentUser.name + '(' + currentUser.class + ')';
+  myName = name + (currentUser.class ? '(' + currentUser.class + ')' : '');
   await doCreate(qcount, minP, picked);
 }
 
@@ -826,7 +836,8 @@ function showJoinCode() {
 
 async function joinByCode() {
   if (!currentUser) { toast('請先登入！'); go('s-auth'); return; }
-  myName = currentUser.name + '(' + currentUser.class + ')';
+  const { name } = getFormValues();
+  myName = name + (currentUser.class ? '(' + currentUser.class + ')' : '');
   var code = document.getElementById('inp-code').value.trim().toUpperCase();
   if (code.length !== 4) { toast('請輸入 4 位房號'); return; }
 
@@ -888,7 +899,7 @@ async function joinQueue() {
   const { name, minP, qcount, picked } = getFormValues();
   if (!currentUser) { toast('請先登入！'); go('s-auth'); return; }
   if (qMode === 'custom' && (!picked || picked.length === 0)) { toast('請至少勾選一題！'); return; }
-  myName = currentUser.name + '(' + currentUser.class + ')';
+  myName = name + (currentUser.class ? '(' + currentUser.class + ')' : '');
 
   // 單人模式直接建房，不配對
   if (minP === 1) { await doCreate(qcount, minP, picked); return; }
@@ -1241,8 +1252,15 @@ function renderPassage(ty, text) {
 
 function buildBars(ps) {
   var html = ps.map(function(p, i) {
-    return '<div class="prog-row">' +
-      '<div class="prog-label"><span>' + p.name + '</span><span id="pct-' + p.uid + '">0%</span></div>' +
+    var isMe = p.uid === myUid;
+    var nameLabel = isMe
+      ? p.name + ' <span style="font-size:10px;background:var(--purple);color:#fff;border-radius:4px;padding:1px 6px;vertical-align:middle;margin-left:4px">我</span>'
+      : p.name;
+    var rowStyle = isMe
+      ? 'background:var(--purple-light);border-radius:var(--radius);padding:4px 6px;margin-bottom:6px;'
+      : '';
+    return '<div class="prog-row" style="' + rowStyle + '">' +
+      '<div class="prog-label"><span>' + nameLabel + '</span><span id="pct-' + p.uid + '">0%</span></div>' +
       '<div class="prog-bar"><div class="prog-fill" id="bar-' + p.uid + '" style="width:0%;background:' + COLORS[i % 4] + '"></div></div>' +
       '</div>';
   }).join('');
