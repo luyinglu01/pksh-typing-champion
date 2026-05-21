@@ -352,7 +352,7 @@ textarea:disabled { opacity: 0.6; }
   <div class="card">
     <div style="font-size:14px;font-weight:500;margin-bottom:8px">遊戲暱稱</div>
     <input type="text" id="inp-nickname" placeholder="輸入暱稱（預設為真實姓名）" maxlength="10">
-    <div style="font-size:11px;color:var(--text2);margin-top:5px">暱稱只在遊戲對戰中顯示，老師管理頁面仍顯示真實姓名</div>
+
   </div>
   <div class="card">
     <div style="font-size:14px;font-weight:500;margin-bottom:10px">房間設定</div>
@@ -637,6 +637,7 @@ function togglePwd(inputId, btn) {
 }
 
 function doLogout() {
+  if (lbRef) { lbRef.off(); lbRef = null; }
   localStorage.removeItem('currentUser');
   currentUser = null;
   go('s-auth');
@@ -798,6 +799,7 @@ let timerIv = null;
 let inputOn = false;
 let typed = '';
 let doneThisQ = false;
+let isHost = false;
 let lastStatus = '';
 let lastQ = -1;
 
@@ -927,7 +929,7 @@ async function doCreate(qcount, minP, customPassages) {
     createdAt: Date.now(),
     players: { [myUid]: mkPlayer() }
   });
-  db.ref('rooms/' + roomId).onDisconnect().remove();
+  db.ref('rooms/' + roomId + '/players/' + myUid).onDisconnect().remove();
   // 30分鐘後自動清除房間
   setTimeout(function() {
     if (roomId) db.ref('rooms/' + roomId).remove();
@@ -973,7 +975,7 @@ db.ref('.info/connected').on('value', function(snap) {
 function showToastReconnect(msg) {
   var t = document.getElementById('toast');
   t.textContent = msg;
-  t.style.background = msg.includes('✅') ? 'var(--green)' : 'var(--amber)';
+  t.style.background = msg.includes('✅') ? 'var(--green)' : '#BA7517';
   t.classList.add('show');
   setTimeout(function() {
     t.classList.remove('show');
@@ -1456,6 +1458,7 @@ function cleanup() {
 }
 
 async function playAgain() {
+  myTotalWpm = 0; myTotalAcc = 0; myRounds = 0;
   var hostSnap = await db.ref('rooms/' + roomId + '/host').once('value');
   if (hostSnap.val() !== myUid) { toast('只有房主可以重新開始'); return; }
   var snap = await db.ref('rooms/' + roomId).once('value');
