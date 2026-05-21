@@ -222,6 +222,31 @@ textarea:disabled { opacity: 0.6; }
 .rstat strong { color: var(--text); }
 .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); background: var(--red); color: #fff; padding: 10px 20px; border-radius: var(--radius); font-size: 14px; z-index: 999; opacity: 0; transition: opacity .3s; pointer-events: none; }
 .toast.show { opacity: 1; }
+
+/* ── 登入/註冊 ── */
+.auth-tab-bar { display: flex; gap: 0; border-bottom: 0.5px solid var(--border); margin-bottom: 1.25rem; }
+.auth-tab { flex: 1; padding: 9px; text-align: center; font-size: 14px; color: var(--text2); cursor: pointer; border-bottom: 2px solid transparent; transition: all .15s; }
+.auth-tab.active { color: var(--purple); border-bottom-color: var(--purple); font-weight: 500; }
+.form-group { margin-bottom: 12px; }
+.form-label { font-size: 13px; color: var(--text2); margin-bottom: 5px; display: block; }
+
+/* ── 排行榜 ── */
+.lb-class-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 8px; cursor: pointer; transition: border-color .15s; }
+.lb-class-card:hover { border-color: var(--purple); }
+.lb-class-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.lb-class-name { font-weight: 500; font-size: 14px; }
+.lb-class-score { font-size: 13px; color: var(--text2); }
+.lb-prog-bar { height: 7px; background: var(--bg3); border-radius: 4px; overflow: hidden; margin-bottom: 4px; }
+.lb-prog-fill { height: 100%; border-radius: 4px; background: var(--purple); transition: width .5s ease; }
+.lb-prog-fill.done { background: var(--green); }
+.lb-student-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 0.5px solid var(--border); font-size: 13px; }
+.lb-student-row:last-child { border-bottom: none; }
+.lb-rank { width: 28px; text-align: center; font-size: 15px; }
+.lb-name { flex: 1; }
+.lb-score { font-weight: 500; color: var(--purple); }
+.lb-pct { font-size: 11px; color: var(--text2); width: 36px; text-align: right; }
+.user-info-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--purple-light); border-radius: var(--radius); margin-bottom: 12px; font-size: 13px; }
+.user-info-bar strong { color: var(--purple-dark); }
 .q-mode-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 0.5px solid var(--border); }
 .q-mode-btn { flex: 1; padding: 7px; border: 0.5px solid var(--border); border-radius: var(--radius); background: transparent; color: var(--text2); font-size: 13px; cursor: pointer; text-align: center; transition: all .15s; }
 .q-mode-btn.active { background: var(--purple-light); border-color: var(--purple); color: var(--purple-dark); font-weight: 500; }
@@ -236,10 +261,75 @@ textarea:disabled { opacity: 0.6; }
 <body>
 <div class="wrap">
 
+<!-- 登入/註冊畫面 -->
+<div id="s-auth" class="screen active">
+  <h1>打字競速 <span class="badge badge-purple">連線版</span></h1>
+  <p class="sub">請先登入或註冊帳號</p>
+  <div class="auth-tab-bar">
+    <div class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">登入</div>
+    <div class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">註冊</div>
+  </div>
+  <!-- 登入 -->
+  <div id="auth-login">
+    <div class="form-group">
+      <label class="form-label">學號</label>
+      <input type="text" id="login-id" placeholder="輸入學號">
+    </div>
+    <div class="form-group">
+      <label class="form-label">密碼</label>
+      <input type="password" id="login-pwd" placeholder="輸入密碼" onkeydown="if(event.key==='Enter') doLogin()">
+    </div>
+    <div id="login-err" style="display:none;font-size:13px;color:var(--red);margin-bottom:10px"></div>
+    <button class="btn-p" style="width:100%" onclick="doLogin()">登入</button>
+  </div>
+  <!-- 註冊 -->
+  <div id="auth-register" style="display:none">
+    <div class="form-group">
+      <label class="form-label">姓名</label>
+      <input type="text" id="reg-name" placeholder="輸入真實姓名" maxlength="10">
+    </div>
+    <div class="form-group">
+      <label class="form-label">學號</label>
+      <input type="text" id="reg-id" placeholder="輸入學號" maxlength="20">
+    </div>
+    <div class="form-group">
+      <label class="form-label">班級</label>
+      <select id="reg-class">
+        <option value="">請選擇班級</option>
+        <option value="商一甲">商一甲</option>
+        <option value="商一乙">商一乙</option>
+        <option value="應一甲">應一甲</option>
+        <option value="貿一甲">貿一甲</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">密碼</label>
+      <input type="password" id="reg-pwd" placeholder="設定密碼（至少4字元）" maxlength="20">
+    </div>
+    <div id="reg-err" style="display:none;font-size:13px;color:var(--red);margin-bottom:10px"></div>
+    <button class="btn-p" style="width:100%" onclick="doRegister()">註冊</button>
+  </div>
+</div>
+
 <!-- 主選單 -->
-<div id="s-menu" class="screen active">
+<div id="s-menu" class="screen">
+  <div class="user-info-bar">
+    <span>👤 <strong id="ui-name"></strong> &nbsp;<span id="ui-class" style="color:var(--text2)"></span></span>
+    <span>本週 <strong id="ui-score" style="color:var(--purple)">0</strong> 題 &nbsp;<button onclick="doLogout()" style="padding:3px 8px;font-size:12px">登出</button></span>
+  </div>
   <h1>打字競速 <span class="badge badge-purple">連線版</span></h1>
   <p class="sub">隨機配對，最多 4 人同時對戰</p>
+
+  <!-- 班級積分排行榜 -->
+  <div class="card">
+    <div style="font-size:14px;font-weight:500;margin-bottom:10px">📊 本週班級積分</div>
+    <div id="lb-overview"></div>
+    <div id="lb-detail" style="display:none;margin-top:10px">
+      <div style="font-size:13px;font-weight:500;margin-bottom:8px" id="lb-detail-title"></div>
+      <div id="lb-detail-list"></div>
+      <button onclick="closeLbDetail()" style="margin-top:8px;font-size:12px;color:var(--text2)">收起 ▲</button>
+    </div>
+  </div>
   <div class="card">
     <div style="font-size:14px;font-weight:500;margin-bottom:10px">你的名字</div>
     <input type="text" id="inp-name" placeholder="輸入暱稱（最多 10 字）" maxlength="10">
@@ -411,6 +501,13 @@ textarea:disabled { opacity: 0.6; }
   <div id="res-list"></div>
   <hr class="divider">
   <div id="res-sum" style="font-size:13px;color:var(--text2)"></div>
+
+  <!-- 結算後也顯示班級積分 -->
+  <div style="margin-top:1rem">
+    <div style="font-size:14px;font-weight:500;margin-bottom:10px">📊 本週班級積分</div>
+    <div id="res-lb-overview"></div>
+  </div>
+
   <div class="row row-end gap8 mt1">
     <button onclick="backMenu()">回主選單</button>
     <button class="btn-p" onclick="playAgain()">再玩一局</button>
@@ -423,6 +520,166 @@ textarea:disabled { opacity: 0.6; }
 <script>
 firebase.initializeApp(FIREBASE_CONFIG);
 const db = firebase.database();
+
+// ── 班級設定 ──
+const CLASSES = ['商一甲','商一乙','應一甲','貿一甲'];
+const TARGETS = { '商一甲': 150, '商一乙': 150, '應一甲': 80, '貿一甲': 80 };
+const MEDALS = ['🥇','🥈','🥉'];
+
+// ── 目前登入的使用者 ──
+var currentUser = null; // { studentId, name, class, weekScore }
+
+// ── 登入/註冊 ──
+function switchAuthTab(tab) {
+  document.getElementById('tab-login').classList.toggle('active', tab==='login');
+  document.getElementById('tab-register').classList.toggle('active', tab==='register');
+  document.getElementById('auth-login').style.display = tab==='login' ? 'block' : 'none';
+  document.getElementById('auth-register').style.display = tab==='register' ? 'block' : 'none';
+}
+
+async function doLogin() {
+  const sid = document.getElementById('login-id').value.trim();
+  const pwd = document.getElementById('login-pwd').value;
+  if (!sid || !pwd) { showAuthErr('login', '請填寫學號和密碼'); return; }
+
+  const snap = await db.ref('users/' + sid).once('value');
+  const user = snap.val();
+  if (!user) { showAuthErr('login', '找不到此學號，請先註冊'); return; }
+  if (user.password !== pwd) { showAuthErr('login', '密碼錯誤'); return; }
+
+  currentUser = user;
+  document.getElementById('login-err').style.display = 'none';
+  enterMenu();
+}
+
+async function doRegister() {
+  const name = document.getElementById('reg-name').value.trim();
+  const sid = document.getElementById('reg-id').value.trim();
+  const cls = document.getElementById('reg-class').value;
+  const pwd = document.getElementById('reg-pwd').value;
+
+  if (!name || !sid || !cls || !pwd) { showAuthErr('reg', '請填寫所有欄位'); return; }
+  if (pwd.length < 4) { showAuthErr('reg', '密碼至少需要 4 個字元'); return; }
+
+  // 檢查學號是否已存在
+  const snap = await db.ref('users/' + sid).once('value');
+  if (snap.val()) { showAuthErr('reg', '此學號已經註冊過了'); return; }
+
+  const userData = { studentId: sid, name, class: cls, password: pwd, weekScore: 0, totalScore: 0 };
+  await db.ref('users/' + sid).set(userData);
+  currentUser = userData;
+  document.getElementById('reg-err').style.display = 'none';
+  toast('註冊成功！歡迎 ' + name);
+  enterMenu();
+}
+
+function showAuthErr(type, msg) {
+  const el = document.getElementById(type === 'login' ? 'login-err' : 'reg-err');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function enterMenu() {
+  go('s-menu');
+  document.getElementById('ui-name').textContent = currentUser.name;
+  document.getElementById('ui-class').textContent = currentUser.class;
+  document.getElementById('ui-score').textContent = currentUser.weekScore || 0;
+  loadLeaderboard();
+}
+
+function doLogout() {
+  currentUser = null;
+  go('s-auth');
+}
+
+// ── 排行榜 ──
+var lbRef = null;
+function loadLeaderboard() {
+  if (lbRef) lbRef.off();
+  lbRef = db.ref('users');
+  lbRef.on('value', function(snap) {
+    const data = snap.val() || {};
+    const students = Object.values(data);
+    // 更新自己的分數顯示
+    if (currentUser) {
+      const me = data[currentUser.studentId];
+      if (me) {
+        currentUser.weekScore = me.weekScore || 0;
+        document.getElementById('ui-score').textContent = currentUser.weekScore;
+      }
+    }
+    renderLeaderboard(students);
+  });
+}
+
+var lbOpenClass = null;
+function renderLeaderboard(students) {
+  const overview = document.getElementById('lb-overview');
+  overview.innerHTML = CLASSES.map(cls => {
+    const clsStudents = students.filter(s => s.class === cls);
+    const total = clsStudents.reduce((sum, s) => sum + (s.weekScore||0), 0);
+    const target = TARGETS[cls];
+    const pct = Math.min(100, Math.round((total/target)*100));
+    const done = total >= target;
+    return `<div class="lb-class-card" onclick="toggleLbDetail('${cls}', ${JSON.stringify(clsStudents).replace(/"/g,'&quot;')})">
+      <div class="lb-class-header">
+        <span class="lb-class-name">${cls} ${done?'✅':''}</span>
+        <span class="lb-class-score">${total}/${target} 題 &nbsp;${pct}%</span>
+      </div>
+      <div class="lb-prog-bar"><div class="lb-prog-fill ${done?'done':''}" style="width:${pct}%"></div></div>
+      <div style="font-size:11px;color:var(--text2)">${done ? '🎉 已達標！' : '還差 '+(target-total)+' 題'} ・ 點擊查看個人排行</div>
+    </div>`;
+  }).join('');
+
+  // 如果有展開的班級，重新渲染
+  if (lbOpenClass) {
+    const clsStudents = students.filter(s => s.class === lbOpenClass);
+    renderLbDetail(lbOpenClass, clsStudents);
+  }
+}
+
+function toggleLbDetail(cls, students) {
+  if (lbOpenClass === cls) {
+    closeLbDetail();
+  } else {
+    lbOpenClass = cls;
+    renderLbDetail(cls, students);
+    document.getElementById('lb-detail').style.display = 'block';
+  }
+}
+
+function renderLbDetail(cls, students) {
+  const sorted = [...students].sort((a,b) => (b.weekScore||0)-(a.weekScore||0));
+  const total = sorted.reduce((sum, s) => sum + (s.weekScore||0), 0);
+  document.getElementById('lb-detail-title').textContent = cls + ' 個人貢獻';
+  document.getElementById('lb-detail-list').innerHTML = sorted.length === 0
+    ? '<div style="font-size:13px;color:var(--text2);padding:8px 0">此班目前沒有學生</div>'
+    : sorted.map((s, i) => {
+        const score = s.weekScore || 0;
+        const pct = total > 0 ? Math.round((score/total)*100) : 0;
+        const isMe = currentUser && s.studentId === currentUser.studentId;
+        return `<div class="lb-student-row" style="${isMe?'background:var(--purple-light);border-radius:var(--radius);padding:8px;margin:-2px -4px':''}">
+          <div class="lb-rank">${MEDALS[i]||i+1}</div>
+          <div class="lb-name">${s.name}${isMe?' <span style="font-size:11px;color:var(--purple)">(我)</span>':''}</div>
+          <div class="lb-score">${score} 題</div>
+          <div class="lb-pct">${pct}%</div>
+        </div>`;
+      }).join('');
+}
+
+function closeLbDetail() {
+  lbOpenClass = null;
+  document.getElementById('lb-detail').style.display = 'none';
+}
+
+// ── 完成題目時加積分 ──
+function addWeekScore() {
+  if (!currentUser || !currentUser.studentId) return;
+  currentUser.weekScore = (currentUser.weekScore || 0) + 1;
+  db.ref('users/' + currentUser.studentId + '/weekScore').transaction(function(val) {
+    return (val || 0) + 1;
+  });
+}
 
 const PASSAGES = [
   "由此可知，Dell經營線上購物成功，是經過有效規劃，善用企業原本的優勢，契合市場機會，而非人云亦云、盲目上網。國內業者企圖經營線上購物業務時，不妨考慮是否也有相類似的條件或是其他利基。由藍色巨人IBM、媒體巨擘Time Warner集團與軟體霸主Microsoft經營線上購物中心Avenue、DreamShop與線上服務業務MSN的前例來看，僅憑藉大量資金、專業技術便想在線上購物市場大小通吃的作法不切實際，缺乏本業專門領域知識（Know-how）往往遭致失敗命運。",
@@ -489,9 +746,9 @@ function getFormValues() {
 
 async function createNewRoom() {
   const { name, minP, qcount, picked } = getFormValues();
-  if (!name) { toast('請先輸入名字'); return; }
+  if (!currentUser) { toast('請先登入！'); go('s-auth'); return; }
   if (qMode === 'custom' && (!picked || picked.length === 0)) { toast('請至少勾選一題！'); return; }
-  myName = name;
+  myName = currentUser.name + '(' + currentUser.class + ')';
   await doCreate(qcount, minP, picked);
 }
 
@@ -504,8 +761,8 @@ function showJoinCode() {
 }
 
 async function joinByCode() {
-  myName = document.getElementById('inp-name').value.trim();
-  if (!myName) { toast('請先輸入名字'); return; }
+  if (!currentUser) { toast('請先登入！'); go('s-auth'); return; }
+  myName = currentUser.name + '(' + currentUser.class + ')';
   var code = document.getElementById('inp-code').value.trim().toUpperCase();
   if (code.length !== 4) { toast('請輸入 4 位房號'); return; }
 
@@ -565,9 +822,9 @@ function toggleQ(i) {
 
 async function joinQueue() {
   const { name, minP, qcount, picked } = getFormValues();
-  if (!name) { toast('請先輸入名字'); return; }
+  if (!currentUser) { toast('請先登入！'); go('s-auth'); return; }
   if (qMode === 'custom' && (!picked || picked.length === 0)) { toast('請至少勾選一題！'); return; }
-  myName = name;
+  myName = currentUser.name + '(' + currentUser.class + ')';
 
   // 單人模式直接建房，不配對
   if (minP === 1) { await doCreate(qcount, minP, picked); return; }
@@ -958,6 +1215,8 @@ function finishQ(wpm, acc) {
     totalAcc: myTotalAcc,
     rounds: myRounds
   });
+  // 完成一題加一分到個人積分
+  addWeekScore();
 
   var finText = '✅ 完成！' + wpm + ' 字/分 ｜ 準確率 ' + acc + '%';
   syncEl(['g-fin','g-fin-d'], 'textContent', finText);
@@ -1001,6 +1260,28 @@ function checkAllDone(d, ps) {
 function showResults(d, ps) {
   clearInterval(timerIv);
   go('s-result');
+  // 更新結算頁的班級積分
+  db.ref('users').once('value', function(snap) {
+    const data = snap.val() || {};
+    const students = Object.values(data);
+    const resLb = document.getElementById('res-lb-overview');
+    if (resLb) {
+      resLb.innerHTML = CLASSES.map(cls => {
+        const clsStudents = students.filter(s => s.class === cls);
+        const total = clsStudents.reduce((sum, s) => sum + (s.weekScore||0), 0);
+        const target = TARGETS[cls];
+        const pct = Math.min(100, Math.round((total/target)*100));
+        const done = total >= target;
+        return '<div class="lb-class-card" style="cursor:default">' +
+          '<div class="lb-class-header">' +
+          '<span class="lb-class-name">' + cls + (done?' ✅':'') + '</span>' +
+          '<span class="lb-class-score">' + total + '/' + target + ' 題 ' + pct + '%</span>' +
+          '</div>' +
+          '<div class="lb-prog-bar"><div class="lb-prog-fill ' + (done?'done':'') + '" style="width:' + pct + '%"></div></div>' +
+          '</div>';
+      }).join('');
+    }
+  });
   var medals = ['🥇','🥈','🥉','🏅'];
   var ranked = ps.map(function(p) {
     return {
