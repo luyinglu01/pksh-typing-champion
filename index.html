@@ -59,7 +59,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn-p:hover { background: var(--purple-dark); border-color: var(--purple-dark); }
 .screen { display: none; }
 .screen.active { display: block; }
-#s-menu { overflow-y: auto; max-height: 100vh; }
+#s-menu { overflow-y: visible; }
+body { overflow-y: auto; }
 .row { display: flex; align-items: center; gap: 10px; }
 .row-end { justify-content: flex-end; }
 .row-between { justify-content: space-between; }
@@ -108,7 +109,7 @@ textarea:disabled { opacity: 0.6; }
 
 /* ── 電腦版遊戲（上下分割，769px 以上）── */
 @media (min-width: 769px) {
-  body { overflow: hidden; }
+  body.game-active { overflow: hidden; }
   #s-game { display: none; }
   #s-game.active {
     display: flex;
@@ -594,11 +595,16 @@ function showAuthErr(type, msg) {
   el.style.display = 'block';
 }
 
-function enterMenu() {
-  go('s-menu');
+function updateUserBar() {
+  if (!currentUser) return;
   document.getElementById('ui-name').textContent = currentUser.name;
   document.getElementById('ui-class').textContent = currentUser.isGuest ? '訪客' : currentUser.class;
   document.getElementById('ui-score').textContent = currentUser.isGuest ? '—' : (currentUser.weekScore || 0);
+}
+
+function enterMenu() {
+  go('s-menu');
+  updateUserBar();
   loadLeaderboard();
 }
 
@@ -632,11 +638,11 @@ function loadLeaderboard() {
     const data = snap.val() || {};
     const students = Object.values(data);
     // 更新自己的分數顯示
-    if (currentUser) {
+    if (currentUser && !currentUser.isGuest) {
       const me = data[currentUser.studentId];
       if (me) {
         currentUser.weekScore = me.weekScore || 0;
-        document.getElementById('ui-score').textContent = currentUser.weekScore;
+        updateUserBar();
       }
     }
     renderLeaderboard(students);
@@ -652,7 +658,7 @@ function renderLeaderboard(students) {
     const target = TARGETS[cls];
     const pct = Math.min(100, Math.round((total/target)*100));
     const done = total >= target;
-    return `<div class="lb-class-card" onclick="toggleLbDetail('${cls}', ${JSON.stringify(clsStudents).replace(/"/g,'&quot;')})">
+    return `<div class="lb-class-card" onclick="toggleLbDetail('${cls}')">
       <div class="lb-class-header">
         <span class="lb-class-name">${cls} ${done?'✅':''}</span>
         <span class="lb-class-score">${total}/${target} 題 &nbsp;${pct}%</span>
@@ -669,14 +675,18 @@ function renderLeaderboard(students) {
   }
 }
 
-function toggleLbDetail(cls, students) {
+function toggleLbDetail(cls) {
   if (lbOpenClass === cls) {
     closeLbDetail();
-  } else {
-    lbOpenClass = cls;
-    renderLbDetail(cls, students);
-    document.getElementById('lb-detail').style.display = 'block';
+    return;
   }
+  lbOpenClass = cls;
+  document.getElementById('lb-detail').style.display = 'block';
+  // 從 Firebase 即時資料讀取，不傳 JSON
+  db.ref('users').orderByChild('class').equalTo(cls).once('value', function(snap) {
+    var students = snap.val() ? Object.values(snap.val()) : [];
+    renderLbDetail(cls, students);
+  });
 }
 
 function renderLbDetail(cls, students) {
@@ -713,8 +723,7 @@ function addWeekScore() {
     timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
   }).replace(/\//g, '-');
 
-  // 記錄格式：users/{studentId}/dailyPassages/{today}/{passageIndex}
-  var passageIdx = curQ + '_' + (curText ? curText.slice(0, 10) : curQ);
+  // 記錄格式：users/{studentId}/dailyPassages/{today}/{题目索引}
   var recordRef = db.ref('users/' + currentUser.studentId + '/dailyPassages/' + today + '/' + curQ);
 
   recordRef.once('value', function(snap) {
@@ -768,7 +777,6 @@ function syncEl(ids, prop, val, isStyle) {
 const myUid = 'u' + Date.now() + Math.random().toString(36).slice(2,5);
 let myName = '';
 let roomId = null;
-let isHost = false;
 let roomRef = null;
 let curQ = 0;
 let curText = '';
@@ -1126,6 +1134,7 @@ function startQ(d, ps) {
   }, 400);
 
   go('s-game');
+  document.body.classList.add('game-active');
   setTimeout(function() { inp.focus(); }, 100);
 }
 
@@ -1312,7 +1321,8 @@ function checkAllDone(d, ps) {
 function showResults(d, ps) {
   clearInterval(timerIv);
   go('s-result');
-  // 更新結算頁的班級積分
+  // 延遲 1.5 秒讀取，確保 addWeekScore 已寫入 Firebase
+  setTimeout(function() {
   db.ref('users').once('value', function(snap) {
     const data = snap.val() || {};
     const students = Object.values(data);
@@ -1334,6 +1344,7 @@ function showResults(d, ps) {
       }).join('');
     }
   });
+  }, 1500);
   var medals = ['🥇','🥈','🥉','🏅'];
   var ranked = ps.map(function(p) {
     return {
@@ -1405,6 +1416,7 @@ async function leaveRoom() {
 
 function backMenu() {
   cleanup();
+  document.body.classList.remove('game-active');
   go('s-menu');
 }
 
