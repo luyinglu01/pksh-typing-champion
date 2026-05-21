@@ -337,11 +337,14 @@ textarea:disabled { opacity: 0.6; }
   <div class="card">
     <div style="font-size:14px;font-weight:500;margin-bottom:10px">📊 本週班級積分</div>
     <div id="lb-overview"></div>
-    <div id="lb-detail" style="display:none;margin-top:10px">
-      <div style="font-size:13px;font-weight:500;margin-bottom:8px" id="lb-detail-title"></div>
-      <div id="lb-detail-list"></div>
-      <button onclick="closeLbDetail()" style="margin-top:8px;font-size:12px;color:var(--text2)">收起 ▲</button>
+  </div>
+  <!-- 個人排行（展開後獨立顯示，不擠壓其他內容） -->
+  <div id="lb-detail" class="card" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:13px;font-weight:500" id="lb-detail-title"></div>
+      <button onclick="closeLbDetail()" style="font-size:12px;color:var(--text2);padding:4px 8px">收起 ▲</button>
     </div>
+    <div id="lb-detail-list"></div>
   </div>
   <!-- inp-name 隱藏，由 currentUser.name 自動填入 -->
   <input type="hidden" id="inp-name">
