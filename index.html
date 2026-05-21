@@ -48,8 +48,9 @@ h1 { font-size: 20px; font-weight: 500; margin-bottom: 6px; }
 h2 { font-size: 17px; font-weight: 500; margin-bottom: 12px; }
 .sub { font-size: 13px; color: var(--text2); margin-bottom: 1.25rem; }
 .card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 12px; }
-input[type=text], select { width: 100%; padding: 9px 12px; border: 0.5px solid var(--border); border-radius: var(--radius); font-size: 16px; /* 16px 防止 iOS 自動縮放 */ background: var(--bg); color: var(--text); outline: none; transition: border-color .15s; -webkit-appearance: none; appearance: none; }
+input[type=text], input[type=password], select { width: 100%; padding: 9px 12px; border: 0.5px solid var(--border); border-radius: var(--radius); font-size: 16px; background: var(--bg) !important; color: var(--text) !important; outline: none; transition: border-color .15s; -webkit-appearance: none; appearance: none; }
 input:focus, select:focus { border-color: var(--purple); box-shadow: 0 0 0 3px var(--purple-light); }
+input[type=password]::-webkit-credentials-auto-fill-button { visibility: hidden; }
 button { padding: 10px 18px; border: 0.5px solid var(--border); border-radius: var(--radius); background: transparent; color: var(--text); font-size: 14px; cursor: pointer; transition: background .15s, transform .1s; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 button:hover { background: var(--bg2); }
 button:active { transform: scale(0.97); }
@@ -256,6 +257,8 @@ textarea:disabled { opacity: 0.6; }
 .q-check-box { width: 14px; height: 14px; border: 1.5px solid var(--border); border-radius: 3px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; }
 .q-check.checked .q-check-box { background: var(--purple); border-color: var(--purple); color: #fff; }
 .q-select-hint { font-size: 12px; color: var(--text2); margin-top: 6px; }
+.pwd-input { width: 100%; padding-right: 52px; }
+.pwd-toggle { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); border: none; background: none; color: var(--text2); font-size: 13px; cursor: pointer; line-height: 1; padding: 4px; }
 </style>
 </head>
 <body>
@@ -277,10 +280,17 @@ textarea:disabled { opacity: 0.6; }
     </div>
     <div class="form-group">
       <label class="form-label">密碼</label>
-      <input type="password" id="login-pwd" placeholder="輸入密碼" onkeydown="if(event.key==='Enter') doLogin()">
+      <div style="position:relative;width:100%">
+        <input type="password" id="login-pwd" placeholder="輸入密碼" onkeydown="if(event.key==='Enter') doLogin()" class="pwd-input">
+        <button onclick="togglePwd('login-pwd',this)" class="pwd-toggle">顯示</button>
+      </div>
     </div>
     <div id="login-err" style="display:none;font-size:13px;color:var(--red);margin-bottom:10px"></div>
     <button class="btn-p" style="width:100%" onclick="doLogin()">登入</button>
+    <div style="text-align:center;margin-top:12px">
+      <span style="font-size:13px;color:var(--text2)">不想累積積分？</span>
+      <button onclick="guestLogin()" style="font-size:13px;color:var(--purple);border:none;background:none;padding:0;cursor:pointer;text-decoration:underline">以訪客身份練習</button>
+    </div>
   </div>
   <!-- 註冊 -->
   <div id="auth-register" style="display:none">
@@ -304,7 +314,10 @@ textarea:disabled { opacity: 0.6; }
     </div>
     <div class="form-group">
       <label class="form-label">密碼</label>
-      <input type="password" id="reg-pwd" placeholder="設定密碼（至少4字元）" maxlength="20">
+      <div style="position:relative;width:100%">
+        <input type="password" id="reg-pwd" placeholder="設定密碼（至少4字元）" maxlength="20" class="pwd-input">
+        <button onclick="togglePwd('reg-pwd',this)" class="pwd-toggle">顯示</button>
+      </div>
     </div>
     <div id="reg-err" style="display:none;font-size:13px;color:var(--red);margin-bottom:10px"></div>
     <button class="btn-p" style="width:100%" onclick="doRegister()">註冊</button>
@@ -315,7 +328,7 @@ textarea:disabled { opacity: 0.6; }
 <div id="s-menu" class="screen">
   <div class="user-info-bar">
     <span>👤 <strong id="ui-name"></strong> &nbsp;<span id="ui-class" style="color:var(--text2)"></span></span>
-    <span>本週 <strong id="ui-score" style="color:var(--purple)">0</strong> 題 &nbsp;<button onclick="doLogout()" style="padding:3px 8px;font-size:12px">登出</button></span>
+    <span id="ui-score-wrap">本週 <strong id="ui-score" style="color:var(--purple)">0</strong> 題 &nbsp;</span><button onclick="doLogout()" style="padding:3px 8px;font-size:12px">登出</button>
   </div>
   <h1>打字競速 <span class="badge badge-purple">連線版</span></h1>
   <p class="sub">隨機配對，最多 4 人同時對戰</p>
@@ -582,9 +595,25 @@ function showAuthErr(type, msg) {
 function enterMenu() {
   go('s-menu');
   document.getElementById('ui-name').textContent = currentUser.name;
-  document.getElementById('ui-class').textContent = currentUser.class;
-  document.getElementById('ui-score').textContent = currentUser.weekScore || 0;
+  document.getElementById('ui-class').textContent = currentUser.isGuest ? '訪客' : currentUser.class;
+  document.getElementById('ui-score').textContent = currentUser.isGuest ? '—' : (currentUser.weekScore || 0);
   loadLeaderboard();
+}
+
+function guestLogin() {
+  currentUser = { name: '訪客', class: '', isGuest: true, weekScore: 0 };
+  enterMenu();
+}
+
+function togglePwd(inputId, btn) {
+  var inp = document.getElementById(inputId);
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    btn.textContent = '隱藏';
+  } else {
+    inp.type = 'password';
+    btn.textContent = '顯示';
+  }
 }
 
 function doLogout() {
@@ -1215,8 +1244,8 @@ function finishQ(wpm, acc) {
     totalAcc: myTotalAcc,
     rounds: myRounds
   });
-  // 完成一題加一分到個人積分
-  addWeekScore();
+  // 完成一題加一分到個人積分（訪客不累積）
+  if (!currentUser || !currentUser.isGuest) addWeekScore();
 
   var finText = '✅ 完成！' + wpm + ' 字/分 ｜ 準確率 ' + acc + '%';
   syncEl(['g-fin','g-fin-d'], 'textContent', finText);
