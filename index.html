@@ -343,10 +343,8 @@ textarea:disabled { opacity: 0.6; }
       <button onclick="closeLbDetail()" style="margin-top:8px;font-size:12px;color:var(--text2)">收起 ▲</button>
     </div>
   </div>
-  <div class="card">
-    <div style="font-size:14px;font-weight:500;margin-bottom:10px">你的名字</div>
-    <input type="text" id="inp-name" placeholder="輸入暱稱（最多 10 字）" maxlength="10">
-  </div>
+  <!-- inp-name 隱藏，由 currentUser.name 自動填入 -->
+  <input type="hidden" id="inp-name">
   <div class="card">
     <div style="font-size:14px;font-weight:500;margin-bottom:10px">房間設定</div>
     <div class="q-mode-row">
@@ -701,12 +699,33 @@ function closeLbDetail() {
   document.getElementById('lb-detail').style.display = 'none';
 }
 
-// ── 完成題目時加積分 ──
+// ── 完成題目時加積分（每人每天每題只計一次）──
 function addWeekScore() {
   if (!currentUser || !currentUser.studentId) return;
-  currentUser.weekScore = (currentUser.weekScore || 0) + 1;
-  db.ref('users/' + currentUser.studentId + '/weekScore').transaction(function(val) {
-    return (val || 0) + 1;
+  if (currentUser.isGuest) return; // 訪客不累積積分
+
+  // 取得今天日期字串（台灣時區）
+  var today = new Date().toLocaleDateString('zh-TW', {
+    timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).replace(/\//g, '-');
+
+  // 記錄格式：users/{studentId}/dailyPassages/{today}/{passageIndex}
+  var passageIdx = curQ + '_' + (curText ? curText.slice(0, 10) : curQ);
+  var recordRef = db.ref('users/' + currentUser.studentId + '/dailyPassages/' + today + '/' + curQ);
+
+  recordRef.once('value', function(snap) {
+    if (snap.val()) {
+      // 今天已經打過這題，不計分
+      toast('今天這題已計過分，換題繼續加油！');
+      return;
+    }
+    // 標記今天已打過這題
+    recordRef.set(true);
+    // 加積分
+    currentUser.weekScore = (currentUser.weekScore || 0) + 1;
+    db.ref('users/' + currentUser.studentId + '/weekScore').transaction(function(val) {
+      return (val || 0) + 1;
+    });
   });
 }
 
@@ -761,7 +780,7 @@ let lastQ = -1;
 
 // 從表單取得共用設定值
 function getFormValues() {
-  const name = document.getElementById('inp-name').value.trim();
+  const name = currentUser ? currentUser.name : '';
   const minP = parseInt(document.getElementById('sel-min').value);
   const isCustom = qMode === 'custom';
   const picked = isCustom

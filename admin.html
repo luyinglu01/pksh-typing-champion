@@ -86,7 +86,10 @@ button:hover { background: var(--bg2); }
   <h1>老師管理頁面</h1>
   <p style="font-size:14px;color:var(--text2);margin-bottom:1.5rem">請輸入管理員密碼</p>
   <div class="card">
-    <input type="password" id="inp-pwd" placeholder="輸入密碼" onkeydown="if(event.key==='Enter') login()">
+    <div style="position:relative;width:100%">
+      <input type="password" id="inp-pwd" placeholder="輸入密碼" onkeydown="if(event.key==='Enter') login()" style="width:100%;padding-right:52px">
+      <button onclick="var i=document.getElementById('inp-pwd');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'顯示':'隱藏'" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);border:none;background:none;color:#666;font-size:13px;cursor:pointer;line-height:1">顯示</button>
+    </div>
     <div class="row row-end mt1">
       <button class="btn-p" onclick="login()">登入</button>
     </div>
@@ -313,7 +316,10 @@ async function doReset() {
   const snap = await db.ref('users').once('value');
   const data = snap.val() || {};
   const updates = {};
-  Object.keys(data).forEach(id => { updates[`users/${id}/weekScore`] = 0; });
+  Object.keys(data).forEach(id => {
+    updates[`users/${id}/weekScore`] = 0;
+    updates[`users/${id}/dailyPassages`] = null; // 同時清除每日打題紀錄
+  });
   await db.ref().update(updates);
   // 記錄重置時間
   await db.ref('system/lastReset').set(new Date().toISOString());
