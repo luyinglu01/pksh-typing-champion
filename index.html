@@ -354,6 +354,9 @@ textarea:disabled { opacity: 0.6; }
       <div class="passage" id="g-passage-d"></div>
       <div class="fin-banner" id="g-fin-d" style="display:none"></div>
       <div class="wait-msg" id="g-wait-d" style="display:none">等待其他玩家完成<span class="dots"></span></div>
+      <div style="display:none;text-align:right;margin-top:8px" id="g-leave-d">
+        <button onclick="leaveEarly()" style="font-size:13px">提前離開</button>
+      </div>
     </div>
     <!-- 右欄：輸入 + 統計 + 進度 -->
     <div class="game-right">
@@ -388,6 +391,9 @@ textarea:disabled { opacity: 0.6; }
     <div id="g-prog"></div>
     <div class="fin-banner" id="g-fin" style="display:none"></div>
     <div class="wait-msg" id="g-wait" style="display:none">等待其他玩家完成<span class="dots"></span></div>
+    <div style="display:none;text-align:right;margin-top:8px" id="g-leave">
+      <button onclick="leaveEarly()" style="font-size:13px">提前離開</button>
+    </div>
   </div>
 
   <!-- 手機版：固定底部輸入框 -->
@@ -684,6 +690,10 @@ function onRoom(d) {
     }
 
   } else if (d.status === 'playing') {
+    // 從 Firebase 同步 advancing 狀態，防止房主轉移後重複觸發
+    if (d.advancing) advancing = true;
+    else if (d.advancing === false) advancing = false;
+
     if (lastStatus !== 'playing' || d.q !== lastQ) {
       lastQ = d.q;
       lastStatus = 'playing';
@@ -953,6 +963,9 @@ function finishQ(wpm, acc) {
   syncEl(['g-fin','g-fin-d'], 'textContent', finText);
   syncEl(['g-fin','g-fin-d'], 'display', 'block', true);
   syncEl(['g-wait','g-wait-d'], 'display', 'block', true);
+
+  // 完成後可以選擇先離開，不用等其他人
+  syncEl(['g-leave','g-leave-d'], 'display', 'block', true);
 }
 
 // ── 全員完成檢查（只有房主執行，避免重複寫入）──
@@ -963,18 +976,20 @@ function checkAllDone(d, ps) {
   if (d.status !== 'playing') return;
   if (ps.length === 0) return;
 
-  // 所有人的 done > curQ 才算全員完成本題
+  // 留在房間的玩家都完成本題才進下一題
   var allDone = ps.every(function(p) { return (p.done || 0) > curQ; });
   if (!allDone) return;
 
   advancing = true;
-  var nextQ = curQ + 1;
+  // 同步到 Firebase 防止房主轉移後新房主重複觸發
+  db.ref('rooms/' + roomId).update({ advancing: true });
 
+  var nextQ = curQ + 1;
   setTimeout(function() {
     if (nextQ >= d.qcount) {
-      db.ref('rooms/' + roomId).update({ status: 'results' });
+      db.ref('rooms/' + roomId).update({ status: 'results', advancing: false });
     } else {
-      var updates = { status: 'countdown', cdStart: Date.now(), q: nextQ, roundStart: 0 };
+      var updates = { status: 'countdown', cdStart: Date.now(), q: nextQ, roundStart: 0, advancing: false };
       ps.forEach(function(p) { updates['players/' + p.uid + '/prog'] = 0; });
       db.ref('rooms/' + roomId).update(updates);
     }
@@ -1005,6 +1020,49 @@ function showResults(d, ps) {
   document.getElementById('res-sum').textContent = '共完成 ' + d.qcount + ' 題';
 }
 
+// ── 提前離開（完成題目後可離開）──
+async function leaveEarly() {
+  if (!roomId) { backMenu(); return; }
+
+  var snap = await db.ref('rooms/' + roomId).once('value');
+  var d = snap.val();
+  if (!d) { cleanup(); backMenu(); return; }
+
+  var remaining = d.players
+    ? Object.values(d.players).filter(function(p) { return p.uid !== myUid; })
+    : [];
+
+  if (remaining.length === 0) {
+    // 沒有其他人，直接刪除房間
+    await db.ref('rooms/' + roomId).remove();
+    cleanup(); backMenu(); return;
+  }
+
+  // 移除自己
+  await db.ref('rooms/' + roomId + '/players/' + myUid).remove();
+
+  // 如果自己是房主，轉移給最早加入的人，並重置 advancing
+  if (d.host === myUid) {
+    var next = remaining.sort(function(a,b){ return (a.joinedAt||0)-(b.joinedAt||0); })[0];
+    await db.ref('rooms/' + roomId).update({ host: next.uid, advancing: false });
+  }
+
+  // 離開後立刻檢查剩餘玩家是否都完成了（觸發結算）
+  var allDone = remaining.every(function(p) { return (p.done || 0) > curQ; });
+  if (allDone && d.status === 'playing') {
+    var nextQ = curQ + 1;
+    if (nextQ >= d.qcount) {
+      await db.ref('rooms/' + roomId).update({ status: 'results' });
+    } else {
+      var updates = { status: 'countdown', cdStart: Date.now(), q: nextQ, roundStart: 0 };
+      remaining.forEach(function(p) { updates['players/' + p.uid + '/prog'] = 0; });
+      await db.ref('rooms/' + roomId).update(updates);
+    }
+  }
+
+  cleanup(); backMenu();
+}
+
 // ── 離開 / 重玩 ──
 async function leaveRoom() {
   if (roomId) await db.ref('rooms/' + roomId + '/players/' + myUid).remove();
@@ -1027,6 +1085,7 @@ function cleanup() {
   typed = ''; doneThisQ = false; inputOn = false; advancing = false;
   myTotalWpm = 0; myTotalAcc = 0; myRounds = 0;
   lastProgUpdate = 0; lastLobbyHash = '';
+  syncEl(['g-leave','g-leave-d'], 'display', 'none', true);
 }
 
 async function playAgain() {
