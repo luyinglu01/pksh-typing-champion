@@ -28,7 +28,7 @@ const FIREBASE_CONFIG = {
   --bg: #ffffff; --bg2: #f5f5f3; --bg3: #ebebea;
   --text: #1a1a1a; --text2: #666;
   --border: rgba(0,0,0,0.12);
-  --purple: #0ABAB5; --purple-light: #E0F7F6; --purple-dark: #078A86;
+  --purple: #7F77DD; --purple-light: #EEEDFE; --purple-dark: #534AB7;
   --green: #1D9E75; --green-light: #EAF3DE;
   --red: #E24B4A; --red-light: #FCEBEB;
   --radius: 8px; --radius-lg: 12px;
@@ -38,7 +38,7 @@ const FIREBASE_CONFIG = {
     --bg: #1a1a1a; --bg2: #242424; --bg3: #2e2e2e;
     --text: #f0f0f0; --text2: #999;
     --border: rgba(255,255,255,0.12);
-    --purple-light: #0A3333; --green-light: #173404; --red-light: #501313;
+    --purple-light: #26215C; --green-light: #173404; --red-light: #501313;
   }
 }
 /* ── 基礎 ── */
@@ -206,7 +206,7 @@ textarea:disabled { opacity: 0.6; }
 
 /* ── 結果 ── */
 .result-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--radius); margin-bottom: 8px; background: var(--bg2); border: 0.5px solid var(--border); }
-.result-row.gold { background: var(--purple-light); border-color: #5DD4D0; }
+.result-row.gold { background: var(--purple-light); border-color: #AFA9EC; }
 .medal { font-size: 24px; width: 32px; text-align: center; }
 
 /* ── 手機響應式 ── */
@@ -564,6 +564,7 @@ async function doLogin() {
   if (user.password !== pwd) { showAuthErr('login', '密碼錯誤'); return; }
 
   currentUser = user;
+  localStorage.setItem('currentUser', JSON.stringify(currentUser));
   document.getElementById('login-err').style.display = 'none';
   enterMenu();
 }
@@ -584,6 +585,7 @@ async function doRegister() {
   const userData = { studentId: sid, name, class: cls, password: pwd, weekScore: 0, totalScore: 0 };
   await db.ref('users/' + sid).set(userData);
   currentUser = userData;
+  localStorage.setItem('currentUser', JSON.stringify(currentUser));
   document.getElementById('reg-err').style.display = 'none';
   toast('註冊成功！歡迎 ' + name);
   enterMenu();
@@ -610,6 +612,7 @@ function enterMenu() {
 
 function guestLogin() {
   currentUser = { name: '訪客', class: '', isGuest: true, weekScore: 0 };
+  localStorage.setItem('currentUser', JSON.stringify(currentUser));
   enterMenu();
 }
 
@@ -625,6 +628,7 @@ function togglePwd(inputId, btn) {
 }
 
 function doLogout() {
+  localStorage.removeItem('currentUser');
   currentUser = null;
   go('s-auth');
 }
@@ -1357,7 +1361,7 @@ function showResults(d, ps) {
   document.getElementById('res-list').innerHTML = ranked.map(function(p, i) {
     return '<div class="result-row ' + (i === 0 ? 'gold' : '') + '">' +
       '<div class="medal">' + (medals[i] || (i+1)) + '</div>' +
-      '<div class="rname">' + escapeHtml(p.name) + '</div>' +
+      '<div class="rname">' + p.name + '</div>' +
       '<div class="rstat">平均 <strong>' + p.avgWpm + '</strong> 字/分 &nbsp; 準確率 <strong>' + p.avgAcc + '%</strong></div>' +
       '</div>';
   }).join('');
@@ -1434,7 +1438,6 @@ function cleanup() {
 }
 
 async function playAgain() {
-  if (!roomId) { toast('無法重新開始：roomId 不存在'); return; }
   var hostSnap = await db.ref('rooms/' + roomId + '/host').once('value');
   if (hostSnap.val() !== myUid) { toast('只有房主可以重新開始'); return; }
   var snap = await db.ref('rooms/' + roomId).once('value');
@@ -1453,6 +1456,29 @@ async function playAgain() {
   lastStatus = ''; lastQ = -1; advancing = false;
   await db.ref('rooms/' + roomId).update(updates);
 }
+
+// ── 頁面載入時自動恢復登入 ──
+(function autoRestore() {
+  var saved = localStorage.getItem('currentUser');
+  if (!saved) return;
+  try {
+    var user = JSON.parse(saved);
+    if (!user) return;
+    if (user.isGuest) { currentUser = user; enterMenu(); return; }
+    if (!user.studentId) return;
+    // 從 Firebase 重新讀取最新資料（確保積分是最新的）
+    db.ref('users/' + user.studentId).once('value', function(snap) {
+      var latest = snap.val();
+      if (!latest) { localStorage.removeItem('currentUser'); return; }
+      currentUser = latest;
+      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      enterMenu();
+    });
+  } catch(e) {
+    localStorage.removeItem('currentUser');
+  }
+})();
+
 </script>
 </body>
 </html>
