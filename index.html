@@ -348,11 +348,12 @@ textarea:disabled { opacity: 0.6; }
     </div>
     <div id="lb-detail-list"></div>
   </div>
+  <!-- inp-name 隱藏，由 currentUser.name 自動填入 -->
   <input type="hidden" id="inp-name">
   <div class="card">
-    <div style="font-size:14px;font-weight:500;margin-bottom:8px">遊戲暱稱</div>
+    <div style="font-size:14px;font-weight:500;margin-bottom:10px">遊戲暱稱</div>
     <input type="text" id="inp-nickname" placeholder="輸入暱稱（預設為真實姓名）" maxlength="10">
-
+    <div style="font-size:11px;color:var(--text2);margin-top:5px">暱稱只在遊戲中顯示，老師管理頁面仍顯示真實姓名</div>
   </div>
   <div class="card">
     <div style="font-size:14px;font-weight:500;margin-bottom:10px">房間設定</div>
@@ -543,7 +544,7 @@ const db = firebase.database();
 
 // ── 班級設定 ──
 const CLASSES = ['商一甲','商一乙','應一甲','貿一甲'];
-const TARGETS = { '商一甲': 70, '商一乙': 65, '應一甲': 80, '貿一甲': 80 };
+const TARGETS = { '商一甲': 150, '商一乙': 150, '應一甲': 80, '貿一甲': 80 };
 const MEDALS = ['🥇','🥈','🥉'];
 
 // ── 目前登入的使用者 ──
@@ -568,7 +569,11 @@ async function doLogin() {
   if (user.password !== pwd) { showAuthErr('login', '密碼錯誤'); return; }
 
   currentUser = user;
-  localStorage.setItem('currentUser', JSON.stringify(currentUser));
+  // 產生此次登入的唯一 session ID
+  currentUser.sessionId = 'sess_' + Date.now() + Math.random().toString(36).slice(2,6);
+  db.ref('users/' + user.studentId + '/activeSession').set(currentUser.sessionId);
+  // 存入 sessionStorage，重新整理後可自動恢復登入
+  sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
   document.getElementById('login-err').style.display = 'none';
   enterMenu();
 }
@@ -589,7 +594,9 @@ async function doRegister() {
   const userData = { studentId: sid, name, class: cls, password: pwd, weekScore: 0, totalScore: 0 };
   await db.ref('users/' + sid).set(userData);
   currentUser = userData;
-  localStorage.setItem('currentUser', JSON.stringify(currentUser));
+  currentUser.sessionId = 'sess_' + Date.now() + Math.random().toString(36).slice(2,6);
+  db.ref('users/' + sid + '/activeSession').set(currentUser.sessionId);
+  sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
   document.getElementById('reg-err').style.display = 'none';
   toast('註冊成功！歡迎 ' + name);
   enterMenu();
@@ -612,16 +619,16 @@ function enterMenu() {
   go('s-menu');
   updateUserBar();
   loadLeaderboard();
-  // 預填暱稱為真實姓名（若尚未填過）
+  // 預填暱稱為真實姓名
   var nickInp = document.getElementById('inp-nickname');
-  if (nickInp && currentUser && !currentUser.isGuest && !nickInp.value) {
+  if (nickInp && currentUser && !currentUser.isGuest) {
     nickInp.value = currentUser.name;
   }
 }
 
 function guestLogin() {
   currentUser = { name: '訪客', class: '', isGuest: true, weekScore: 0 };
-  localStorage.setItem('currentUser', JSON.stringify(currentUser));
+  sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
   enterMenu();
 }
 
@@ -637,8 +644,11 @@ function togglePwd(inputId, btn) {
 }
 
 function doLogout() {
-  if (lbRef) { lbRef.off(); lbRef = null; }
-  localStorage.removeItem('currentUser');
+  // 清除 Firebase activeSession 和 sessionStorage
+  if (currentUser && currentUser.studentId) {
+    db.ref('users/' + currentUser.studentId + '/activeSession').remove();
+  }
+  sessionStorage.removeItem('currentUser');
   currentUser = null;
   go('s-auth');
 }
@@ -737,21 +747,26 @@ function addWeekScore() {
     timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
   }).replace(/\//g, '-');
 
-  // 記錄格式：users/{studentId}/dailyPassages/{today}/{题目索引}
-  var recordRef = db.ref('users/' + currentUser.studentId + '/dailyPassages/' + today + '/' + curQ);
+  // 記錄格式：用題目內容前20字的 hash 當 key，確保不同題不會衝突
+  var passageKey = curText ? encodeURIComponent(curText.slice(0, 20)).replace(/%/g, '_') : ('q' + curQ);
+  var recordRef = db.ref('users/' + currentUser.studentId + '/dailyPassages/' + today + '/' + passageKey);
 
-  recordRef.once('value', function(snap) {
-    if (snap.val()) {
-      // 今天已經打過這題，不計分
-      toast('今天這題已計過分，換題繼續加油！');
+  // 先驗證 session，防止多分頁重複計分
+  db.ref('users/' + currentUser.studentId + '/activeSession').once('value', function(sesSnap) {
+    if (sesSnap.val() !== currentUser.sessionId) {
+      toast('⚠️ 此帳號已在其他分頁登入，請關閉多餘的分頁！');
       return;
     }
-    // 標記今天已打過這題
-    recordRef.set(true);
-    // 加積分
-    currentUser.weekScore = (currentUser.weekScore || 0) + 1;
-    db.ref('users/' + currentUser.studentId + '/weekScore').transaction(function(val) {
-      return (val || 0) + 1;
+    recordRef.once('value', function(snap) {
+      if (snap.val()) {
+        toast('今天這題已計過分，換題繼續加油！');
+        return;
+      }
+      recordRef.set(true);
+      currentUser.weekScore = (currentUser.weekScore || 0) + 1;
+      db.ref('users/' + currentUser.studentId + '/weekScore').transaction(function(val) {
+        return (val || 0) + 1;
+      });
     });
   });
 }
@@ -799,7 +814,6 @@ let timerIv = null;
 let inputOn = false;
 let typed = '';
 let doneThisQ = false;
-let isHost = false;
 let lastStatus = '';
 let lastQ = -1;
 
@@ -808,7 +822,7 @@ let lastQ = -1;
 // 從表單取得共用設定值
 function getFormValues() {
   var nickInp = document.getElementById('inp-nickname');
-  var nickname = (nickInp && nickInp.value.trim()) ? nickInp.value.trim() : (currentUser ? currentUser.name : '訪客');
+  const name = (nickInp && nickInp.value.trim()) ? nickInp.value.trim() : (currentUser ? currentUser.name : '訪客');
   const minP = parseInt(document.getElementById('sel-min').value);
   const isCustom = qMode === 'custom';
   const picked = isCustom
@@ -817,7 +831,7 @@ function getFormValues() {
   const qcount = isCustom
     ? (picked ? picked.length : 1)
     : parseInt(document.getElementById('sel-q').value);
-  return { name: nickname, minP, qcount, picked };
+  return { name, minP, qcount, picked };
 }
 
 async function createNewRoom() {
@@ -838,8 +852,8 @@ function showJoinCode() {
 
 async function joinByCode() {
   if (!currentUser) { toast('請先登入！'); go('s-auth'); return; }
-  const { name } = getFormValues();
-  myName = name + (currentUser.class ? '(' + currentUser.class + ')' : '');
+  const { name: nickname } = getFormValues();
+  myName = nickname + (currentUser.class ? '(' + currentUser.class + ')' : '');
   var code = document.getElementById('inp-code').value.trim().toUpperCase();
   if (code.length !== 4) { toast('請輸入 4 位房號'); return; }
 
@@ -918,7 +932,6 @@ async function joinQueue() {
 }
 
 async function doCreate(qcount, minP, customPassages) {
-  isHost = true;
   const code = rndCode();
   roomId = 'room_' + code;
   var sourceList = customPassages ? customPassages : shuffle(PASSAGES).slice(0, qcount);
@@ -939,7 +952,6 @@ async function doCreate(qcount, minP, customPassages) {
 }
 
 async function doJoin(rid) {
-  isHost = false;
   roomId = rid;
   await db.ref('rooms/' + roomId + '/players/' + myUid).set(mkPlayer());
   db.ref('rooms/' + roomId + '/players/' + myUid).onDisconnect().remove();
@@ -975,7 +987,7 @@ db.ref('.info/connected').on('value', function(snap) {
 function showToastReconnect(msg) {
   var t = document.getElementById('toast');
   t.textContent = msg;
-  t.style.background = msg.includes('✅') ? 'var(--green)' : '#BA7517';
+  t.style.background = msg.includes('✅') ? 'var(--green)' : '#B45309';
   t.classList.add('show');
   setTimeout(function() {
     t.classList.remove('show');
@@ -1255,9 +1267,9 @@ function renderPassage(ty, text) {
 function buildBars(ps) {
   var html = ps.map(function(p, i) {
     var isMe = p.uid === myUid;
-    var nameLabel = isMe
-      ? p.name + ' <span style="font-size:10px;background:var(--purple);color:#fff;border-radius:4px;padding:1px 6px;vertical-align:middle;margin-left:4px">我</span>'
-      : p.name;
+    var nameLabel = p.name + (isMe
+      ? ' <span style="font-size:10px;background:var(--purple);color:#fff;border-radius:4px;padding:1px 5px;vertical-align:middle;margin-left:4px">我</span>'
+      : '');
     var rowStyle = isMe
       ? 'background:var(--purple-light);border-radius:var(--radius);padding:4px 6px;margin-bottom:6px;'
       : '';
@@ -1449,7 +1461,7 @@ function cleanup() {
   if (cdInterval) { clearInterval(cdInterval); cdInterval = null; }
   if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
   if (roomRef) { roomRef.off(); roomRef = null; }
-  roomId = null; isHost = false;
+  roomId = null;
   curQ = 0; curText = ''; lastStatus = ''; lastQ = -1;
   typed = ''; doneThisQ = false; inputOn = false; advancing = false;
   myTotalWpm = 0; myTotalAcc = 0; myRounds = 0;
@@ -1458,7 +1470,6 @@ function cleanup() {
 }
 
 async function playAgain() {
-  myTotalWpm = 0; myTotalAcc = 0; myRounds = 0;
   var hostSnap = await db.ref('rooms/' + roomId + '/host').once('value');
   if (hostSnap.val() !== myUid) { toast('只有房主可以重新開始'); return; }
   var snap = await db.ref('rooms/' + roomId).once('value');
@@ -1477,29 +1488,28 @@ async function playAgain() {
   lastStatus = ''; lastQ = -1; advancing = false;
   await db.ref('rooms/' + roomId).update(updates);
 }
-
 // ── 頁面載入時自動恢復登入 ──
 (function autoRestore() {
-  var saved = localStorage.getItem('currentUser');
+  var saved = sessionStorage.getItem('currentUser');
   if (!saved) return;
   try {
     var user = JSON.parse(saved);
     if (!user) return;
+    // 訪客直接恢復
     if (user.isGuest) { currentUser = user; enterMenu(); return; }
     if (!user.studentId) return;
-    // 從 Firebase 重新讀取最新資料（確保積分是最新的）
+    // 從 Firebase 重新讀取最新資料
     db.ref('users/' + user.studentId).once('value', function(snap) {
       var latest = snap.val();
-      if (!latest) { localStorage.removeItem('currentUser'); return; }
-      currentUser = latest;
-      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      if (!latest) { sessionStorage.removeItem('currentUser'); return; }
+      currentUser = Object.assign(latest, { sessionId: user.sessionId });
+      sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
       enterMenu();
     });
   } catch(e) {
-    localStorage.removeItem('currentUser');
+    sessionStorage.removeItem('currentUser');
   }
 })();
-
 </script>
 </body>
 </html>
