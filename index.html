@@ -352,7 +352,7 @@ textarea:disabled { opacity: 0.6; }
   <input type="hidden" id="inp-name">
   <div class="card">
     <div style="font-size:14px;font-weight:500;margin-bottom:10px">遊戲暱稱</div>
-    <input type="text" id="inp-nickname" placeholder="輸入暱稱（預設為真實姓名）" maxlength="10">
+    <input type="text" id="inp-nickname" placeholder="輸入暱稱（預設為真實姓名）" maxlength="10" oninput="if(currentUser && currentUser.studentId) sessionStorage.setItem('nickname_' + currentUser.studentId, this.value)">
     <div style="font-size:11px;color:var(--text2);margin-top:5px">暱稱只在遊戲中顯示，老師管理頁面仍顯示真實姓名</div>
   </div>
   <div class="card">
@@ -544,7 +544,7 @@ const db = firebase.database();
 
 // ── 班級設定 ──
 const CLASSES = ['商一甲','商一乙','應一甲','貿一甲'];
-const TARGETS = { '商一甲': 57, '商一乙': 65, '應一甲': 80, '貿一甲': 25 };
+const TARGETS = { '商一甲': 150, '商一乙': 150, '應一甲': 80, '貿一甲': 80 };
 const MEDALS = ['🥇','🥈','🥉'];
 
 // ── 目前登入的使用者 ──
@@ -571,7 +571,7 @@ async function doLogin() {
   currentUser = user;
   // 產生此次登入的唯一 session ID
   currentUser.sessionId = 'sess_' + Date.now() + Math.random().toString(36).slice(2,6);
-  db.ref('users/' + user.studentId + '/activeSession').set(currentUser.sessionId);
+  await db.ref('users/' + user.studentId + '/activeSession').set(currentUser.sessionId);
   // 存入 sessionStorage，重新整理後可自動恢復登入
   sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
   document.getElementById('login-err').style.display = 'none';
@@ -595,7 +595,7 @@ async function doRegister() {
   await db.ref('users/' + sid).set(userData);
   currentUser = userData;
   currentUser.sessionId = 'sess_' + Date.now() + Math.random().toString(36).slice(2,6);
-  db.ref('users/' + sid + '/activeSession').set(currentUser.sessionId);
+  await db.ref('users/' + sid + '/activeSession').set(currentUser.sessionId);
   sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
   document.getElementById('reg-err').style.display = 'none';
   toast('註冊成功！歡迎 ' + name);
@@ -619,10 +619,11 @@ function enterMenu() {
   go('s-menu');
   updateUserBar();
   loadLeaderboard();
-  // 預填暱稱為真實姓名
+  // 預填暱稱：優先用 sessionStorage 儲存的暱稱，否則用真實姓名
   var nickInp = document.getElementById('inp-nickname');
   if (nickInp && currentUser && !currentUser.isGuest) {
-    nickInp.value = currentUser.name;
+    var savedNick = sessionStorage.getItem('nickname_' + currentUser.studentId);
+    nickInp.value = savedNick || currentUser.name;
   }
 }
 
@@ -644,12 +645,15 @@ function togglePwd(inputId, btn) {
 }
 
 function doLogout() {
+  // 清除排行榜監聽
+  if (lbRef) { lbRef.off(); lbRef = null; }
   // 清除 Firebase activeSession 和 sessionStorage
   if (currentUser && currentUser.studentId) {
     db.ref('users/' + currentUser.studentId + '/activeSession').remove();
   }
   sessionStorage.removeItem('currentUser');
   currentUser = null;
+  lbOpenClass = null;
   go('s-auth');
 }
 
@@ -692,22 +696,28 @@ function renderLeaderboard(students) {
     </div>`;
   }).join('');
 
-  // 如果有展開的班級，重新渲染
+  // 如果有展開的班級，用本地已有的資料直接更新（不需要再讀 Firebase）
   if (lbOpenClass) {
-    const clsStudents = students.filter(s => s.class === lbOpenClass);
+    var clsStudents = students.filter(s => s.class === lbOpenClass);
     renderLbDetail(lbOpenClass, clsStudents);
+    // 不透過 toggleLbDetail，直接渲染避免重複 Firebase 請求
   }
 }
 
+var lbLoading = false;
 function toggleLbDetail(cls) {
   if (lbOpenClass === cls) {
     closeLbDetail();
     return;
   }
+  if (lbLoading) return; // 防止快速點擊 race condition
+  lbLoading = true;
   lbOpenClass = cls;
   document.getElementById('lb-detail').style.display = 'block';
-  // 從 Firebase 即時資料讀取，不傳 JSON
+  document.getElementById('lb-detail-list').innerHTML = '<div style="font-size:13px;color:var(--text2);padding:8px 0">載入中...</div>';
   db.ref('users').orderByChild('class').equalTo(cls).once('value', function(snap) {
+    lbLoading = false;
+    if (lbOpenClass !== cls) return; // 已被切換，放棄渲染
     var students = snap.val() ? Object.values(snap.val()) : [];
     renderLbDetail(cls, students);
   });
@@ -734,6 +744,7 @@ function renderLbDetail(cls, students) {
 
 function closeLbDetail() {
   lbOpenClass = null;
+  lbLoading = false;
   document.getElementById('lb-detail').style.display = 'none';
 }
 
@@ -748,12 +759,19 @@ function addWeekScore() {
   }).replace(/\//g, '-');
 
   // 記錄格式：用題目內容前20字的 hash 當 key，確保不同題不會衝突
-  var passageKey = curText ? encodeURIComponent(curText.slice(0, 20)).replace(/%/g, '_') : ('q' + curQ);
+  // 用 djb2 hash 產生穩定的數字 key，碰撞機率極低且不含特殊字元
+  var passageKey = 'p' + (function(str) {
+    var h = 5381;
+    for (var i = 0; i < str.length; i++) h = ((h << 5) + h) ^ str.charCodeAt(i);
+    return Math.abs(h);
+  })(curText.slice(0, 30));
   var recordRef = db.ref('users/' + currentUser.studentId + '/dailyPassages/' + today + '/' + passageKey);
 
   // 先驗證 session，防止多分頁重複計分
+  // 若帳號沒有 activeSession（舊帳號），允許計分
   db.ref('users/' + currentUser.studentId + '/activeSession').once('value', function(sesSnap) {
-    if (sesSnap.val() !== currentUser.sessionId) {
+    var activeSession = sesSnap.val();
+    if (activeSession && activeSession !== currentUser.sessionId) {
       toast('⚠️ 此帳號已在其他分頁登入，請關閉多餘的分頁！');
       return;
     }
@@ -793,7 +811,12 @@ const COLORS = ['#7F77DD','#1D9E75','#D85A30','#D4537E'];
 
 // ── 工具 ──
 function shuffle(a) { return [...a].sort(() => Math.random() - .5); }
-function rndCode() { return Math.random().toString(36).slice(2,6).toUpperCase(); }
+function rndCode() {
+  var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 移除 0/O/1/I 等易混淆字元
+  var code = '';
+  for (var i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
 function go(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
 function calcWpm(chars, t0) { const m = (Date.now() - t0) / 60000; return m > 0 ? Math.round(chars / m / 2) : 0; }
@@ -939,13 +962,17 @@ async function doCreate(qcount, minP, customPassages) {
   await db.ref('rooms/' + roomId).set({
     code: code, status: 'waiting', host: myUid,
     qcount: qcount, minP: minP, qs: qs, q: 0, roundStart: 0,
+    isCustom: !!customPassages,
     createdAt: Date.now(),
     players: { [myUid]: mkPlayer() }
   });
   db.ref('rooms/' + roomId + '/players/' + myUid).onDisconnect().remove();
-  // 30分鐘後自動清除房間
+  // 30分鐘後自動清除房間（用本地副本避免 roomId 被 cleanup 清除）
+  var roomIdCopy = roomId;
   setTimeout(function() {
-    if (roomId) db.ref('rooms/' + roomId).remove();
+    db.ref('rooms/' + roomIdCopy).once('value', function(s) {
+      if (s.val()) db.ref('rooms/' + roomIdCopy).remove();
+    });
   }, 30 * 60 * 1000);
   listen();
   go('s-lobby');
@@ -1031,7 +1058,7 @@ function onRoom(d) {
   } else if (d.status === 'countdown') {
     if (lastStatus !== 'countdown' || lastQ !== d.q) {
       lastStatus = 'countdown';
-      // 注意：不在這裡設 lastQ，讓 playing 狀態時一定觸發 startQ
+      lastQ = d.q; // 更新 lastQ 防止網路抖動重複觸發 doCountdown
       doCountdown(d.cdStart || Date.now(), d);
     }
 
@@ -1132,7 +1159,9 @@ function startQ(d, ps) {
   doneThisQ = false;
   startTime = d.roundStart || Date.now();
 
-  var isDesktop = window.innerWidth >= 769;
+  // 用 CSS 判斷哪個 textarea 目前可見，比 innerWidth 更可靠
+  var desktopInput = document.getElementById('g-input-d');
+  var isDesktop = desktopInput && desktopInput.offsetParent !== null;
   var qText = '第 ' + (curQ + 1) + ' / ' + d.qcount + ' 題';
   var qtTitle = '題目 ' + (curQ + 1) + '：';
 
@@ -1141,6 +1170,7 @@ function startQ(d, ps) {
   syncEl(['g-qtitle','g-qtitle-d'], 'textContent', qtTitle);
   syncEl(['g-fin','g-fin-d'], 'display', 'none', true);
   syncEl(['g-wait','g-wait-d'], 'display', 'none', true);
+  syncEl(['g-leave','g-leave-d'], 'display', 'none', true);
 
   renderPassage('', curText);
   buildBars(ps);
@@ -1197,14 +1227,6 @@ function setupInput(inputEl) {
   inputEl.addEventListener('input', function() {
     // 組字中不做任何判斷，等 compositionend
     if (isComposing) return;
-
-    var diff = this.value.length - lastTypedLen;
-    // 只有非組字狀態下一次增加超過3個字才判定為貼上
-    if (diff > 3) {
-      this.value = this.value.slice(0, lastTypedLen);
-      toast('不允許複製貼上，請手動輸入！');
-      return;
-    }
     lastTypedLen = this.value.length;
     handleTyping(this.value);
   });
@@ -1264,9 +1286,17 @@ function renderPassage(ty, text) {
   syncEl(['g-passage','g-passage-d'], 'innerHTML', html);
 }
 
+// 用 uid 的 hash 固定每個玩家的顏色，不依陣列順序
+function uidToColor(uid) {
+  var hash = 0;
+  for (var i = 0; i < uid.length; i++) hash = uid.charCodeAt(i) + ((hash << 5) - hash);
+  return COLORS[Math.abs(hash) % COLORS.length];
+}
+
 function buildBars(ps) {
-  var html = ps.map(function(p, i) {
+  var html = ps.map(function(p) {
     var isMe = p.uid === myUid;
+    var color = uidToColor(p.uid);
     var nameLabel = p.name + (isMe
       ? ' <span style="font-size:10px;background:var(--purple);color:#fff;border-radius:4px;padding:1px 5px;vertical-align:middle;margin-left:4px">我</span>'
       : '');
@@ -1275,7 +1305,7 @@ function buildBars(ps) {
       : '';
     return '<div class="prog-row" style="' + rowStyle + '">' +
       '<div class="prog-label"><span>' + nameLabel + '</span><span id="pct-' + p.uid + '">0%</span></div>' +
-      '<div class="prog-bar"><div class="prog-fill" id="bar-' + p.uid + '" style="width:0%;background:' + COLORS[i % 4] + '"></div></div>' +
+      '<div class="prog-bar"><div class="prog-fill" id="bar-' + p.uid + '" style="width:0%;background:' + color + '"></div></div>' +
       '</div>';
   }).join('');
   syncEl(['g-prog','g-prog-d'], 'innerHTML', html);
@@ -1349,7 +1379,8 @@ function checkAllDone(d, ps) {
       ps.forEach(function(p) { updates['players/' + p.uid + '/prog'] = 0; });
       db.ref('rooms/' + roomId).update(updates);
     }
-    setTimeout(function() { advancing = false; }, 3000);
+    // advancing 由 Firebase 同步，onRoom 裡會讀取 d.advancing 更新本地狀態
+    // 不需要強制計時清除，避免網路慢時重複觸發
   }, 1500);
 }
 
@@ -1388,7 +1419,10 @@ function showResults(d, ps) {
       avgWpm: p.rounds > 0 ? Math.round(p.totalWpm / p.rounds) : 0,
       avgAcc: p.rounds > 0 ? Math.round(p.totalAcc / p.rounds) : 0
     };
-  }).sort(function(a, b) { return b.avgWpm - a.avgWpm; });
+  }).sort(function(a, b) {
+    if (b.avgWpm !== a.avgWpm) return b.avgWpm - a.avgWpm;
+    return b.avgAcc - a.avgAcc; // 字速相同時，準確率高的排前面
+  });
 
   document.getElementById('res-list').innerHTML = ranked.map(function(p, i) {
     return '<div class="result-row ' + (i === 0 ? 'gold' : '') + '">' +
@@ -1445,7 +1479,22 @@ async function leaveEarly() {
 
 // ── 離開 / 重玩 ──
 async function leaveRoom() {
-  if (roomId) await db.ref('rooms/' + roomId + '/players/' + myUid).remove();
+  if (!roomId) { backMenu(); return; }
+
+  // 如果自己是房主，轉移給下一位玩家
+  var snap = await db.ref('rooms/' + roomId).once('value');
+  var d = snap.val();
+  if (d) {
+    var remaining = d.players
+      ? Object.values(d.players).filter(function(p) { return p.uid !== myUid; })
+      : [];
+    if (remaining.length > 0 && d.host === myUid) {
+      var next = remaining.sort(function(a,b){ return (a.joinedAt||0)-(b.joinedAt||0); })[0];
+      await db.ref('rooms/' + roomId).update({ host: next.uid });
+    }
+  }
+
+  await db.ref('rooms/' + roomId + '/players/' + myUid).remove();
   cleanup();
   backMenu();
 }
@@ -1453,7 +1502,11 @@ async function leaveRoom() {
 function backMenu() {
   cleanup();
   document.body.classList.remove('game-active');
-  go('s-menu');
+  if (currentUser) {
+    enterMenu(); // 重新載入最新排行榜資料
+  } else {
+    go('s-menu');
+  }
 }
 
 function cleanup() {
@@ -1461,21 +1514,36 @@ function cleanup() {
   if (cdInterval) { clearInterval(cdInterval); cdInterval = null; }
   if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
   if (roomRef) { roomRef.off(); roomRef = null; }
+  if (lbRef) { lbRef.off(); lbRef = null; }
   roomId = null;
   curQ = 0; curText = ''; lastStatus = ''; lastQ = -1;
   typed = ''; doneThisQ = false; inputOn = false; advancing = false;
   myTotalWpm = 0; myTotalAcc = 0; myRounds = 0;
   lastProgUpdate = 0; lastLobbyHash = '';
   syncEl(['g-leave','g-leave-d'], 'display', 'none', true);
+  lbOpenClass = null;
+  lbLoading = false;
+  var lb = document.getElementById('lb-detail');
+  if (lb) lb.style.display = 'none';
 }
 
 async function playAgain() {
   var hostSnap = await db.ref('rooms/' + roomId + '/host').once('value');
   if (hostSnap.val() !== myUid) { toast('只有房主可以重新開始'); return; }
+  // 重置本地累計值，避免上一局成績帶入下一局
+  myTotalWpm = 0; myTotalAcc = 0; myRounds = 0;
   var snap = await db.ref('rooms/' + roomId).once('value');
   var d = snap.val();
-  // 保留原來的題組順序（自選或隨機都保持）
-  var qs = d.qs ? shuffle(d.qs).slice(0, d.qcount) : shuffle(PASSAGES).slice(0, d.qcount).map(function(t, i) { return { i: i, t: t }; });
+  // 自選題組：保留原本選的題目不變
+  // 隨機模式：從全部 PASSAGES 重新隨機抽，確保每次不同
+  var qs;
+  if (d.isCustom) {
+    // 自選模式：保持原本選的題目不變
+    qs = d.qs;
+  } else {
+    // 隨機模式：重新從所有 PASSAGES 抽新的題目
+    qs = shuffle(PASSAGES).slice(0, d.qcount).map(function(t, i) { return { i: i, t: t }; });
+  }
   var updates = { status: 'waiting', qs: qs, q: 0, roundStart: 0 };
   var ps = d.players ? Object.values(d.players) : [];
   ps.forEach(function(p) {
@@ -1488,6 +1556,12 @@ async function playAgain() {
   lastStatus = ''; lastQ = -1; advancing = false;
   await db.ref('rooms/' + roomId).update(updates);
 }
+// ── 防止瀏覽器返回鍵跳出遊戲 ──
+window.history.pushState(null, '', window.location.href);
+window.addEventListener('popstate', function() {
+  window.history.pushState(null, '', window.location.href);
+});
+
 // ── 頁面載入時自動恢復登入 ──
 (function autoRestore() {
   var saved = sessionStorage.getItem('currentUser');
@@ -1502,7 +1576,10 @@ async function playAgain() {
     db.ref('users/' + user.studentId).once('value', function(snap) {
       var latest = snap.val();
       if (!latest) { sessionStorage.removeItem('currentUser'); return; }
-      currentUser = Object.assign(latest, { sessionId: user.sessionId });
+      // 重新產生 sessionId，確保此分頁的 session 是最新的
+      var newSessionId = 'sess_' + Date.now() + Math.random().toString(36).slice(2,6);
+      currentUser = Object.assign(latest, { sessionId: newSessionId });
+      db.ref('users/' + user.studentId + '/activeSession').set(newSessionId);
       sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
       enterMenu();
     });
