@@ -249,7 +249,7 @@ function renderStudentList(cls) {
         const pct = total > 0 ? Math.round((score / total) * 100) : 0;
         return `<tr>
           <td><span class="rank-medal">${MEDALS[i] || (i+1)}</span></td>
-          <td>${s.name}</td>
+          <td style="cursor:pointer;color:var(--purple)" onclick="toggleDetail('${s.studentId}','${s.name}')">${s.name} ▾</td>
           <td style="color:var(--text2)">${s.studentId}</td>
           <td style="color:var(--text2);font-family:monospace">${s.password || '—'}</td>
           <td style="text-align:right;font-weight:500;color:var(--purple)">${score}</td>
@@ -258,6 +258,11 @@ function renderStudentList(cls) {
             <button onclick="editScore('${s.studentId}','${s.name}',${s.weekScore||0})" style="font-size:12px;padding:4px 8px;color:var(--purple);border-color:var(--purple)">修改積分</button>
             <button onclick="deleteAccount('${s.studentId}')" style="font-size:12px;padding:4px 8px;color:var(--red);border-color:var(--red)">刪除</button>
           </td>
+          </tr>
+          <tr id="detail-${s.studentId}" style="display:none">
+            <td colspan="7" style="padding:0">
+              <div id="detail-content-${s.studentId}" style="padding:10px 14px;background:var(--bg3);font-size:12px"></div>
+            </td>
         </tr>`;
       }).join('')}</tbody>
     </table>`;
@@ -306,6 +311,50 @@ function searchStudent() {
           </td>
         </tr>`).join('')}</tbody>
       </table>`;
+}
+
+// ── 個人打題紀錄 ──
+var openDetail = null;
+function toggleDetail(studentId, name) {
+  var row = document.getElementById('detail-' + studentId);
+  if (!row) return;
+  if (openDetail === studentId) {
+    row.style.display = 'none';
+    openDetail = null;
+    return;
+  }
+  // 關閉上一個展開的
+  if (openDetail) {
+    var prev = document.getElementById('detail-' + openDetail);
+    if (prev) prev.style.display = 'none';
+  }
+  openDetail = studentId;
+  row.style.display = '';
+  var box = document.getElementById('detail-content-' + studentId);
+  box.innerHTML = '<span style="color:var(--text2)">載入中...</span>';
+
+  db.ref('users/' + studentId + '/dailyPassages').once('value', function(snap) {
+    var data = snap.val();
+    if (!data) {
+      box.innerHTML = '<span style="color:var(--text2)">尚無打題紀錄</span>';
+      return;
+    }
+    // 整理每天的紀錄
+    var days = Object.keys(data).sort().reverse(); // 最新日期在前
+    var html = days.map(function(day) {
+      var passages = data[day];
+      var keys = Object.keys(passages);
+      return '<div style="margin-bottom:8px">' +
+        '<div style="font-weight:500;margin-bottom:4px;color:var(--text)">' + day + '　共 ' + keys.length + ' 題</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:4px">' +
+        keys.map(function(k) {
+          var title = typeof passages[k] === 'string' ? passages[k] : '已完成';
+          return '<span style="background:var(--purple-light);color:var(--purple-dark);padding:2px 7px;border-radius:4px;font-size:11px" title="' + title + '">✓ ' + title + '...</span>';
+        }).join('') +
+        '</div></div>';
+    }).join('');
+    box.innerHTML = html;
+  });
 }
 
 // ── 修改積分 ──
