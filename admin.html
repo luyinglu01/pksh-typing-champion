@@ -332,103 +332,104 @@ function toggleDetail(studentId, name) {
   var box = document.getElementById('detail-content-' + studentId);
   box.innerHTML = '<span style="color:var(--text2)">載入中...</span>';
 
-  db.ref('users/' + studentId + '/dailyPassages').once('value', function(snap) {
-    var data = snap.val();
-    if (!data) {
-      box.innerHTML = '<span style="color:var(--text2)">尚無打題紀錄</span>';
-      return;
-    }
+  // 同時讀取 history（詳細成績）和 dailyPassages（每日統計）
+  db.ref('users/' + studentId).once('value', function(snap) {
+    var userData = snap.val();
+    if (!userData) { box.innerHTML = '<span style="color:var(--text2)">尚無資料</span>'; return; }
 
-    var days = Object.keys(data).sort(); // 日期升冪（舊→新）
-    
-    // ── 折線圖 ──
-    var chartData = days.map(function(day) {
-      return { day: day, count: Object.keys(data[day]).length };
+    var history = userData.history ? Object.values(userData.history) : [];
+    var dailyData = userData.dailyPassages || {};
+
+    // 按時間排序（最新在前）
+    history.sort(function(a,b) { return (b.timestamp||0)-(a.timestamp||0); });
+
+    // ── 折線圖（每日打題數）──
+    var dayMap = {};
+    history.forEach(function(h) {
+      var day = h.time ? h.time.split(' ')[0] : '未知';
+      dayMap[day] = (dayMap[day] || 0) + 1;
     });
-    var maxCount = Math.max.apply(null, chartData.map(function(d) { return d.count; }));
-    var chartW = 420, chartH = 80, padL = 28, padB = 20, padR = 10, padT = 10;
-    var innerW = chartW - padL - padR;
-    var innerH = chartH - padT - padB;
-    var pts = chartData.map(function(d, i) {
-      var x = padL + (chartData.length === 1 ? innerW/2 : i / (chartData.length-1) * innerW);
-      var y = padT + innerH - (maxCount > 0 ? d.count / maxCount * innerH : 0);
-      return { x: x, y: y, day: d.day, count: d.count };
-    });
-    var polyline = pts.map(function(p) { return p.x + ',' + p.y; }).join(' ');
-    var areaPoints = (pts.map(function(p) { return p.x + ',' + p.y; }).join(' ')) +
-      ' ' + pts[pts.length-1].x + ',' + (padT+innerH) +
-      ' ' + pts[0].x + ',' + (padT+innerH);
+    var days = Object.keys(dayMap).sort();
+    var chartData = days.map(function(d) { return { day: d, count: dayMap[d] }; });
 
-    // Y 軸刻度
-    var yLabels = [];
-    for (var yi = 0; yi <= maxCount; yi += Math.max(1, Math.ceil(maxCount/4))) {
-      var yy = padT + innerH - (maxCount > 0 ? yi / maxCount * innerH : 0);
-      yLabels.push('<text x="' + (padL-4) + '" y="' + (yy+4) + '" font-size="9" text-anchor="end" fill="var(--text2)">' + yi + '</text>');
-      yLabels.push('<line x1="' + padL + '" y1="' + yy + '" x2="' + (chartW-padR) + '" y2="' + yy + '" stroke="var(--border)" stroke-width="0.5"/>');
-    }
-
-    // X 軸日期（最多顯示7個）
-    var xStep = Math.ceil(pts.length / 7);
-    var xLabels = pts.filter(function(_, i) { return i % xStep === 0 || i === pts.length-1; }).map(function(p) {
-      var shortDay = p.day.slice(5); // MM-DD
-      return '<text x="' + p.x + '" y="' + (chartH-4) + '" font-size="9" text-anchor="middle" fill="var(--text2)">' + shortDay + '</text>';
-    });
-
-    // 資料點
-    var dots = pts.map(function(p) {
-      return '<circle cx="' + p.x + '" cy="' + p.y + '" r="3" fill="var(--purple)" stroke="var(--bg)" stroke-width="1.5"/>' +
-        '<title>' + p.day + '：' + p.count + ' 題</title>';
-    });
-
-    var svgChart = '<div style="margin-bottom:12px">' +
-      '<div style="font-size:12px;font-weight:500;margin-bottom:6px;color:var(--text)">每日打題趨勢</div>' +
-      '<svg width="100%" viewBox="0 0 ' + chartW + ' ' + chartH + '" style="max-width:' + chartW + 'px;overflow:visible">' +
-      yLabels.join('') +
-      '<polyline points="' + areaPoints + '" fill="var(--purple-light)" stroke="none" opacity="0.5"/>' +
-      '<polyline points="' + polyline + '" fill="none" stroke="var(--purple)" stroke-width="2" stroke-linejoin="round"/>' +
-      dots.join('') +
-      xLabels.join('') +
-      '</svg></div>';
-
-    // ── 總計打過哪些篇 ──
-    var allPassages = {};
-    days.forEach(function(day) {
-      Object.entries(data[day]).forEach(function(entry) {
-        var title = typeof entry[1] === 'string' ? entry[1] : '已完成';
-        if (!allPassages[title]) allPassages[title] = 0;
-        allPassages[title]++;
+    var svgChart = '';
+    if (chartData.length > 0) {
+      var maxCount = Math.max.apply(null, chartData.map(function(d) { return d.count; }));
+      var chartW = 460, chartH = 90, padL = 28, padB = 22, padR = 10, padT = 10;
+      var innerW = chartW - padL - padR;
+      var innerH = chartH - padT - padB;
+      var pts = chartData.map(function(d, i) {
+        var x = padL + (chartData.length === 1 ? innerW/2 : i / (chartData.length-1) * innerW);
+        var y = padT + innerH - (maxCount > 0 ? d.count / maxCount * innerH : 0);
+        return { x: x, y: y, day: d.day, count: d.count };
       });
+      var polyline = pts.map(function(p) { return p.x+','+p.y; }).join(' ');
+      var area = polyline + ' ' + pts[pts.length-1].x+','+(padT+innerH) + ' ' + pts[0].x+','+(padT+innerH);
+      var yLines = [];
+      for (var yi = 0; yi <= maxCount; yi += Math.max(1, Math.ceil(maxCount/4))) {
+        var yy = padT + innerH - (maxCount > 0 ? yi/maxCount*innerH : 0);
+        yLines.push('<text x="'+(padL-4)+'" y="'+(yy+4)+'" font-size="9" text-anchor="end" fill="var(--text2)">'+yi+'</text>');
+        yLines.push('<line x1="'+padL+'" y1="'+yy+'" x2="'+(chartW-padR)+'" y2="'+yy+'" stroke="var(--border)" stroke-width="0.5"/>');
+      }
+      var xStep = Math.ceil(pts.length/7);
+      var xLabels = pts.filter(function(_,i){ return i%xStep===0||i===pts.length-1; }).map(function(p) {
+        return '<text x="'+p.x+'" y="'+(chartH-5)+'" font-size="9" text-anchor="middle" fill="var(--text2)">'+p.day.slice(5)+'</text>';
+      });
+      var dots = pts.map(function(p) {
+        return '<circle cx="'+p.x+'" cy="'+p.y+'" r="3" fill="var(--purple)" stroke="var(--bg)" stroke-width="1.5"><title>'+p.day+'：'+p.count+'次</title></circle>';
+      });
+      svgChart = '<div style="margin-bottom:14px">' +
+        '<div style="font-size:12px;font-weight:500;margin-bottom:6px">📈 每日打題趨勢</div>' +
+        '<svg width="100%" viewBox="0 0 '+chartW+' '+chartH+'" style="overflow:visible">' +
+        yLines.join('') +
+        '<polyline points="'+area+'" fill="var(--purple-light)" stroke="none" opacity="0.4"/>' +
+        '<polyline points="'+polyline+'" fill="none" stroke="var(--purple)" stroke-width="2" stroke-linejoin="round"/>' +
+        dots.join('') + xLabels.join('') + '</svg></div>';
+    }
+
+    // ── 曾打過哪些篇（統計）──
+    var passageCount = {};
+    history.forEach(function(h) {
+      var t = h.passage || '未知';
+      if (!passageCount[t]) passageCount[t] = { count: 0, wpmSum: 0, accSum: 0 };
+      passageCount[t].count++;
+      passageCount[t].wpmSum += (h.wpm || 0);
+      passageCount[t].accSum += (h.acc || 0);
     });
-    var passageList = Object.entries(allPassages).sort(function(a,b) { return b[1]-a[1]; });
+    var passageList = Object.entries(passageCount).sort(function(a,b){ return b[1].count-a[1].count; });
     var passageTags = passageList.map(function(p) {
-      return '<span style="background:var(--purple-light);color:var(--purple-dark);padding:3px 8px;border-radius:4px;font-size:11px;display:inline-flex;align-items:center;gap:4px">' +
-        p[0] + '… <span style="background:var(--purple);color:#fff;border-radius:3px;padding:0 4px;font-size:10px">' + p[1] + '次</span></span>';
+      var avgWpm = Math.round(p[1].wpmSum/p[1].count);
+      var avgAcc = Math.round(p[1].accSum/p[1].count);
+      return '<div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius);padding:6px 10px;font-size:12px">' +
+        '<div style="font-weight:500;margin-bottom:2px">'+p[0]+'…</div>' +
+        '<div style="color:var(--text2);font-size:11px">打了 <strong style="color:var(--purple)">'+p[1].count+'</strong> 次　平均 <strong>'+avgWpm+'</strong> 字/分　準確率 <strong>'+avgAcc+'%</strong></div>' +
+        '</div>';
     }).join('');
+    var totalSummary = '<div style="margin-bottom:14px">' +
+      '<div style="font-size:12px;font-weight:500;margin-bottom:8px">📚 打過的題目（共 '+passageList.length+' 篇）</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px">'+passageTags+'</div></div>';
 
-    var totalSummary = '<div style="margin-bottom:12px">' +
-      '<div style="font-size:12px;font-weight:500;margin-bottom:6px;color:var(--text)">曾打過的題目（共 ' + passageList.length + ' 篇）</div>' +
-      '<div style="display:flex;flex-wrap:wrap;gap:5px">' + passageTags + '</div></div>';
-
-    // ── 每日明細 ──
-    var dailyDetail = days.slice().reverse().map(function(day) {
-      var passages = data[day];
-      var keys = Object.keys(passages);
-      return '<div style="margin-bottom:8px">' +
-        '<div style="font-weight:500;margin-bottom:4px;color:var(--text);font-size:12px">' + day + '　' +
-        '<span style="color:var(--text2)">共 ' + keys.length + ' 題</span></div>' +
-        '<div style="display:flex;flex-wrap:wrap;gap:4px">' +
-        keys.map(function(k) {
-          var title = typeof passages[k] === 'string' ? passages[k] : '已完成';
-          return '<span style="background:var(--bg);border:0.5px solid var(--border);color:var(--text2);padding:2px 7px;border-radius:4px;font-size:11px">✓ ' + title + '…</span>';
-        }).join('') +
-        '</div></div>';
+    // ── 每次詳細紀錄 ──
+    var historyRows = history.slice(0, 50).map(function(h) {
+      return '<tr>' +
+        '<td style="padding:5px 8px;color:var(--text2);font-size:11px">'+( h.time || '—')+'</td>' +
+        '<td style="padding:5px 8px;font-size:12px">'+(h.passage||'—')+'…</td>' +
+        '<td style="padding:5px 8px;text-align:right;color:var(--purple);font-weight:500">'+(h.wpm||0)+'</td>' +
+        '<td style="padding:5px 8px;text-align:right">'+(h.acc||0)+'%</td>' +
+        '</tr>';
     }).join('');
+    var historyTable = '<div>' +
+      '<div style="font-size:12px;font-weight:500;margin-bottom:8px">📋 每次成績（最近50筆）</div>' +
+      '<table style="width:100%;border-collapse:collapse;font-size:12px">' +
+      '<thead><tr style="border-bottom:0.5px solid var(--border)">' +
+      '<th style="padding:5px 8px;text-align:left;color:var(--text2);font-weight:500">時間</th>' +
+      '<th style="padding:5px 8px;text-align:left;color:var(--text2);font-weight:500">題目</th>' +
+      '<th style="padding:5px 8px;text-align:right;color:var(--text2);font-weight:500">字/分</th>' +
+      '<th style="padding:5px 8px;text-align:right;color:var(--text2);font-weight:500">準確率</th>' +
+      '</tr></thead><tbody>' + (history.length > 0 ? historyRows : '<tr><td colspan="4" style="padding:12px;text-align:center;color:var(--text2)">尚無紀錄</td></tr>') +
+      '</tbody></table></div>';
 
-    var detailSection = '<div>' +
-      '<div style="font-size:12px;font-weight:500;margin-bottom:6px;color:var(--text)">每日明細</div>' +
-      dailyDetail + '</div>';
-
-    box.innerHTML = svgChart + totalSummary + detailSection;
+    box.innerHTML = (chartData.length > 0 ? svgChart : '') + totalSummary + historyTable;
   });
 }
 
