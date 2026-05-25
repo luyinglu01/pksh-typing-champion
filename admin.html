@@ -323,7 +323,6 @@ function toggleDetail(studentId, name) {
     openDetail = null;
     return;
   }
-  // 關閉上一個展開的
   if (openDetail) {
     var prev = document.getElementById('detail-' + openDetail);
     if (prev) prev.style.display = 'none';
@@ -339,21 +338,97 @@ function toggleDetail(studentId, name) {
       box.innerHTML = '<span style="color:var(--text2)">尚無打題紀錄</span>';
       return;
     }
-    // 整理每天的紀錄
-    var days = Object.keys(data).sort().reverse(); // 最新日期在前
-    var html = days.map(function(day) {
+
+    var days = Object.keys(data).sort(); // 日期升冪（舊→新）
+    
+    // ── 折線圖 ──
+    var chartData = days.map(function(day) {
+      return { day: day, count: Object.keys(data[day]).length };
+    });
+    var maxCount = Math.max.apply(null, chartData.map(function(d) { return d.count; }));
+    var chartW = 420, chartH = 80, padL = 28, padB = 20, padR = 10, padT = 10;
+    var innerW = chartW - padL - padR;
+    var innerH = chartH - padT - padB;
+    var pts = chartData.map(function(d, i) {
+      var x = padL + (chartData.length === 1 ? innerW/2 : i / (chartData.length-1) * innerW);
+      var y = padT + innerH - (maxCount > 0 ? d.count / maxCount * innerH : 0);
+      return { x: x, y: y, day: d.day, count: d.count };
+    });
+    var polyline = pts.map(function(p) { return p.x + ',' + p.y; }).join(' ');
+    var areaPoints = (pts.map(function(p) { return p.x + ',' + p.y; }).join(' ')) +
+      ' ' + pts[pts.length-1].x + ',' + (padT+innerH) +
+      ' ' + pts[0].x + ',' + (padT+innerH);
+
+    // Y 軸刻度
+    var yLabels = [];
+    for (var yi = 0; yi <= maxCount; yi += Math.max(1, Math.ceil(maxCount/4))) {
+      var yy = padT + innerH - (maxCount > 0 ? yi / maxCount * innerH : 0);
+      yLabels.push('<text x="' + (padL-4) + '" y="' + (yy+4) + '" font-size="9" text-anchor="end" fill="var(--text2)">' + yi + '</text>');
+      yLabels.push('<line x1="' + padL + '" y1="' + yy + '" x2="' + (chartW-padR) + '" y2="' + yy + '" stroke="var(--border)" stroke-width="0.5"/>');
+    }
+
+    // X 軸日期（最多顯示7個）
+    var xStep = Math.ceil(pts.length / 7);
+    var xLabels = pts.filter(function(_, i) { return i % xStep === 0 || i === pts.length-1; }).map(function(p) {
+      var shortDay = p.day.slice(5); // MM-DD
+      return '<text x="' + p.x + '" y="' + (chartH-4) + '" font-size="9" text-anchor="middle" fill="var(--text2)">' + shortDay + '</text>';
+    });
+
+    // 資料點
+    var dots = pts.map(function(p) {
+      return '<circle cx="' + p.x + '" cy="' + p.y + '" r="3" fill="var(--purple)" stroke="var(--bg)" stroke-width="1.5"/>' +
+        '<title>' + p.day + '：' + p.count + ' 題</title>';
+    });
+
+    var svgChart = '<div style="margin-bottom:12px">' +
+      '<div style="font-size:12px;font-weight:500;margin-bottom:6px;color:var(--text)">每日打題趨勢</div>' +
+      '<svg width="100%" viewBox="0 0 ' + chartW + ' ' + chartH + '" style="max-width:' + chartW + 'px;overflow:visible">' +
+      yLabels.join('') +
+      '<polyline points="' + areaPoints + '" fill="var(--purple-light)" stroke="none" opacity="0.5"/>' +
+      '<polyline points="' + polyline + '" fill="none" stroke="var(--purple)" stroke-width="2" stroke-linejoin="round"/>' +
+      dots.join('') +
+      xLabels.join('') +
+      '</svg></div>';
+
+    // ── 總計打過哪些篇 ──
+    var allPassages = {};
+    days.forEach(function(day) {
+      Object.entries(data[day]).forEach(function(entry) {
+        var title = typeof entry[1] === 'string' ? entry[1] : '已完成';
+        if (!allPassages[title]) allPassages[title] = 0;
+        allPassages[title]++;
+      });
+    });
+    var passageList = Object.entries(allPassages).sort(function(a,b) { return b[1]-a[1]; });
+    var passageTags = passageList.map(function(p) {
+      return '<span style="background:var(--purple-light);color:var(--purple-dark);padding:3px 8px;border-radius:4px;font-size:11px;display:inline-flex;align-items:center;gap:4px">' +
+        p[0] + '… <span style="background:var(--purple);color:#fff;border-radius:3px;padding:0 4px;font-size:10px">' + p[1] + '次</span></span>';
+    }).join('');
+
+    var totalSummary = '<div style="margin-bottom:12px">' +
+      '<div style="font-size:12px;font-weight:500;margin-bottom:6px;color:var(--text)">曾打過的題目（共 ' + passageList.length + ' 篇）</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:5px">' + passageTags + '</div></div>';
+
+    // ── 每日明細 ──
+    var dailyDetail = days.slice().reverse().map(function(day) {
       var passages = data[day];
       var keys = Object.keys(passages);
       return '<div style="margin-bottom:8px">' +
-        '<div style="font-weight:500;margin-bottom:4px;color:var(--text)">' + day + '　共 ' + keys.length + ' 題</div>' +
+        '<div style="font-weight:500;margin-bottom:4px;color:var(--text);font-size:12px">' + day + '　' +
+        '<span style="color:var(--text2)">共 ' + keys.length + ' 題</span></div>' +
         '<div style="display:flex;flex-wrap:wrap;gap:4px">' +
         keys.map(function(k) {
           var title = typeof passages[k] === 'string' ? passages[k] : '已完成';
-          return '<span style="background:var(--purple-light);color:var(--purple-dark);padding:2px 7px;border-radius:4px;font-size:11px" title="' + title + '">✓ ' + title + '...</span>';
+          return '<span style="background:var(--bg);border:0.5px solid var(--border);color:var(--text2);padding:2px 7px;border-radius:4px;font-size:11px">✓ ' + title + '…</span>';
         }).join('') +
         '</div></div>';
     }).join('');
-    box.innerHTML = html;
+
+    var detailSection = '<div>' +
+      '<div style="font-size:12px;font-weight:500;margin-bottom:6px;color:var(--text)">每日明細</div>' +
+      dailyDetail + '</div>';
+
+    box.innerHTML = svgChart + totalSummary + detailSection;
   });
 }
 
