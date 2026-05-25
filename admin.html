@@ -239,6 +239,7 @@ function renderStudentList(cls) {
         <th style="width:40px">排名</th>
         <th>姓名</th>
         <th>學號</th>
+        <th>密碼</th>
         <th style="text-align:right">完成題次</th>
         <th style="text-align:right">貢獻比</th>
         <th style="text-align:center">操作</th>
@@ -250,6 +251,7 @@ function renderStudentList(cls) {
           <td><span class="rank-medal">${MEDALS[i] || (i+1)}</span></td>
           <td>${s.name}</td>
           <td style="color:var(--text2)">${s.studentId}</td>
+          <td style="color:var(--text2);font-family:monospace">${s.password || '—'}</td>
           <td style="text-align:right;font-weight:500;color:var(--purple)">${score}</td>
           <td style="text-align:right;color:var(--text2)">${pct}%</td>
           <td style="text-align:center;display:flex;gap:4px;justify-content:center">
@@ -267,11 +269,12 @@ function renderAllAccounts() {
   document.getElementById('all-accounts').innerHTML = sorted.length === 0
     ? '<div style="text-align:center;padding:1rem;color:var(--text2);font-size:14px">目前沒有帳號</div>'
     : `<table class="student-table">
-        <thead><tr><th>班級</th><th>姓名</th><th>學號</th><th style="text-align:right">本週積分</th><th style="text-align:center">操作</th></tr></thead>
+        <thead><tr><th>班級</th><th>姓名</th><th>學號</th><th>密碼</th><th style="text-align:right">本週積分</th><th style="text-align:center">操作</th></tr></thead>
         <tbody>${sorted.map(s => `<tr>
           <td><span class="badge">${s.class}</span></td>
           <td>${s.name}</td>
           <td style="color:var(--text2)">${s.studentId}</td>
+          <td style="color:var(--text2);font-family:monospace">${s.password || '—'}</td>
           <td style="text-align:right;color:var(--purple);font-weight:500">${s.weekScore||0}</td>
           <td style="text-align:center;display:flex;gap:4px;justify-content:center">
             <button onclick="editScore('${s.studentId}','${s.name}',${s.weekScore||0})" style="font-size:12px;padding:4px 8px;color:var(--purple);border-color:var(--purple)">修改</button>
@@ -290,11 +293,12 @@ function searchStudent() {
   document.getElementById('search-result').innerHTML = found.length === 0
     ? '<div style="font-size:13px;color:var(--text2)">找不到符合的學生</div>'
     : `<table class="student-table">
-        <thead><tr><th>班級</th><th>姓名</th><th>學號</th><th style="text-align:right">本週積分</th><th style="text-align:center">操作</th></tr></thead>
+        <thead><tr><th>班級</th><th>姓名</th><th>學號</th><th>密碼</th><th style="text-align:right">本週積分</th><th style="text-align:center">操作</th></tr></thead>
         <tbody>${found.map(s => `<tr>
           <td><span class="badge">${s.class}</span></td>
           <td>${s.name}</td>
           <td style="color:var(--text2)">${s.studentId}</td>
+          <td style="color:var(--text2);font-family:monospace">${s.password || '—'}</td>
           <td style="text-align:right;color:var(--purple);font-weight:500">${s.weekScore||0}</td>
           <td style="text-align:center;display:flex;gap:4px;justify-content:center">
             <button onclick="editScore('${s.studentId}','${s.name}',${s.weekScore||0})" style="font-size:12px;padding:4px 8px;color:var(--purple);border-color:var(--purple)">修改</button>
