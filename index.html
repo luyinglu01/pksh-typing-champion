@@ -1078,13 +1078,13 @@ async function doCreate(qcount, minP, customPassages) {
     players: { [myUid]: mkPlayer() }
   });
   db.ref('rooms/' + roomId + '/players/' + myUid).onDisconnect().remove();
-  // 30分鐘後自動清除房間（用本地副本避免 roomId 被 cleanup 清除）
+  // 120分鐘後自動清除房間（用本地副本避免 roomId 被 cleanup 清除）
   var roomIdCopy = roomId;
   setTimeout(function() {
     db.ref('rooms/' + roomIdCopy).once('value', function(s) {
       if (s.val()) db.ref('rooms/' + roomIdCopy).remove();
     });
-  }, 30 * 60 * 1000);
+  }, 120 * 60 * 1000);
   listen();
   go('s-lobby');
 }
