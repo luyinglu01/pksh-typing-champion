@@ -154,7 +154,13 @@ const db = firebase.database();
 
 const ADMIN_PWD = 'pksh0815';
 const CLASSES = ['商一甲','商一乙','應一甲','貿一甲'];
-const TARGETS = { '商一甲': 150, '商一乙': 150, '應一甲': 80, '貿一甲': 80 };
+const LEVELS = [
+  { label: '⭐ 達標',      targets: { '商一甲': 58,  '商一乙': 65,  '應一甲': 28,  '貿一甲': 25  } },
+  { label: '⭐⭐ 良好',    targets: { '商一甲': 81,  '商一乙': 91,  '應一甲': 39,  '貿一甲': 35  } },
+  { label: '⭐⭐⭐ 優秀',  targets: { '商一甲': 115, '商一乙': 130, '應一甲': 55,  '貿一甲': 50  } },
+  { label: '🎉 傳說',      targets: { '商一甲': 115, '商一乙': 130, '應一甲': 55,  '貿一甲': 50  } },
+];
+const TARGETS = { '商一甲': 115, '商一乙': 130, '應一甲': 55, '貿一甲': 50 }; // 最高等級目標
 const MEDALS = ['🥇','🥈','🥉'];
 
 async function sha256(str) {
@@ -201,16 +207,35 @@ function renderOverview() {
   overview.innerHTML = CLASSES.map(cls => {
     const students = allStudents.filter(s => s.class === cls);
     const total = students.reduce((sum, s) => sum + (s.weekScore || 0), 0);
-    const target = TARGETS[cls];
-    const pct = Math.min(100, Math.round((total / target) * 100));
-    const done = total >= target;
+
+    // 找當前等級
+    var currentLevelIdx = -1;
+    for (var li = 0; li < LEVELS.length; li++) {
+      if (total >= LEVELS[li].targets[cls]) currentLevelIdx = li;
+      else break;
+    }
+    var showLevelIdx = Math.min(currentLevelIdx + 1, LEVELS.length - 1);
+    var target = LEVELS[showLevelIdx].targets[cls];
+    var pct = Math.min(100, Math.round((total / target) * 100));
+    var done = total >= target;
+    var allDone = currentLevelIdx === LEVELS.length - 1;
+
+    var badges = '';
+    for (var ai = 0; ai <= currentLevelIdx; ai++) {
+      badges += '<span style="font-size:11px;background:var(--green-light);color:var(--green);padding:1px 6px;border-radius:4px;margin-right:3px">' + LEVELS[ai].label + '</span>';
+    }
+
     return `<div class="class-card">
       <div class="class-header">
-        <span class="class-name">${cls} ${done ? '✅' : ''}</span>
+        <span class="class-name">${cls}</span>
         <span class="class-score">${total} / ${target} 題 &nbsp;${pct}%</span>
       </div>
+      ${badges ? '<div style="margin-bottom:6px">' + badges + '</div>' : ''}
       <div class="prog-bar"><div class="prog-fill ${done?'done':''}" style="width:${pct}%"></div></div>
-      <div style="font-size:12px;color:var(--text2)">${students.length} 位學生${done ? ' ・ 已達標！' : ` ・ 還差 ${target-total} 題`}</div>
+      <div style="font-size:12px;color:var(--text2)">
+        ${students.length} 位學生 ・
+        ${allDone ? '🎉 全部達成！' : (done ? '✅ ' + LEVELS[showLevelIdx].label + ' 達成！' : '目標：' + LEVELS[showLevelIdx].label + ' 還差 ' + (target-total) + ' 題')}
+      </div>
     </div>`;
   }).join('');
 }
