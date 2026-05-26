@@ -289,11 +289,39 @@ textarea:disabled { opacity: 0.6; }
     </div>
     <div id="login-err" style="display:none;font-size:13px;color:var(--red);margin-bottom:10px"></div>
     <button class="btn-p" style="width:100%" onclick="doLogin()">登入</button>
-    <div style="text-align:center;margin-top:12px">
-      <span style="font-size:13px;color:var(--text2)">不想累積積分？</span>
-      <button onclick="guestLogin()" style="font-size:13px;color:var(--purple);border:none;background:none;padding:0;cursor:pointer;text-decoration:underline">以訪客身份練習</button>
+    <div style="text-align:center;margin-top:12px;display:flex;justify-content:space-between">
+      <span>
+        <span style="font-size:13px;color:var(--text2)">不想累積積分？</span>
+        <button onclick="guestLogin()" style="font-size:13px;color:var(--purple);border:none;background:none;padding:0;cursor:pointer;text-decoration:underline">以訪客身份練習</button>
+      </span>
+      <button onclick="showResetPwd()" style="font-size:13px;color:var(--text2);border:none;background:none;padding:0;cursor:pointer;text-decoration:underline">忘記密碼？</button>
     </div>
   </div>
+  <!-- 忘記密碼 -->
+  <div id="auth-reset" style="display:none">
+    <div style="font-size:14px;font-weight:500;margin-bottom:12px">重設密碼</div>
+    <div class="form-group">
+      <label class="form-label">學號</label>
+      <input type="text" id="reset-id" placeholder="輸入學號">
+    </div>
+    <div class="form-group">
+      <label class="form-label">姓名（驗證身份）</label>
+      <input type="text" id="reset-name" placeholder="輸入註冊時的真實姓名">
+    </div>
+    <div class="form-group">
+      <label class="form-label">新密碼</label>
+      <div style="position:relative;width:100%">
+        <input type="password" id="reset-pwd" placeholder="設定新密碼（至少4字元）" class="pwd-input">
+        <button onclick="togglePwd('reset-pwd',this)" class="pwd-toggle">顯示</button>
+      </div>
+    </div>
+    <div id="reset-err" style="display:none;font-size:13px;color:var(--red);margin-bottom:10px"></div>
+    <button class="btn-p" style="width:100%" onclick="doResetPwd()">確認重設</button>
+    <div style="text-align:center;margin-top:10px">
+      <button onclick="showLogin()" style="font-size:13px;color:var(--text2);border:none;background:none;cursor:pointer;text-decoration:underline">返回登入</button>
+    </div>
+  </div>
+
   <!-- 註冊 -->
   <div id="auth-register" style="display:none">
     <div class="form-group">
@@ -544,7 +572,7 @@ const db = firebase.database();
 
 // ── 班級設定 ──
 const CLASSES = ['商一甲','商一乙','應一甲','貿一甲'];
-const TARGETS = { '商一甲': 57, '商一乙': 65, '應一甲': 38, '貿一甲': 25 };
+const TARGETS = { '商一甲': 150, '商一乙': 150, '應一甲': 80, '貿一甲': 80 };
 const MEDALS = ['🥇','🥈','🥉'];
 
 // ── 目前登入的使用者 ──
@@ -640,6 +668,41 @@ function guestLogin() {
   currentUser = { name: '訪客', class: '', isGuest: true, weekScore: 0 };
   sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
   enterMenu();
+}
+
+function showResetPwd() {
+  document.getElementById('auth-login').style.display = 'none';
+  document.getElementById('auth-register').style.display = 'none';
+  document.getElementById('auth-reset').style.display = 'block';
+  document.getElementById('tab-login').classList.remove('active');
+  document.getElementById('tab-register').classList.remove('active');
+}
+
+function showLogin() {
+  document.getElementById('auth-reset').style.display = 'none';
+  document.getElementById('auth-login').style.display = 'block';
+  document.getElementById('tab-login').classList.add('active');
+}
+
+async function doResetPwd() {
+  var sid = document.getElementById('reset-id').value.trim();
+  var name = document.getElementById('reset-name').value.trim();
+  var newPwd = document.getElementById('reset-pwd').value;
+  var errEl = document.getElementById('reset-err');
+
+  if (!sid || !name || !newPwd) { errEl.textContent = '請填寫所有欄位'; errEl.style.display = 'block'; return; }
+  if (newPwd.length < 4) { errEl.textContent = '密碼至少需要 4 個字元'; errEl.style.display = 'block'; return; }
+
+  var snap = await db.ref('users/' + sid).once('value');
+  var user = snap.val();
+  if (!user) { errEl.textContent = '找不到此學號'; errEl.style.display = 'block'; return; }
+  if (user.name !== name) { errEl.textContent = '姓名驗證失敗，請確認輸入的姓名與註冊時相同'; errEl.style.display = 'block'; return; }
+
+  var hashed = await sha256(newPwd);
+  await db.ref('users/' + sid + '/password').set(hashed);
+  errEl.style.display = 'none';
+  toast('✅ 密碼重設成功！請用新密碼登入');
+  showLogin();
 }
 
 function togglePwd(inputId, btn) {
