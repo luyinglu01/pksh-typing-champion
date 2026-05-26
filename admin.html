@@ -157,6 +157,11 @@ const CLASSES = ['商一甲','商一乙','應一甲','貿一甲'];
 const TARGETS = { '商一甲': 150, '商一乙': 150, '應一甲': 80, '貿一甲': 80 };
 const MEDALS = ['🥇','🥈','🥉'];
 
+async function sha256(str) {
+  var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
 function toast(msg, isRed) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -239,7 +244,6 @@ function renderStudentList(cls) {
         <th style="width:40px">排名</th>
         <th>姓名</th>
         <th>學號</th>
-        <th>密碼</th>
         <th style="text-align:right">完成題次</th>
         <th style="text-align:right">貢獻比</th>
         <th style="text-align:center">操作</th>
@@ -251,7 +255,6 @@ function renderStudentList(cls) {
           <td><span class="rank-medal">${MEDALS[i] || (i+1)}</span></td>
           <td style="cursor:pointer;color:var(--purple)" onclick="toggleDetail('${s.studentId}','${s.name}')">${s.name} ▾</td>
           <td style="color:var(--text2)">${s.studentId}</td>
-          <td style="color:var(--text2);font-family:monospace">${s.password || '—'}</td>
           <td style="text-align:right;font-weight:500;color:var(--purple)">${score}</td>
           <td style="text-align:right;color:var(--text2)">${pct}%</td>
           <td style="text-align:center;display:flex;gap:4px;justify-content:center">
@@ -274,15 +277,15 @@ function renderAllAccounts() {
   document.getElementById('all-accounts').innerHTML = sorted.length === 0
     ? '<div style="text-align:center;padding:1rem;color:var(--text2);font-size:14px">目前沒有帳號</div>'
     : `<table class="student-table">
-        <thead><tr><th>班級</th><th>姓名</th><th>學號</th><th>密碼</th><th style="text-align:right">本週積分</th><th style="text-align:center">操作</th></tr></thead>
+        <thead><tr><th>班級</th><th>姓名</th><th>學號</th><th style="text-align:right">本週積分</th><th style="text-align:center">操作</th></tr></thead>
         <tbody>${sorted.map(s => `<tr>
           <td><span class="badge">${s.class}</span></td>
           <td>${s.name}</td>
           <td style="color:var(--text2)">${s.studentId}</td>
-          <td style="color:var(--text2);font-family:monospace">${s.password || '—'}</td>
           <td style="text-align:right;color:var(--purple);font-weight:500">${s.weekScore||0}</td>
           <td style="text-align:center;display:flex;gap:4px;justify-content:center">
-            <button onclick="editScore('${s.studentId}','${s.name}',${s.weekScore||0})" style="font-size:12px;padding:4px 8px;color:var(--purple);border-color:var(--purple)">修改</button>
+            <button onclick="resetPassword('${s.studentId}','${s.name}')" style="font-size:12px;padding:4px 8px">重設密碼</button>
+            <button onclick="editScore('${s.studentId}','${s.name}',${s.weekScore||0})" style="font-size:12px;padding:4px 8px;color:var(--purple);border-color:var(--purple)">修改積分</button>
             <button onclick="deleteAccount('${s.studentId}')" style="font-size:12px;padding:4px 8px;color:var(--red);border-color:var(--red)">刪除</button>
           </td>
         </tr>`).join('')}</tbody>
@@ -298,15 +301,15 @@ function searchStudent() {
   document.getElementById('search-result').innerHTML = found.length === 0
     ? '<div style="font-size:13px;color:var(--text2)">找不到符合的學生</div>'
     : `<table class="student-table">
-        <thead><tr><th>班級</th><th>姓名</th><th>學號</th><th>密碼</th><th style="text-align:right">本週積分</th><th style="text-align:center">操作</th></tr></thead>
+        <thead><tr><th>班級</th><th>姓名</th><th>學號</th><th style="text-align:right">本週積分</th><th style="text-align:center">操作</th></tr></thead>
         <tbody>${found.map(s => `<tr>
           <td><span class="badge">${s.class}</span></td>
           <td>${s.name}</td>
           <td style="color:var(--text2)">${s.studentId}</td>
-          <td style="color:var(--text2);font-family:monospace">${s.password || '—'}</td>
           <td style="text-align:right;color:var(--purple);font-weight:500">${s.weekScore||0}</td>
           <td style="text-align:center;display:flex;gap:4px;justify-content:center">
-            <button onclick="editScore('${s.studentId}','${s.name}',${s.weekScore||0})" style="font-size:12px;padding:4px 8px;color:var(--purple);border-color:var(--purple)">修改</button>
+            <button onclick="resetPassword('${s.studentId}','${s.name}')" style="font-size:12px;padding:4px 8px">重設密碼</button>
+            <button onclick="editScore('${s.studentId}','${s.name}',${s.weekScore||0})" style="font-size:12px;padding:4px 8px;color:var(--purple);border-color:var(--purple)">修改積分</button>
             <button onclick="deleteAccount('${s.studentId}')" style="font-size:12px;padding:4px 8px;color:var(--red);border-color:var(--red)">刪除</button>
           </td>
         </tr>`).join('')}</tbody>
@@ -431,6 +434,16 @@ function toggleDetail(studentId, name) {
 
     box.innerHTML = (chartData.length > 0 ? svgChart : '') + totalSummary + historyTable;
   });
+}
+
+// ── 重設密碼 ──
+async function resetPassword(studentId, name) {
+  var newPwd = prompt('重設 ' + name + ' 的密碼\n請輸入新密碼（至少4字元）：');
+  if (newPwd === null) return;
+  if (newPwd.length < 4) { alert('密碼至少需要 4 個字元'); return; }
+  var hashed = await sha256(newPwd);
+  await db.ref('users/' + studentId + '/password').set(hashed);
+  toast('✅ ' + name + ' 的密碼已重設，請告知同學新密碼：' + newPwd);
 }
 
 // ── 修改積分 ──
