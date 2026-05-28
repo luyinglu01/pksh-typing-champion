@@ -574,10 +574,10 @@ const db = firebase.database();
 const CLASSES = ['商一甲','商一乙','應一甲','貿一甲'];
 // 四個等級目標（達標後才解鎖下一級）
 const LEVELS = [
-  { label: '⭐ 達標',      reward: '總成績 +1',      targets: { '商一甲': 58,  '商一乙': 52,  '應一甲': 28,  '貿一甲': 20  } },
+  { label: '⭐ 達標',      reward: '總成績 +1',      targets: { '商一甲': 58,  '商一乙': 65,  '應一甲': 28,  '貿一甲': 25  } },
   { label: '⭐⭐ 良好',    reward: '總成績 +2',      targets: { '商一甲': 81,  '商一乙': 91,  '應一甲': 39,  '貿一甲': 35  } },
   { label: '⭐⭐⭐ 優秀',  reward: '總成績 +3',      targets: { '商一甲': 115, '商一乙': 130, '應一甲': 55,  '貿一甲': 50  } },
-  { label: '🎉 傳說',      reward: '總成績 +3 + 禮物', targets: { '商一甲': 115, '商一乙': 130, '應一甲': 55,  '貿一甲': 50  } },
+  { label: '🎉 傳說',      reward: '總成績 +3 + 點心', targets: { '商一甲': 115, '商一乙': 130, '應一甲': 55,  '貿一甲': 50  } },
 ];
 // 向下相容
 const TARGETS = { '商一甲': 58, '商一乙': 65, '應一甲': 28, '貿一甲': 25 };
@@ -1193,16 +1193,18 @@ function onRoom(d) {
     }
 
   } else if (d.status === 'playing') {
-    // 從 Firebase 同步 advancing 狀態，防止房主轉移後重複觸發
     if (d.advancing) advancing = true;
     else if (d.advancing === false) advancing = false;
 
-    if (lastStatus !== 'playing' || d.q !== lastQ) {
-      lastQ = d.q;
+    if (lastStatus !== 'playing') {
+      // 第一次進入遊戲，從第 0 題開始
       lastStatus = 'playing';
+      lastQ = 0;
       startQ(d, ps);
     } else {
+      // 更新其他人的進度條
       updateBars(ps);
+      // 房主檢查是否所有人都打完所有題目
       if (d.host === myUid) checkAllDone(d, ps);
     }
 
@@ -1492,13 +1494,63 @@ function finishQ(wpm, acc) {
   var finText = '✅ 完成！' + wpm + ' 字/分 ｜ 準確率 ' + acc + '%';
   syncEl(['g-fin','g-fin-d'], 'textContent', finText);
   syncEl(['g-fin','g-fin-d'], 'display', 'block', true);
-  syncEl(['g-wait','g-wait-d'], 'display', 'block', true);
 
-  // 完成後可以選擇先離開，不用等其他人
-  syncEl(['g-leave','g-leave-d'], 'display', 'block', true);
+  // 多題模式：自己打完就直接進下一題，不等其他人
+  db.ref('rooms/' + roomId).once('value', function(snap) {
+    var d = snap.val();
+    if (!d) return;
+    var nextQ = curQ + 1;
+    if (nextQ >= d.qcount) {
+      // 所有題目打完，顯示等待結算
+      syncEl(['g-wait','g-wait-d'], 'display', 'block', true);
+      syncEl(['g-leave','g-leave-d'], 'display', 'block', true);
+      // 檢查是否全員都打完了
+      var ps = d.players ? Object.values(d.players) : [];
+      if (d.host === myUid) checkAllDone(d, ps);
+    } else {
+      // 還有下一題，1.5 秒後自己直接進下一題
+      syncEl(['g-fin','g-fin-d'], 'textContent', finText + '　下一題準備中...');
+      setTimeout(function() {
+        if (!roomId) return;
+        // 重置自己的進度條
+        db.ref('rooms/' + roomId + '/players/' + myUid).update({ prog: 0 });
+        // 直接進下一題（不透過 Firebase countdown，只更新本人畫面）
+        db.ref('rooms/' + roomId).once('value', function(s2) {
+          var d2 = s2.val();
+          if (!d2) return;
+          var ps2 = d2.players ? Object.values(d2.players) : [];
+          curQ = nextQ;
+          curText = d2.qs[nextQ].t;
+          typed = '';
+          doneThisQ = false;
+          startTime = Date.now();
+          syncEl(['g-fin','g-fin-d'], 'display', 'none', true);
+          syncEl(['g-wait','g-wait-d'], 'display', 'none', true);
+          syncEl(['g-leave','g-leave-d'], 'display', 'none', true);
+          renderPassage('', curText);
+          buildBars(ps2);
+          syncEl(['g-input','g-input-d'], 'value', '');
+          syncEl(['g-input','g-input-d'], 'disabled', false);
+          var isDesktop = document.getElementById('g-input-d') && document.getElementById('g-input-d').offsetParent !== null;
+          var inp = document.getElementById(isDesktop ? 'g-input-d' : 'g-input');
+          inputOn = true;
+          lastTypedLen = 0;
+          syncEl(['g-qinfo','g-qinfo-d'], 'textContent', '第 ' + (nextQ+1) + ' / ' + d2.qcount + ' 題');
+          syncEl(['g-qtitle','g-qtitle-d'], 'textContent', '題目 ' + (nextQ+1) + '：');
+          if (timerIv) clearInterval(timerIv);
+          timerIv = setInterval(function() {
+            var s = Math.round((Date.now() - startTime) / 1000);
+            syncEl(['g-timer','g-timer-d'], 'textContent', '⏱ ' + s + 's');
+            syncEl(['g-wpm','g-wpm-d'], 'textContent', calcWpm(typed.length, startTime) + ' 字/分');
+          }, 400);
+          setTimeout(function() { if (inp) inp.focus(); }, 100);
+        });
+      }, 1500);
+    }
+  });
 }
 
-// ── 全員完成檢查（只有房主執行，避免重複寫入）──
+// ── 全員完成檢查（所有人都打完所有題才結算）──
 var advancing = false;
 var lastProgUpdate = 0;
 function checkAllDone(d, ps) {
@@ -1506,25 +1558,15 @@ function checkAllDone(d, ps) {
   if (d.status !== 'playing') return;
   if (ps.length === 0) return;
 
-  // 留在房間的玩家都完成本題才進下一題
-  var allDone = ps.every(function(p) { return (p.done || 0) > curQ; });
+  // 所有人都打完所有題目才進結算
+  var allDone = ps.every(function(p) { return (p.done || 0) >= d.qcount; });
   if (!allDone) return;
 
   advancing = true;
-  // 同步到 Firebase 防止房主轉移後新房主重複觸發
   db.ref('rooms/' + roomId).update({ advancing: true });
 
-  var nextQ = curQ + 1;
   setTimeout(function() {
-    if (nextQ >= d.qcount) {
-      db.ref('rooms/' + roomId).update({ status: 'results', advancing: false });
-    } else {
-      var updates = { status: 'countdown', cdStart: Date.now(), q: nextQ, roundStart: 0, advancing: false };
-      ps.forEach(function(p) { updates['players/' + p.uid + '/prog'] = 0; });
-      db.ref('rooms/' + roomId).update(updates);
-    }
-    // advancing 由 Firebase 同步，onRoom 裡會讀取 d.advancing 更新本地狀態
-    // 不需要強制計時清除，避免網路慢時重複觸發
+    db.ref('rooms/' + roomId).update({ status: 'results', advancing: false });
   }, 1500);
 }
 
