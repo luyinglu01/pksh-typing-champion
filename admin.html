@@ -505,22 +505,27 @@ function cancelReset() {
 }
 
 async function doReset() {
-  cancelReset();
+  // 先把班級存起來，再關閉對話框，避免 cancelReset 清掉 resetTargetClass
+  var targetCls = resetTargetClass;
+  document.getElementById('confirm-overlay').style.display = 'none';
+  resetTargetClass = null;
+
+  if (!targetCls) { toast('錯誤：未指定班級', true); return; }
+
   const snap = await db.ref('users').once('value');
   const data = snap.val() || {};
   const updates = {};
   Object.keys(data).forEach(id => {
     var s = data[id];
-    // 只重置指定班級
-    if (!resetTargetClass || s.class === resetTargetClass) {
+    if (s.class === targetCls) {
       updates['users/' + id + '/weekScore'] = 0;
       updates['users/' + id + '/dailyPassages'] = null;
+      updates['users/' + id + '/history'] = null;
     }
   });
   await db.ref().update(updates);
-  await db.ref('system/lastReset_' + (resetTargetClass || 'all')).set(new Date().toISOString());
-  toast('✅ ' + (resetTargetClass || '全班') + ' 分數已重置完成');
-  resetTargetClass = null;
+  await db.ref('system/lastReset_' + targetCls).set(new Date().toISOString());
+  toast('✅ ' + targetCls + ' 分數已重置完成');
 }
 </script>
 </body>
