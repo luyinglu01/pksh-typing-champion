@@ -840,7 +840,7 @@ function renderLbDetail(cls, students) {
         const isMe = currentUser && s.studentId === currentUser.studentId;
         return `<div class="lb-student-row" style="${isMe?'background:var(--purple-light);border-radius:var(--radius);padding:8px;margin:-2px -4px':''}">
           <div class="lb-rank">${MEDALS[i]||i+1}</div>
-          <div class="lb-name">${s.name}${isMe?' <span style="font-size:11px;color:var(--purple)">(我)</span>':''}</div>
+          <div class="lb-name">${escHtml(s.name)}${isMe?' <span style="font-size:11px;color:var(--purple)">(我)</span>':''}</div>
           <div class="lb-score">${score} 題</div>
           <div class="lb-pct">${pct}%</div>
         </div>`;
@@ -857,6 +857,14 @@ function closeLbDetail() {
 function addWeekScore() {
   if (!currentUser || !currentUser.studentId) return;
   if (currentUser.isGuest) return; // 訪客不累積積分
+  // 從 Firebase 驗證帳號確實存在，防止 sessionStorage 偽造
+  db.ref('users/' + currentUser.studentId + '/studentId').once('value', function(chk) {
+    if (!chk.val()) return; // 帳號不存在，拒絕計分
+    _doAddWeekScore();
+  });
+}
+function _doAddWeekScore() {
+  if (!currentUser || !currentUser.studentId) return;
 
   // 取得今天日期字串（台灣時區）
   var today = new Date().toLocaleDateString('zh-TW', {
@@ -894,7 +902,7 @@ function addWeekScore() {
       });
     });
   });
-}
+} // end _doAddWeekScore
 
 const PASSAGES = [
   "由此可知，Dell經營線上購物成功，是經過有效規劃，善用企業原本的優勢，契合市場機會，而非人云亦云、盲目上網。國內業者企圖經營線上購物業務時，不妨考慮是否也有相類似的條件或是其他利基。由藍色巨人IBM、媒體巨擘Time Warner集團與軟體霸主Microsoft經營線上購物中心Avenue、DreamShop與線上服務業務MSN的前例來看，僅憑藉大量資金、專業技術便想在線上購物市場大小通吃的作法不切實際，缺乏本業專門領域知識（Know-how）往往遭致失敗命運。",
@@ -917,6 +925,17 @@ const PASSAGES = [
 const COLORS = ['#7F77DD','#1D9E75','#D85A30','#D4537E'];
 
 // ── 工具 ──
+// XSS 防護：跳脫 HTML 特殊字元
+function escHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 async function sha256(str) {
   var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
@@ -1215,7 +1234,7 @@ function renderLobby(d, ps) {
   document.getElementById('lob-players').innerHTML = ps.map(function(p, i) {
     return '<div class="player-item">' +
       '<div class="avatar" style="background:' + COLORS[i] + '22;color:' + COLORS[i] + '">' + p.name.slice(0,2) + '</div>' +
-      '<div style="flex:1">' + p.name + '</div>' +
+      '<div style="flex:1">' + escHtml(p.name) + '</div>' +
       '<span class="badge ' + (p.uid === d.host ? 'badge-purple' : 'badge-gray') + '">' + (p.uid === d.host ? '房主' : '等待中') + '</span>' +
       '</div>';
   }).join('');
@@ -1408,7 +1427,7 @@ function buildBars(ps) {
   var html = ps.map(function(p) {
     var isMe = p.uid === myUid;
     var color = uidToColor(p.uid);
-    var nameLabel = p.name + (isMe
+    var nameLabel = escHtml(p.name) + (isMe
       ? ' <span style="font-size:10px;background:var(--purple);color:#fff;border-radius:4px;padding:1px 5px;vertical-align:middle;margin-left:4px">我</span>'
       : '');
     var rowStyle = isMe
@@ -1513,30 +1532,48 @@ function checkAllDone(d, ps) {
 function showResults(d, ps) {
   clearInterval(timerIv);
   go('s-result');
-  // 延遲 1.5 秒讀取，確保 addWeekScore 已寫入 Firebase
+  // 延遲 2.5 秒讀取，確保 addWeekScore 已寫入 Firebase
+  var resLb = document.getElementById('res-lb-overview');
+  if (resLb) resLb.innerHTML = '<div style="text-align:center;padding:12px;color:var(--text2);font-size:13px">更新中...</div>';
   setTimeout(function() {
-  db.ref('users').once('value', function(snap) {
-    const data = snap.val() || {};
-    const students = Object.values(data);
-    const resLb = document.getElementById('res-lb-overview');
-    if (resLb) {
-      resLb.innerHTML = CLASSES.map(cls => {
-        const clsStudents = students.filter(s => s.class === cls);
-        const total = clsStudents.reduce((sum, s) => sum + (s.weekScore||0), 0);
-        const target = TARGETS[cls];
-        const pct = Math.min(100, Math.round((total/target)*100));
-        const done = total >= target;
+    db.ref('users').once('value', function(snap) {
+      const data = snap.val() || {};
+      const students = Object.values(data);
+      if (!resLb) return;
+      resLb.innerHTML = CLASSES.map(function(cls) {
+        var clsStudents = students.filter(function(s) { return s.class === cls; });
+        var total = clsStudents.reduce(function(sum, s) { return sum + (s.weekScore||0); }, 0);
+
+        // 用四等級邏輯
+        var currentLevelIdx = -1;
+        for (var li = 0; li < LEVELS.length; li++) {
+          if (total >= LEVELS[li].targets[cls]) currentLevelIdx = li;
+          else break;
+        }
+        var showLevelIdx = Math.min(currentLevelIdx + 1, LEVELS.length - 1);
+        var target = LEVELS[showLevelIdx].targets[cls];
+        var pct = Math.min(100, Math.round((total / target) * 100));
+        var done = total >= target;
+        var allDone = currentLevelIdx === LEVELS.length - 1;
+
+        var badges = '';
+        for (var ai = 0; ai <= currentLevelIdx; ai++) {
+          badges += '<span style="font-size:10px;background:var(--green-light);color:var(--green);padding:1px 5px;border-radius:3px;margin-right:3px">' + LEVELS[ai].label + '</span>';
+        }
+
         return '<div class="lb-class-card" style="cursor:default">' +
           '<div class="lb-class-header">' +
-          '<span class="lb-class-name">' + cls + (done?' ✅':'') + '</span>' +
+          '<span class="lb-class-name">' + cls + '</span>' +
           '<span class="lb-class-score">' + total + '/' + target + ' 題 ' + pct + '%</span>' +
           '</div>' +
+          (badges ? '<div style="margin-bottom:5px">' + badges + '</div>' : '') +
           '<div class="lb-prog-bar"><div class="lb-prog-fill ' + (done?'done':'') + '" style="width:' + pct + '%"></div></div>' +
-          '</div>';
+          '<div style="font-size:11px;color:var(--text2);margin-top:3px">' +
+          (allDone ? '🎉 全部達成！' : (done ? '✅ ' + LEVELS[showLevelIdx].label + ' 達成！' : '目標：' + LEVELS[showLevelIdx].label + ' 還差 ' + (target-total) + ' 題')) +
+          '</div></div>';
       }).join('');
-    }
-  });
-  }, 1500);
+    });
+  }, 2500);
   var medals = ['🥇','🥈','🥉','🏅'];
   var ranked = ps.map(function(p) {
     return {
@@ -1552,7 +1589,7 @@ function showResults(d, ps) {
   document.getElementById('res-list').innerHTML = ranked.map(function(p, i) {
     return '<div class="result-row ' + (i === 0 ? 'gold' : '') + '">' +
       '<div class="medal">' + (medals[i] || (i+1)) + '</div>' +
-      '<div class="rname">' + p.name + '</div>' +
+      '<div class="rname">' + escHtml(p.name) + '</div>' +
       '<div class="rstat">平均 <strong>' + p.avgWpm + '</strong> 字/分 &nbsp; 準確率 <strong>' + p.avgAcc + '%</strong></div>' +
       '</div>';
   }).join('');
