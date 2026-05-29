@@ -574,7 +574,7 @@ const db = firebase.database();
 const CLASSES = ['商一甲','商一乙','應一甲','貿一甲'];
 // 四個等級目標（達標後才解鎖下一級）
 const LEVELS = [
-  { label: '⭐ 達標',      reward: '總成績 +1',      targets: { '商一甲': 58,  '商一乙': 52,  '應一甲': 28,  '貿一甲': 20  } },
+  { label: '⭐ 達標',      reward: '總成績 +1',      targets: { '商一甲': 58,  '商一乙': 65,  '應一甲': 28,  '貿一甲': 25  } },
   { label: '⭐⭐ 良好',    reward: '總成績 +2',      targets: { '商一甲': 81,  '商一乙': 91,  '應一甲': 39,  '貿一甲': 35  } },
   { label: '⭐⭐⭐ 優秀',  reward: '總成績 +3',      targets: { '商一甲': 115, '商一乙': 130, '應一甲': 55,  '貿一甲': 50  } },
   { label: '🎉 傳說',      reward: '總成績 +3 + 點心', targets: { '商一甲': 115, '商一乙': 130, '應一甲': 55,  '貿一甲': 50  } },
@@ -949,7 +949,7 @@ function rndCode() {
 }
 function go(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
-function calcWpm(chars, t0) { const m = (Date.now() - t0) / 60000; return m > 0 ? Math.round(chars / m / 2) : 0; }
+function calcWpm(chars, t0) { const m = (Date.now() - t0) / 60000; return m > 0 ? Math.round(chars / m) : 0; }
 // 同時更新多個同功能元素（手機版 + 電腦版）
 function syncEl(ids, prop, val, isStyle) {
   ids.forEach(id => { const el = document.getElementById(id); if (!el) return; isStyle ? el.style[prop] = val : el[prop] = val; });
@@ -1204,8 +1204,8 @@ function onRoom(d) {
     } else {
       // 更新其他人的進度條
       updateBars(ps);
-      // 房主檢查是否所有人都打完所有題目
-      if (d.host === myUid) checkAllDone(d, ps);
+      // 每個人都檢查是否全員打完（advancing 防止重複結算）
+      checkAllDone(d, ps);
     }
 
   } else if (d.status === 'results') {
@@ -1504,9 +1504,16 @@ function finishQ(wpm, acc) {
       // 所有題目打完，顯示等待結算
       syncEl(['g-wait','g-wait-d'], 'display', 'block', true);
       syncEl(['g-leave','g-leave-d'], 'display', 'block', true);
-      // 檢查是否全員都打完了
-      var ps = d.players ? Object.values(d.players) : [];
-      if (d.host === myUid) checkAllDone(d, ps);
+      // 更新 Firebase done 為最後一題
+      db.ref('rooms/' + roomId + '/players/' + myUid).update({ done: d.qcount });
+      // 每個人打完都觸發檢查，不只房主（因為個人進度模式下房主可能先打完）
+      db.ref('rooms/' + roomId).once('value', function(latestSnap) {
+        var latest = latestSnap.val();
+        if (!latest) return;
+        var latestPs = latest.players ? Object.values(latest.players) : [];
+        // 任何人都可以觸發結算，但用 advancing 防止重複
+        checkAllDone(latest, latestPs);
+      });
     } else {
       // 還有下一題，1.5 秒後自己直接進下一題
       syncEl(['g-fin','g-fin-d'], 'textContent', finText + '　下一題準備中...');
@@ -1524,6 +1531,8 @@ function finishQ(wpm, acc) {
           typed = '';
           doneThisQ = false;
           startTime = Date.now();
+          // 更新 Firebase done 欄位，讓其他人知道我已進入第幾題
+          db.ref('rooms/' + roomId + '/players/' + myUid).update({ done: nextQ });
           syncEl(['g-fin','g-fin-d'], 'display', 'none', true);
           syncEl(['g-wait','g-wait-d'], 'display', 'none', true);
           syncEl(['g-leave','g-leave-d'], 'display', 'none', true);
@@ -1665,16 +1674,11 @@ async function leaveEarly() {
     await db.ref('rooms/' + roomId).update({ host: next.uid, advancing: false });
   }
 
-  // 離開後立刻檢查剩餘玩家是否都完成了（觸發結算）
-  var allDone = remaining.every(function(p) { return (p.done || 0) > curQ; });
-  if (allDone && d.status === 'playing') {
-    var nextQ = curQ + 1;
-    if (nextQ >= d.qcount) {
+  // 離開後立刻檢查剩餘玩家是否都打完所有題目（個人進度模式）
+  if (d.status === 'playing') {
+    var allDone = remaining.every(function(p) { return (p.done || 0) >= d.qcount; });
+    if (allDone) {
       await db.ref('rooms/' + roomId).update({ status: 'results' });
-    } else {
-      var updates = { status: 'countdown', cdStart: Date.now(), q: nextQ, roundStart: 0 };
-      remaining.forEach(function(p) { updates['players/' + p.uid + '/prog'] = 0; });
-      await db.ref('rooms/' + roomId).update(updates);
     }
   }
 
