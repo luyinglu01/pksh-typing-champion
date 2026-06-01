@@ -1204,7 +1204,7 @@ function onRoom(d) {
     } else {
       // 更新其他人的進度條
       updateBars(ps);
-      // 每個人都檢查是否全員打完（advancing 防止重複結算）
+      // 每次 Firebase 更新都檢查結算條件
       checkAllDone(d, ps);
     }
 
@@ -1475,11 +1475,8 @@ function finishQ(wpm, acc) {
     var timeStr = now.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
     var passageTitle = curText.slice(0, 15).replace(/\n/g, '');
     db.ref('users/' + currentUser.studentId + '/history').push({
-      time: timeStr,
-      timestamp: Date.now(),
-      passage: passageTitle,
-      wpm: wpm,
-      acc: acc
+      time: timeStr, timestamp: Date.now(),
+      passage: passageTitle, wpm: wpm, acc: acc
     });
   }
 
@@ -1487,42 +1484,39 @@ function finishQ(wpm, acc) {
   syncEl(['g-fin','g-fin-d'], 'textContent', finText);
   syncEl(['g-fin','g-fin-d'], 'display', 'block', true);
 
-  // 等玩家資料寫入完成後再讀房間狀態，確保時序正確
-  db.ref('rooms/' + roomId + '/players/' + myUid).update({
-    prog: 100,
-    wpm: wpm,
-    done: curQ + 1,
-    totalWpm: myTotalWpm,
-    totalAcc: myTotalAcc,
-    rounds: myRounds
-  }, function() {
-    // callback：確保寫入完成後才讀房間
-    db.ref('rooms/' + roomId).once('value', function(snap) {
+  // 計算下一題索引（在非同步操作前先記錄）
+  var nextQ = curQ + 1;
+
+  // 先讀房間資料取得 qcount
+  db.ref('rooms/' + roomId).once('value', function(snap) {
     var d = snap.val();
     if (!d) return;
-    var nextQ = curQ + 1;
+
     if (nextQ >= d.qcount) {
-      // 所有題目打完，顯示等待結算
+      // ── 最後一題打完 ──
       syncEl(['g-wait','g-wait-d'], 'display', 'block', true);
       syncEl(['g-leave','g-leave-d'], 'display', 'block', true);
-      // 先等 done 寫入 Firebase 後，再讀取最新資料觸發結算
-      db.ref('rooms/' + roomId + '/players/' + myUid).update({ done: d.qcount }, function() {
-        // callback 確保 done 寫入完成後才讀取
-        db.ref('rooms/' + roomId).once('value', function(latestSnap) {
-          var latest = latestSnap.val();
-          if (!latest) return;
-          var latestPs = latest.players ? Object.values(latest.players) : [];
-          checkAllDone(latest, latestPs);
-        });
+
+      // 寫入最終玩家資料，done = qcount 表示全部完成
+      // onRoom 監聽到 players 變化後會呼叫 checkAllDone，由它觸發結算
+      db.ref('rooms/' + roomId + '/players/' + myUid).update({
+        prog: 100, wpm: wpm, done: d.qcount,
+        totalWpm: myTotalWpm, totalAcc: myTotalAcc, rounds: myRounds
       });
+      // 同時把自己的 done 記入本地，讓 onRoom 下次觸發時計算正確
+
     } else {
-      // 還有下一題，1.5 秒後自己直接進下一題
+      // ── 還有下一題，1.5 秒後直接進下一題 ──
       syncEl(['g-fin','g-fin-d'], 'textContent', finText + '　下一題準備中...');
+
+      // 寫入目前題目成績
+      db.ref('rooms/' + roomId + '/players/' + myUid).update({
+        prog: 100, wpm: wpm, done: nextQ,
+        totalWpm: myTotalWpm, totalAcc: myTotalAcc, rounds: myRounds
+      });
+
       setTimeout(function() {
         if (!roomId) return;
-        // 重置自己的進度條
-        db.ref('rooms/' + roomId + '/players/' + myUid).update({ prog: 0 });
-        // 直接進下一題（不透過 Firebase countdown，只更新本人畫面）
         db.ref('rooms/' + roomId).once('value', function(s2) {
           var d2 = s2.val();
           if (!d2) return;
@@ -1532,8 +1526,7 @@ function finishQ(wpm, acc) {
           typed = '';
           doneThisQ = false;
           startTime = Date.now();
-          // 更新 Firebase done 欄位，讓其他人知道我已進入第幾題
-          db.ref('rooms/' + roomId + '/players/' + myUid).update({ done: nextQ });
+          db.ref('rooms/' + roomId + '/players/' + myUid).update({ prog: 0 });
           syncEl(['g-fin','g-fin-d'], 'display', 'none', true);
           syncEl(['g-wait','g-wait-d'], 'display', 'none', true);
           syncEl(['g-leave','g-leave-d'], 'display', 'none', true);
@@ -1557,28 +1550,22 @@ function finishQ(wpm, acc) {
         });
       }, 1500);
     }
-    });
   });
 }
 
-// ── 全員完成檢查（所有人都打完所有題才結算）──
+// ── 全員完成檢查（onRoom 觸發，作為備援確保結算）──
 var advancing = false;
 var lastProgUpdate = 0;
 function checkAllDone(d, ps) {
-  if (advancing) return;
   if (d.status !== 'playing') return;
   if (ps.length === 0) return;
-
-  // 所有人都打完所有題目才進結算
   var allDone = ps.every(function(p) { return (p.done || 0) >= d.qcount; });
   if (!allDone) return;
-
-  advancing = true;
-  db.ref('rooms/' + roomId).update({ advancing: true });
-
-  setTimeout(function() {
-    db.ref('rooms/' + roomId).update({ status: 'results', advancing: false });
-  }, 1500);
+  // 用 transaction 安全觸發，防止重複
+  db.ref('rooms/' + roomId + '/status').transaction(function(status) {
+    if (status === 'playing') return 'results';
+    return;
+  });
 }
 
 // ── 結算 ──
