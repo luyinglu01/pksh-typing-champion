@@ -46,8 +46,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; b
 .wrap { max-width: 680px; margin: 0 auto; padding: 1.5rem 1rem; padding-bottom: env(safe-area-inset-bottom, 1rem); }
 h1 { font-size: 20px; font-weight: 500; margin-bottom: 6px; }
 h2 { font-size: 17px; font-weight: 500; margin-bottom: 12px; }
-.sub { font-size: 13px; color: var(--text2); margin-bottom: 1.25rem; }
-.card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 12px; }
+.sub { font-size: 13px; color: var(--text2); margin-bottom: 1.rem; }
+.card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.rem; margin-bottom: 12px; }
 input[type=text], input[type=password], select { width: 100%; padding: 9px 12px; border: 0.5px solid var(--border); border-radius: var(--radius); font-size: 16px; background: var(--bg) !important; color: var(--text) !important; outline: none; transition: border-color .15s; -webkit-appearance: none; appearance: none; }
 input:focus, select:focus { border-color: var(--purple); box-shadow: 0 0 0 3px var(--purple-light); }
 input[type=password]::-webkit-credentials-auto-fill-button { visibility: hidden; }
@@ -574,7 +574,7 @@ const db = firebase.database();
 const CLASSES = ['商一甲','商一乙','應一甲','貿一甲'];
 // 四個等級目標（達標後才解鎖下一級）
 const LEVELS = [
-  { label: '⭐ 達標',      reward: '總成績 +1',      targets: { '商一甲': 58,  '商一乙': 65,  '應一甲': 28,  '貿一甲': 25  } },
+  { label: '⭐ 達標',      reward: '總成績 +1',      targets: { '商一甲': 58,  '商一乙': 52,  '應一甲': 28,  '貿一甲': 20  } },
   { label: '⭐⭐ 良好',    reward: '總成績 +2',      targets: { '商一甲': 81,  '商一乙': 91,  '應一甲': 39,  '貿一甲': 35  } },
   { label: '⭐⭐⭐ 優秀',  reward: '總成績 +3',      targets: { '商一甲': 115, '商一乙': 130, '應一甲': 55,  '貿一甲': 50  } },
   { label: '🎉 傳說',      reward: '總成績 +3 + 點心', targets: { '商一甲': 115, '商一乙': 130, '應一甲': 55,  '貿一甲': 50  } },
