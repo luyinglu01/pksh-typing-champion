@@ -46,8 +46,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; b
 .wrap { max-width: 680px; margin: 0 auto; padding: 1.5rem 1rem; padding-bottom: env(safe-area-inset-bottom, 1rem); }
 h1 { font-size: 20px; font-weight: 500; margin-bottom: 6px; }
 h2 { font-size: 17px; font-weight: 500; margin-bottom: 12px; }
-.sub { font-size: 13px; color: var(--text2); margin-bottom: 1.rem; }
-.card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.rem; margin-bottom: 12px; }
+.sub { font-size: 13px; color: var(--text2); margin-bottom: 1.25rem; }
+.card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 12px; }
 input[type=text], input[type=password], select { width: 100%; padding: 9px 12px; border: 0.5px solid var(--border); border-radius: var(--radius); font-size: 16px; background: var(--bg) !important; color: var(--text) !important; outline: none; transition: border-color .15s; -webkit-appearance: none; appearance: none; }
 input:focus, select:focus { border-color: var(--purple); box-shadow: 0 0 0 3px var(--purple-light); }
 input[type=password]::-webkit-credentials-auto-fill-button { visibility: hidden; }
@@ -234,20 +234,20 @@ textarea:disabled { opacity: 0.6; }
 .form-label { font-size: 13px; color: var(--text2); margin-bottom: 5px; display: block; }
 
 /* ── 排行榜 ── */
-.lb-class-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 8px; cursor: pointer; transition: border-color .15s; }
-.lb-class-card:hover { border-color: var(--purple); }
+.lb-class-card { background: var(--bg2); border: none; border-radius: var(--radius); padding: 14px 16px; margin-bottom: 8px; cursor: pointer; transition: background .15s; }
+.lb-class-card:hover { background: var(--bg3); }
 .lb-class-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .lb-class-name { font-weight: 500; font-size: 14px; }
 .lb-class-score { font-size: 13px; color: var(--text2); }
 .lb-prog-bar { height: 7px; background: var(--bg3); border-radius: 4px; overflow: hidden; margin-bottom: 4px; }
 .lb-prog-fill { height: 100%; border-radius: 4px; background: var(--purple); transition: width .5s ease; }
 .lb-prog-fill.done { background: var(--green); }
-.lb-student-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 0.5px solid var(--border); font-size: 13px; }
+.lb-student-row { display: flex; align-items: center; gap: 12px; padding: 10px 4px; border-bottom: 0.5px solid var(--border); font-size: 13px; }
 .lb-student-row:last-child { border-bottom: none; }
-.lb-rank { width: 28px; text-align: center; font-size: 15px; }
-.lb-name { flex: 1; }
-.lb-score { font-weight: 500; color: var(--purple); }
-.lb-pct { font-size: 11px; color: var(--text2); width: 36px; text-align: right; }
+.lb-rank { width: 32px; text-align: center; font-size: 15px; flex-shrink: 0; }
+.lb-name { flex: 1; padding: 0 4px; }
+.lb-score { font-weight: 500; color: var(--purple); white-space: nowrap; }
+.lb-pct { font-size: 11px; color: var(--text2); width: 40px; text-align: right; }
 .user-info-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--purple-light); border-radius: var(--radius); margin-bottom: 12px; font-size: 13px; }
 .user-info-bar strong { color: var(--purple-dark); }
 .q-mode-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 0.5px solid var(--border); }
@@ -369,8 +369,8 @@ textarea:disabled { opacity: 0.6; }
     <div id="lb-overview"></div>
   </div>
   <!-- 個人排行（展開後獨立顯示，不擠壓其他內容） -->
-  <div id="lb-detail" class="card" style="display:none">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+  <div id="lb-detail" class="card" style="display:none;padding:1.25rem 1.5rem">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <div style="font-size:13px;font-weight:500" id="lb-detail-title"></div>
       <button onclick="closeLbDetail()" style="font-size:12px;color:var(--text2);padding:4px 8px">收起 ▲</button>
     </div>
@@ -574,7 +574,7 @@ const db = firebase.database();
 const CLASSES = ['商一甲','商一乙','應一甲','貿一甲'];
 // 四個等級目標（達標後才解鎖下一級）
 const LEVELS = [
-  { label: '⭐ 達標',      reward: '總成績 +1',      targets: { '商一甲': 58,  '商一乙': 52,  '應一甲': 28,  '貿一甲': 20  } },
+  { label: '⭐ 達標',      reward: '總成績 +1',      targets: { '商一甲': 58,  '商一乙': 65,  '應一甲': 28,  '貿一甲': 25  } },
   { label: '⭐⭐ 良好',    reward: '總成績 +2',      targets: { '商一甲': 81,  '商一乙': 91,  '應一甲': 39,  '貿一甲': 35  } },
   { label: '⭐⭐⭐ 優秀',  reward: '總成績 +3',      targets: { '商一甲': 115, '商一乙': 130, '應一甲': 55,  '貿一甲': 50  } },
   { label: '🎉 傳說',      reward: '總成績 +3 + 點心', targets: { '商一甲': 115, '商一乙': 130, '應一甲': 55,  '貿一甲': 50  } },
