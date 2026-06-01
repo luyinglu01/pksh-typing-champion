@@ -574,7 +574,7 @@ const db = firebase.database();
 const CLASSES = ['商一甲','商一乙','應一甲','貿一甲'];
 // 四個等級目標（達標後才解鎖下一級）
 const LEVELS = [
-  { label: '⭐ 達標',      reward: '總成績 +1',      targets: { '商一甲': 58,  '商一乙': 52,  '應一甲': 28,  '貿一甲': 20  } },
+  { label: '⭐ 達標',      reward: '總成績 +1',      targets: { '商一甲': 58,  '商一乙': 65,  '應一甲': 28,  '貿一甲': 25  } },
   { label: '⭐⭐ 良好',    reward: '總成績 +2',      targets: { '商一甲': 81,  '商一乙': 91,  '應一甲': 39,  '貿一甲': 35  } },
   { label: '⭐⭐⭐ 優秀',  reward: '總成績 +3',      targets: { '商一甲': 115, '商一乙': 130, '應一甲': 55,  '貿一甲': 50  } },
   { label: '🎉 傳說',      reward: '總成績 +3 + 點心', targets: { '商一甲': 115, '商一乙': 130, '應一甲': 55,  '貿一甲': 50  } },
@@ -1466,14 +1466,6 @@ function finishQ(wpm, acc) {
   myTotalAcc += acc;
   myRounds += 1;
 
-  db.ref('rooms/' + roomId + '/players/' + myUid).update({
-    prog: 100,
-    wpm: wpm,
-    done: curQ + 1,
-    totalWpm: myTotalWpm,
-    totalAcc: myTotalAcc,
-    rounds: myRounds
-  });
   // 完成一題加一分到個人積分（訪客不累積）
   if (!currentUser || !currentUser.isGuest) addWeekScore();
 
@@ -1495,8 +1487,17 @@ function finishQ(wpm, acc) {
   syncEl(['g-fin','g-fin-d'], 'textContent', finText);
   syncEl(['g-fin','g-fin-d'], 'display', 'block', true);
 
-  // 多題模式：自己打完就直接進下一題，不等其他人
-  db.ref('rooms/' + roomId).once('value', function(snap) {
+  // 等玩家資料寫入完成後再讀房間狀態，確保時序正確
+  db.ref('rooms/' + roomId + '/players/' + myUid).update({
+    prog: 100,
+    wpm: wpm,
+    done: curQ + 1,
+    totalWpm: myTotalWpm,
+    totalAcc: myTotalAcc,
+    rounds: myRounds
+  }, function() {
+    // callback：確保寫入完成後才讀房間
+    db.ref('rooms/' + roomId).once('value', function(snap) {
     var d = snap.val();
     if (!d) return;
     var nextQ = curQ + 1;
@@ -1504,15 +1505,15 @@ function finishQ(wpm, acc) {
       // 所有題目打完，顯示等待結算
       syncEl(['g-wait','g-wait-d'], 'display', 'block', true);
       syncEl(['g-leave','g-leave-d'], 'display', 'block', true);
-      // 更新 Firebase done 為最後一題
-      db.ref('rooms/' + roomId + '/players/' + myUid).update({ done: d.qcount });
-      // 每個人打完都觸發檢查，不只房主（因為個人進度模式下房主可能先打完）
-      db.ref('rooms/' + roomId).once('value', function(latestSnap) {
-        var latest = latestSnap.val();
-        if (!latest) return;
-        var latestPs = latest.players ? Object.values(latest.players) : [];
-        // 任何人都可以觸發結算，但用 advancing 防止重複
-        checkAllDone(latest, latestPs);
+      // 先等 done 寫入 Firebase 後，再讀取最新資料觸發結算
+      db.ref('rooms/' + roomId + '/players/' + myUid).update({ done: d.qcount }, function() {
+        // callback 確保 done 寫入完成後才讀取
+        db.ref('rooms/' + roomId).once('value', function(latestSnap) {
+          var latest = latestSnap.val();
+          if (!latest) return;
+          var latestPs = latest.players ? Object.values(latest.players) : [];
+          checkAllDone(latest, latestPs);
+        });
       });
     } else {
       // 還有下一題，1.5 秒後自己直接進下一題
@@ -1556,6 +1557,7 @@ function finishQ(wpm, acc) {
         });
       }, 1500);
     }
+    });
   });
 }
 
