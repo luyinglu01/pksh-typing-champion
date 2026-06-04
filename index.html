@@ -1904,6 +1904,28 @@ function showResults(d, ps) {
 async function leaveEarly() {
   if (!roomId) { backMenu(); return; }
 
+  // 還券：如果雙倍券啟動中但還沒打完，把券還回去
+  if (doubleActive && currentUser && currentUser.studentId) {
+    doubleActive = false;
+    var today = new Date().toLocaleDateString('zh-TW', {
+      timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).replace(/\//g, '-');
+    db.ref('users/' + currentUser.studentId + '/doubleTicket').set({ date: today, count: 1 });
+  }
+  // 還券：如果加速券已使用但這題還沒完成，把券還回去
+  if (currentUser && currentUser.studentId && !doneThisQ) {
+    var today2 = new Date().toLocaleDateString('zh-TW', {
+      timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).replace(/\//g, '-');
+    db.ref('users/' + currentUser.studentId + '/boostTicket').once('value', function(snap) {
+      var data = snap.val() || {};
+      // 加速券被用掉後 count 變 0，還回去設為 1
+      if (data.date === today2 && (data.count || 0) === 0) {
+        db.ref('users/' + currentUser.studentId + '/boostTicket').set({ date: today2, count: 1 });
+      }
+    });
+  }
+
   var snap = await db.ref('rooms/' + roomId).once('value');
   var d = snap.val();
   if (!d) { cleanup(); backMenu(); return; }
