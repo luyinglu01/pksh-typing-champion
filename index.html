@@ -383,6 +383,18 @@ textarea:disabled { opacity: 0.6; }
     <input type="text" id="inp-nickname" placeholder="輸入暱稱（預設為真實姓名）" maxlength="10" oninput="if(currentUser && currentUser.studentId) sessionStorage.setItem('nickname_' + currentUser.studentId, this.value)">
     <div style="font-size:11px;color:var(--text2);margin-top:5px">暱稱只在遊戲中顯示，老師管理頁面仍顯示真實姓名</div>
   </div>
+
+  <!-- 已打過的題目 -->
+  <div class="card" id="my-passages-card" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:14px;font-weight:500">📝 我打過的題目</div>
+      <div style="display:flex;gap:6px">
+        <button id="tab-today" onclick="switchPassageTab('today')" style="font-size:12px;padding:4px 10px;border-radius:20px;background:var(--purple);color:#fff;border-color:var(--purple)">今天</button>
+        <button id="tab-week" onclick="switchPassageTab('week')" style="font-size:12px;padding:4px 10px;border-radius:20px;background:transparent;color:var(--text2)">本週</button>
+      </div>
+    </div>
+    <div id="my-passages-list"></div>
+  </div>
   <div class="card">
     <div style="font-size:14px;font-weight:500;margin-bottom:10px">房間設定</div>
     <div class="q-mode-row">
@@ -580,10 +592,10 @@ const db = firebase.database();
 const CLASSES = ['商一甲','商一乙','應一甲','貿一甲'];
 // 四個等級目標（達標後才解鎖下一級）
 const LEVELS = [
-  { label: '⭐ 達標',      reward: '總成績 +1',      targets: { '商一甲': 58,  '商一乙': 52,  '應一甲': 28,  '貿一甲': 20  } },
-  { label: '⭐⭐ 良好',    reward: '總成績 +2',      targets: { '商一甲': 81,  '商一乙': 79,  '應一甲': 39,  '貿一甲': 35  } },
-  { label: '⭐⭐⭐ 優秀',  reward: '總成績 +3',      targets: { '商一甲': 115, '商一乙': 115, '應一甲': 55,  '貿一甲': 50  } },
-  { label: '🎉 傳說',      reward: '總成績 +3 + 點心', targets: { '商一甲': 115, '商一乙': 115, '應一甲': 55,  '貿一甲': 50  } },
+  { label: '⭐ 達標',      reward: '總成績 +1',      targets: { '商一甲': 58,  '商一乙': 65,  '應一甲': 28,  '貿一甲': 25  } },
+  { label: '⭐⭐ 良好',    reward: '總成績 +2',      targets: { '商一甲': 81,  '商一乙': 91,  '應一甲': 39,  '貿一甲': 35  } },
+  { label: '⭐⭐⭐ 優秀',  reward: '總成績 +3',      targets: { '商一甲': 115, '商一乙': 130, '應一甲': 55,  '貿一甲': 50  } },
+  { label: '🎉 傳說',      reward: '總成績 +3 + 點心', targets: { '商一甲': 115, '商一乙': 130, '應一甲': 55,  '貿一甲': 50  } },
 ];
 // 向下相容
 const TARGETS = { '商一甲': 58, '商一乙': 65, '應一甲': 28, '貿一甲': 25 };
@@ -670,6 +682,7 @@ function enterMenu() {
   go('s-menu');
   updateUserBar();
   loadLeaderboard();
+  loadMyPassages();
   // 預填暱稱：優先用 sessionStorage 儲存的暱稱，否則用真實姓名
   var nickInp = document.getElementById('inp-nickname');
   if (nickInp && currentUser && !currentUser.isGuest) {
@@ -919,6 +932,8 @@ function _doAddWeekScore() {
           currentUser.boostCount = 1;
           updateBoostUI();
           toast('🎉 獲得加速券 x1！打字中途可使用');
+        // 更新主選單的打題紀錄（如果在主選單）
+        if (document.getElementById('my-passages-card')) loadMyPassages();
         }
       });
     });
@@ -1520,13 +1535,36 @@ function finishQ(wpm, acc) {
       syncEl(['g-wait','g-wait-d'], 'display', 'block', true);
       syncEl(['g-leave','g-leave-d'], 'display', 'block', true);
 
-      // 寫入最終玩家資料，done = qcount 表示全部完成
-      // onRoom 監聽到 players 變化後會呼叫 checkAllDone，由它觸發結算
+      toast('📝 寫入成績中...');
       db.ref('rooms/' + roomId + '/players/' + myUid).update({
         prog: 100, wpm: wpm, done: d.qcount,
         totalWpm: myTotalWpm, totalAcc: myTotalAcc, rounds: myRounds
+      }, function(err) {
+        if (err) { toast('❌ 寫入失敗：' + err.message); return; }
+        toast('✅ 寫入完成，檢查結算中...');
+        db.ref('rooms/' + roomId + '/players').once('value', function(psSnap) {
+          var latestPs = psSnap.val() ? Object.values(psSnap.val()) : [];
+          var doneCount = latestPs.filter(function(p) { return (p.done||0) >= d.qcount; }).length;
+          toast('👥 完成人數：' + doneCount + '/' + latestPs.length + '（需要全部完成）');
+          var allDone = latestPs.length > 0 && latestPs.every(function(p) {
+            return (p.done || 0) >= d.qcount;
+          });
+          if (allDone) {
+            toast('🎯 觸發結算...');
+            db.ref('rooms/' + roomId + '/status').transaction(function(status) {
+              toast('🔄 transaction 執行，當前 status: ' + status);
+              if (status === null || status === 'playing') return 'results';
+              return;
+            }, function(err2, committed) {
+              if (err2) toast('❌ transaction 錯誤：' + err2.message);
+              else if (committed) toast('🎉 結算已觸發！');
+              else toast('⚠️ transaction 中止（status 已是 ' + 'results）');
+            });
+          } else {
+            toast('⏳ 等待其他人完成...');
+          }
+        });
       });
-      // 同時把自己的 done 記入本地，讓 onRoom 下次觸發時計算正確
 
     } else {
       // ── 還有下一題，1.5 秒後直接進下一題 ──
@@ -1573,6 +1611,86 @@ function finishQ(wpm, acc) {
         });
       }, 1500);
     }
+  });
+}
+
+// ── 已打過的題目 ──
+var passageTabMode = 'today';
+
+function switchPassageTab(mode) {
+  passageTabMode = mode;
+  document.getElementById('tab-today').style.background = mode === 'today' ? 'var(--purple)' : 'transparent';
+  document.getElementById('tab-today').style.color = mode === 'today' ? '#fff' : 'var(--text2)';
+  document.getElementById('tab-today').style.borderColor = mode === 'today' ? 'var(--purple)' : 'var(--border)';
+  document.getElementById('tab-week').style.background = mode === 'week' ? 'var(--purple)' : 'transparent';
+  document.getElementById('tab-week').style.color = mode === 'week' ? '#fff' : 'var(--text2)';
+  document.getElementById('tab-week').style.borderColor = mode === 'week' ? 'var(--purple)' : 'var(--border)';
+  loadMyPassages();
+}
+
+function loadMyPassages() {
+  if (!currentUser || currentUser.isGuest) return;
+  var card = document.getElementById('my-passages-card');
+  var list = document.getElementById('my-passages-list');
+  if (!card || !list) return;
+  card.style.display = 'block';
+
+  db.ref('users/' + currentUser.studentId + '/dailyPassages').once('value', function(snap) {
+    var data = snap.val() || {};
+    var today = new Date().toLocaleDateString('zh-TW', {
+      timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).replace(/\//g, '-');
+
+    // 收集要顯示的日期
+    var days = Object.keys(data).sort().reverse();
+    if (passageTabMode === 'today') {
+      days = days.filter(function(d) { return d === today; });
+    }
+
+    if (days.length === 0) {
+      list.innerHTML = '<div style="font-size:13px;color:var(--text2);padding:8px 0">' +
+        (passageTabMode === 'today' ? '今天還沒打過任何題目！' : '本週還沒打過任何題目！') +
+        '</div>';
+      return;
+    }
+
+    // 所有 15 題的標題（前 12 字）
+    var PASSAGE_TITLES = PASSAGES.map(function(p, i) {
+      return '題組' + (i+1) + '：' + p.replace(/
+/g, '').slice(0, 12) + '…';
+    });
+
+    var html = days.map(function(day) {
+      var passages = data[day];
+      var keys = Object.keys(passages);
+      var isToday = day === today;
+      return '<div style="margin-bottom:10px">' +
+        '<div style="font-size:12px;color:var(--text2);margin-bottom:6px">' +
+        (isToday ? '📅 今天' : day) + '　共 ' + keys.length + ' 篇</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:5px">' +
+        keys.map(function(k) {
+          var title = typeof passages[k] === 'string' ? passages[k] + '…' : '已完成';
+          return '<span style="background:var(--purple-light);color:var(--purple-dark);' +
+            'padding:4px 10px;border-radius:20px;font-size:12px">✓ ' + escHtml(title) + '</span>';
+        }).join('') +
+        '</div></div>';
+    }).join('');
+
+    // 未打過的題目（今天模式才顯示）
+    if (passageTabMode === 'today') {
+      var todayData = data[today] || {};
+      var doneCount = Object.keys(todayData).length;
+      var remaining = 15 - doneCount;
+      if (remaining > 0) {
+        html += '<div style="font-size:12px;color:var(--text2);margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)">' +
+          '還有 <strong style="color:var(--purple)">' + remaining + '</strong> 篇今天可以打 💪</div>';
+      } else {
+        html += '<div style="font-size:12px;color:var(--green);margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)">' +
+          '🎉 今天 15 篇全部打完了！</div>';
+      }
+    }
+
+    list.innerHTML = html;
   });
 }
 
@@ -1645,9 +1763,10 @@ function checkAllDone(d, ps) {
   var allDone = ps.every(function(p) { return (p.done || 0) >= d.qcount; });
   if (!allDone) return;
   // 用 transaction 安全觸發，防止重複
+  // 注意：status 可能是 null（Firebase 初始讀取），需處理
   db.ref('rooms/' + roomId + '/status').transaction(function(status) {
-    if (status === 'playing') return 'results';
-    return;
+    if (status === null || status === 'playing') return 'results';
+    return; // 已經是 results 或其他狀態，不改
   });
 }
 
