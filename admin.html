@@ -562,7 +562,8 @@ async function doReset() {
     var s = data[id];
     if (s.class === targetCls) {
       updates['users/' + id + '/weekScore'] = 0;
-      // dailyPassages 和 history 保留，長期累積不清除
+      updates['users/' + id + '/dailyPassages'] = null; // 清除每日打題記錄，讓同學可以重新計分
+      // history 保留，長期成績紀錄不清除
     }
   });
   await db.ref().update(updates);
