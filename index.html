@@ -597,10 +597,10 @@ const db = firebase.database();
 const CLASSES = ['商一甲','商一乙','應一甲','貿一甲'];
 // 四個等級目標（達標後才解鎖下一級）
 const LEVELS = [
-  { label: '⭐ 達標',      reward: '總成績 +1',      targets: { '商一甲': 58,  '商一乙': 52,  '應一甲': 28,  '貿一甲': 25  } },
+  { label: '⭐ 達標',      reward: '總成績 +1',      targets: { '商一甲': 58,  '商一乙': 52,  '應一甲': 28,  '貿一甲': 20  } },
   { label: '⭐⭐ 良好',    reward: '總成績 +2',      targets: { '商一甲': 81,  '商一乙': 79,  '應一甲': 39,  '貿一甲': 35  } },
   { label: '⭐⭐⭐ 優秀',  reward: '總成績 +3',      targets: { '商一甲': 115, '商一乙': 115, '應一甲': 55,  '貿一甲': 50  } },
-  { label: '🎉 傳說',      reward: '總成績 +3 + 點心', targets: { '商一甲': 116, '商一乙': 116, '應一甲': 56,  '貿一甲': 51  } },
+  { label: '🎉 傳說',      reward: '總成績 +3 + 點心', targets: { '商一甲': 115, '商一乙': 116, '應一甲': 55,  '貿一甲': 51  } },
 ];
 // 向下相容
 const TARGETS = { '商一甲': 58, '商一乙': 52, '應一甲': 28, '貿一甲': 20 };
@@ -947,15 +947,11 @@ function _doAddWeekScore() {
         // 更新主選單的打題紀錄（如果在主選單）
         if (document.getElementById('my-passages-card')) loadMyPassages();
       });
-      // 今天累積題數達2題時發雙倍券
+      // 打完第1篇就發雙倍券（跟加速券一樣）
       var doubleRef = db.ref('users/' + currentUser.studentId + '/doubleTicket');
       doubleRef.once('value', function(ds) {
         var doubleData = ds.val() || {};
-        var todayCount = Object.keys(
-          (snap.val() && snap.val()[today]) ? snap.val()[today] : {}
-        ).length;
-        // 打完第2題（含這題）才發券，且今天還沒領過
-        if (todayCount >= 2 && doubleData.date !== today) {
+        if (doubleData.date !== today) {
           doubleRef.set({ date: today, count: 1 });
           currentUser.doubleCount = 1;
           updateDoubleUI();
