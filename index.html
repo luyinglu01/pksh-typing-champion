@@ -496,6 +496,9 @@ textarea:disabled { opacity: 0.6; }
       <div style="display:none;text-align:right;margin-top:8px" id="g-leave-d">
         <button onclick="leaveEarly()" style="font-size:13px">提前離開</button>
       </div>
+      <div id="g-boost-d" style="display:none;margin-top:8px">
+        <button onclick="useBoost()" style="font-size:13px;background:var(--purple);color:#fff;border-color:var(--purple)">⚡ 使用加速券（剩餘 <span id="g-boost-count-d">0</span> 張）</button>
+      </div>
     </div>
     <!-- 右欄：輸入 + 統計 + 進度 -->
     <div class="game-right">
@@ -532,6 +535,9 @@ textarea:disabled { opacity: 0.6; }
     <div class="wait-msg" id="g-wait" style="display:none">等待其他玩家完成<span class="dots"></span></div>
     <div style="display:none;text-align:right;margin-top:8px" id="g-leave">
       <button onclick="leaveEarly()" style="font-size:13px">提前離開</button>
+    </div>
+    <div id="g-boost" style="display:none;margin-top:8px">
+      <button onclick="useBoost()" style="font-size:13px;background:var(--purple);color:#fff;border-color:var(--purple);width:100%">⚡ 使用加速券（剩餘 <span id="g-boost-count">0</span> 張）</button>
     </div>
   </div>
 
@@ -574,10 +580,10 @@ const db = firebase.database();
 const CLASSES = ['商一甲','商一乙','應一甲','貿一甲'];
 // 四個等級目標（達標後才解鎖下一級）
 const LEVELS = [
-  { label: '⭐ 達標',      reward: '總成績 +1',      targets: { '商一甲': 58,  '商一乙': 52,  '應一甲': 28,  '貿一甲': 20  } },
-  { label: '⭐⭐ 良好',    reward: '總成績 +2',      targets: { '商一甲': 81,  '商一乙': 79,  '應一甲': 39,  '貿一甲': 35  } },
-  { label: '⭐⭐⭐ 優秀',  reward: '總成績 +3',      targets: { '商一甲': 115, '商一乙': 115, '應一甲': 55,  '貿一甲': 50  } },
-  { label: '🎉 傳說',      reward: '總成績 +3 + 點心', targets: { '商一甲': 115, '商一乙': 115, '應一甲': 55,  '貿一甲': 50  } },
+  { label: '⭐ 達標',      reward: '總成績 +1',      targets: { '商一甲': 58,  '商一乙': 65,  '應一甲': 28,  '貿一甲': 25  } },
+  { label: '⭐⭐ 良好',    reward: '總成績 +2',      targets: { '商一甲': 81,  '商一乙': 91,  '應一甲': 39,  '貿一甲': 35  } },
+  { label: '⭐⭐⭐ 優秀',  reward: '總成績 +3',      targets: { '商一甲': 115, '商一乙': 130, '應一甲': 55,  '貿一甲': 50  } },
+  { label: '🎉 傳說',      reward: '總成績 +3 + 點心', targets: { '商一甲': 115, '商一乙': 130, '應一甲': 55,  '貿一甲': 50  } },
 ];
 // 向下相容
 const TARGETS = { '商一甲': 58, '商一乙': 65, '應一甲': 28, '貿一甲': 25 };
@@ -899,6 +905,21 @@ function _doAddWeekScore() {
       currentUser.weekScore = (currentUser.weekScore || 0) + 1;
       db.ref('users/' + currentUser.studentId + '/weekScore').transaction(function(val) {
         return (val || 0) + 1;
+      });
+      // 每天打完第一篇發1張加速券
+      var today = new Date().toLocaleDateString('zh-TW', {
+        timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+      }).replace(/\//g, '-');
+      var boostRef = db.ref('users/' + currentUser.studentId + '/boostTicket');
+      boostRef.once('value', function(bs) {
+        var boostData = bs.val() || {};
+        if (boostData.date !== today) {
+          // 今天還沒領過，發1張
+          boostRef.set({ date: today, count: 1 });
+          currentUser.boostCount = 1;
+          updateBoostUI();
+          toast('🎉 獲得加速券 x1！打字中途可使用');
+        }
       });
     });
   });
@@ -1326,6 +1347,8 @@ function startQ(d, ps) {
 
   go('s-game');
   document.body.classList.add('game-active');
+  // 顯示加速券按鈕
+  updateBoostUI();
   setTimeout(function() { inp.focus(); }, 100);
 }
 
@@ -1553,6 +1576,66 @@ function finishQ(wpm, acc) {
   });
 }
 
+// ── 加速券 ──
+function updateBoostUI() {
+  if (!currentUser || currentUser.isGuest) return;
+  var today = new Date().toLocaleDateString('zh-TW', {
+    timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).replace(/\//g, '-');
+  db.ref('users/' + currentUser.studentId + '/boostTicket').once('value', function(snap) {
+    var data = snap.val() || {};
+    var count = (data.date === today) ? (data.count || 0) : 0;
+    currentUser.boostCount = count;
+    // 更新兩個版本的按鈕
+    ['g-boost', 'g-boost-d'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = (count > 0 && inputOn) ? 'block' : 'none';
+    });
+    ['g-boost-count', 'g-boost-count-d'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = count;
+    });
+  });
+}
+
+function useBoost() {
+  if (!currentUser || currentUser.isGuest) return;
+  if (!inputOn || !curText) { toast('請在打字中使用加速券'); return; }
+  var count = currentUser.boostCount || 0;
+  if (count <= 0) { toast('沒有加速券了！'); return; }
+
+  var today = new Date().toLocaleDateString('zh-TW', {
+    timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).replace(/\//g, '-');
+
+  // 扣除一張券
+  currentUser.boostCount = count - 1;
+  db.ref('users/' + currentUser.studentId + '/boostTicket').set({
+    date: today, count: count - 1
+  });
+
+  // 把輸入內容跳到文章的50%位置
+  var compareText = curText.replace(/\n/g, '');
+  var halfLen = Math.floor(compareText.length / 2);
+  var halfText = compareText.slice(0, halfLen);
+
+  // 更新兩個 textarea
+  ['g-input', 'g-input-d'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.value = halfText;
+      el.disabled = false;
+    }
+  });
+  lastTypedLen = halfLen;
+  typed = halfText;
+
+  // 觸發畫面更新
+  handleTyping(halfText);
+  updateBoostUI();
+  toast('⚡ 加速券使用！進度已跳至50%，繼續加油！');
+}
+
 // ── 全員完成檢查（onRoom 觸發，作為備援確保結算）──
 var advancing = false;
 var lastProgUpdate = 0;
@@ -1722,6 +1805,10 @@ function cleanup() {
   lbLoading = false;
   var lb = document.getElementById('lb-detail');
   if (lb) lb.style.display = 'none';
+  ['g-boost','g-boost-d'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
 }
 
 async function playAgain() {
