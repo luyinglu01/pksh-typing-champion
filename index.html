@@ -14,8 +14,7 @@ const FIREBASE_CONFIG = {
   projectId: "typing-champion-pksh",
   storageBucket: "typing-champion-pksh.firebasestorage.app",
   messagingSenderId: "488113242984",
-  appId: "1:488113242984:web:a9a78c6ee35f0cacc78cdd",
-  measurementId: "G-MK9XZ4KZEQ"
+  appId: "1:488113242984:web:a9a78c6ee35f0cacc78cdd"
 };
 </script>
 
@@ -511,6 +510,9 @@ textarea:disabled { opacity: 0.6; }
       <div id="g-boost-d" style="display:none;margin-top:8px">
         <button onclick="useBoost()" style="font-size:13px;background:var(--purple);color:#fff;border-color:var(--purple)">⚡ 使用加速券（剩餘 <span id="g-boost-count-d">0</span> 張）</button>
       </div>
+      <div id="g-double-d" style="display:none;margin-top:8px">
+        <button onclick="useDouble()" style="font-size:13px;background:#D4537E;color:#fff;border-color:#D4537E">💎 使用雙倍券（下一題 +2 分，剩餘 <span id="g-double-count-d">0</span> 張）</button>
+      </div>
     </div>
     <!-- 右欄：輸入 + 統計 + 進度 -->
     <div class="game-right">
@@ -550,6 +552,9 @@ textarea:disabled { opacity: 0.6; }
     </div>
     <div id="g-boost" style="display:none;margin-top:8px">
       <button onclick="useBoost()" style="font-size:13px;background:var(--purple);color:#fff;border-color:var(--purple);width:100%">⚡ 使用加速券（剩餘 <span id="g-boost-count">0</span> 張）</button>
+    </div>
+    <div id="g-double" style="display:none;margin-top:8px">
+      <button onclick="useDouble()" style="font-size:13px;background:#D4537E;color:#fff;border-color:#D4537E;width:100%">💎 使用雙倍券（下一題 +2 分，剩餘 <span id="g-double-count">0</span> 張）</button>
     </div>
   </div>
 
@@ -914,11 +919,17 @@ function _doAddWeekScore() {
       }
       // 存題目前10字方便老師在 admin 查看是哪篇
       var passageTitle = curText.slice(0, 10).replace(/\n/g, '');
+      var scoreAdd = doubleActive ? 2 : 1;
       recordRef.set(passageTitle);
-      currentUser.weekScore = (currentUser.weekScore || 0) + 1;
+      currentUser.weekScore = (currentUser.weekScore || 0) + scoreAdd;
       db.ref('users/' + currentUser.studentId + '/weekScore').transaction(function(val) {
-        return (val || 0) + 1;
+        return (val || 0) + scoreAdd;
       });
+      if (doubleActive) {
+        doubleActive = false;
+        updateDoubleUI();
+        toast('💎 雙倍券生效！本題 +2 分');
+      }
       // 每天打完第一篇發1張加速券
       var today = new Date().toLocaleDateString('zh-TW', {
         timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
@@ -927,13 +938,28 @@ function _doAddWeekScore() {
       boostRef.once('value', function(bs) {
         var boostData = bs.val() || {};
         if (boostData.date !== today) {
-          // 今天還沒領過，發1張
+          // 今天還沒領過加速券，發1張
           boostRef.set({ date: today, count: 1 });
           currentUser.boostCount = 1;
           updateBoostUI();
           toast('🎉 獲得加速券 x1！打字中途可使用');
+        }
         // 更新主選單的打題紀錄（如果在主選單）
         if (document.getElementById('my-passages-card')) loadMyPassages();
+      });
+      // 今天累積題數達2題時發雙倍券
+      var doubleRef = db.ref('users/' + currentUser.studentId + '/doubleTicket');
+      doubleRef.once('value', function(ds) {
+        var doubleData = ds.val() || {};
+        var todayCount = Object.keys(
+          (snap.val() && snap.val()[today]) ? snap.val()[today] : {}
+        ).length;
+        // 打完第2題（含這題）才發券，且今天還沒領過
+        if (todayCount >= 2 && doubleData.date !== today) {
+          doubleRef.set({ date: today, count: 1 });
+          currentUser.doubleCount = 1;
+          updateDoubleUI();
+          toast('💎 獲得雙倍券 x1！下一題可得 +2 分');
         }
       });
     });
@@ -1362,8 +1388,9 @@ function startQ(d, ps) {
 
   go('s-game');
   document.body.classList.add('game-active');
-  // 顯示加速券按鈕
+  // 顯示加速券和雙倍券按鈕
   updateBoostUI();
+  updateDoubleUI();
   setTimeout(function() { inp.focus(); }, 100);
 }
 
@@ -1371,6 +1398,7 @@ function startQ(d, ps) {
 // 防複製貼上 + 輸入事件（手機版 + 電腦版 textarea 都綁定）
 var lastTypedLen = 0;
 var isComposing = false; // 追蹤輸入法組字狀態
+var doubleActive = false; // 雙倍券是否啟動
 
 function setupInput(inputEl) {
   if (!inputEl) return;
@@ -1535,33 +1563,30 @@ function finishQ(wpm, acc) {
       syncEl(['g-wait','g-wait-d'], 'display', 'block', true);
       syncEl(['g-leave','g-leave-d'], 'display', 'block', true);
 
-      toast('📝 寫入成績中...');
       db.ref('rooms/' + roomId + '/players/' + myUid).update({
         prog: 100, wpm: wpm, done: d.qcount,
         totalWpm: myTotalWpm, totalAcc: myTotalAcc, rounds: myRounds
       }, function(err) {
-        if (err) { toast('❌ 寫入失敗：' + err.message); return; }
-        toast('✅ 寫入完成，檢查結算中...');
+        if (err) return;
+        // 讀取最新玩家資料判斷是否全員完成
         db.ref('rooms/' + roomId + '/players').once('value', function(psSnap) {
           var latestPs = psSnap.val() ? Object.values(psSnap.val()) : [];
-          var doneCount = latestPs.filter(function(p) { return (p.done||0) >= d.qcount; }).length;
-          toast('👥 完成人數：' + doneCount + '/' + latestPs.length + '（需要全部完成）');
           var allDone = latestPs.length > 0 && latestPs.every(function(p) {
             return (p.done || 0) >= d.qcount;
           });
           if (allDone) {
-            toast('🎯 觸發結算...');
+            // 用 transaction 確保只結算一次
             db.ref('rooms/' + roomId + '/status').transaction(function(status) {
-              toast('🔄 transaction 執行，當前 status: ' + status);
               if (status === null || status === 'playing') return 'results';
               return;
-            }, function(err2, committed) {
-              if (err2) toast('❌ transaction 錯誤：' + err2.message);
-              else if (committed) toast('🎉 結算已觸發！');
-              else toast('⚠️ transaction 中止（status 已是 ' + 'results）');
             });
-          } else {
-            toast('⏳ 等待其他人完成...');
+          }
+          // 單人模式備援：如果只有自己，直接結算不等 onRoom
+          if (latestPs.length === 1 && latestPs[0].uid === myUid) {
+            db.ref('rooms/' + roomId + '/status').transaction(function(status) {
+              if (status === null || status === 'playing') return 'results';
+              return;
+            });
           }
         });
       });
@@ -1753,6 +1778,48 @@ function useBoost() {
   toast('⚡ 加速券使用！進度已跳至50%，繼續加油！');
 }
 
+// ── 雙倍券 ──
+function updateDoubleUI() {
+  if (!currentUser || currentUser.isGuest) return;
+  var today = new Date().toLocaleDateString('zh-TW', {
+    timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).replace(/\//g, '-');
+  db.ref('users/' + currentUser.studentId + '/doubleTicket').once('value', function(snap) {
+    var data = snap.val() || {};
+    var count = (data.date === today) ? (data.count || 0) : 0;
+    currentUser.doubleCount = count;
+    ['g-double', 'g-double-d'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = (count > 0 && inputOn && !doubleActive) ? 'block' : 'none';
+    });
+    ['g-double-count', 'g-double-count-d'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = count;
+    });
+  });
+}
+
+function useDouble() {
+  if (!currentUser || currentUser.isGuest) return;
+  if (!inputOn) { toast('請在打字中使用雙倍券'); return; }
+  var count = currentUser.doubleCount || 0;
+  if (count <= 0) { toast('沒有雙倍券了！'); return; }
+  if (doubleActive) { toast('雙倍券已啟動中！'); return; }
+
+  var today = new Date().toLocaleDateString('zh-TW', {
+    timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).replace(/\//g, '-');
+
+  currentUser.doubleCount = count - 1;
+  db.ref('users/' + currentUser.studentId + '/doubleTicket').set({
+    date: today, count: count - 1
+  });
+
+  doubleActive = true;
+  updateDoubleUI();
+  toast('💎 雙倍券啟動！本題完成後獲得 +2 分！');
+}
+
 // ── 全員完成檢查（onRoom 觸發，作為備援確保結算）──
 var advancing = false;
 var lastProgUpdate = 0;
@@ -1921,9 +1988,10 @@ function cleanup() {
   syncEl(['g-leave','g-leave-d'], 'display', 'none', true);
   lbOpenClass = null;
   lbLoading = false;
+  doubleActive = false;
   var lb = document.getElementById('lb-detail');
   if (lb) lb.style.display = 'none';
-  ['g-boost','g-boost-d'].forEach(function(id) {
+  ['g-boost','g-boost-d','g-double','g-double-d'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
