@@ -1656,8 +1656,7 @@ function loadMyPassages() {
 
     // 所有 15 題的標題（前 12 字）
     var PASSAGE_TITLES = PASSAGES.map(function(p, i) {
-      return '題組' + (i+1) + '：' + p.replace(/
-/g, '').slice(0, 12) + '…';
+      return '題組' + (i+1) + '：' + p.replace(/\n/g, '').slice(0, 12) + '…';
     });
 
     var html = days.map(function(day) {
