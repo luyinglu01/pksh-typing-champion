@@ -511,14 +511,7 @@ async function changeAdminPwd() {
 
 // ── 補發道具券 ──
 async function giveTicket(studentId, name) {
-  var type = prompt(
-    '補發道具券給 ' + name + '
-
-請輸入要補發的券種：
-1 = 加速券 ⚡
-2 = 雙倍券 💎
-3 = 縮短券 ✂️'
-  );
+  var type = prompt('補發道具券給 ' + name + '\n\n請輸入要補發的券種：\n1 = 加速券 ⚡\n2 = 雙倍券 💎\n3 = 縮短券 ✂️');
   if (!type) return;
   var ticketMap = { '1': 'boostTicket', '2': 'doubleTicket', '3': 'shortTicket' };
   var labelMap  = { '1': '加速券 ⚡', '2': '雙倍券 💎', '3': '縮短券 ✂️' };
