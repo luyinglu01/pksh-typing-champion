@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>老師管理頁面</title>
+<title>打字競速 — 多人連線版</title>
+
+<!-- ★★★ 請把下方換成你自己的 Firebase 設定 ★★★ -->
 <script>
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyB25e8VFzjneOwJ_0-xmlM3UA8-QF15KzM",
@@ -12,564 +14,2226 @@ const FIREBASE_CONFIG = {
   projectId: "typing-champion-pksh",
   storageBucket: "typing-champion-pksh.firebasestorage.app",
   messagingSenderId: "488113242984",
-  appId: "1:488113242984:web:a9a78c6ee35f0cacc78cdd",
-  measurementId: "G-MK9XZ4KZEQ"
+  appId: "1:488113242984:web:a9a78c6ee35f0cacc78cdd"
 };
 </script>
+
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
   --bg: #ffffff; --bg2: #f5f5f3; --bg3: #ebebea;
   --text: #1a1a1a; --text2: #666;
   --border: rgba(0,0,0,0.12);
-  --purple: #7F77DD; --purple-light: #EEEDFE; --purple-dark: #534AB7;
+  --purple: #0ABAB5; --purple-light: #E0F7F6; --purple-dark: #078A86;
   --green: #1D9E75; --green-light: #EAF3DE;
   --red: #E24B4A; --red-light: #FCEBEB;
   --radius: 8px; --radius-lg: 12px;
 }
 @media (prefers-color-scheme: dark) {
-  :root { --bg:#1a1a1a; --bg2:#242424; --bg3:#2e2e2e; --text:#f0f0f0; --text2:#999; --border:rgba(255,255,255,0.12); --purple-light:#26215C; --green-light:#173404; --red-light:#501313; }
+  :root {
+    --bg: #1a1a1a; --bg2: #242424; --bg3: #2e2e2e;
+    --text: #f0f0f0; --text2: #999;
+    --border: rgba(255,255,255,0.12);
+    --purple-light: #0A3333; --green-light: #173404; --red-light: #501313;
+  }
 }
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-.wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1rem; }
+/* ── 基礎 ── */
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; min-height: 100dvh; }
+.wrap { max-width: 680px; margin: 0 auto; padding: 1.5rem 1rem; padding-bottom: env(safe-area-inset-bottom, 1rem); }
 h1 { font-size: 20px; font-weight: 500; margin-bottom: 6px; }
-h2 { font-size: 16px; font-weight: 500; margin-bottom: 12px; }
+h2 { font-size: 17px; font-weight: 500; margin-bottom: 12px; }
+.sub { font-size: 13px; color: var(--text2); margin-bottom: 1.25rem; }
 .card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 12px; }
-input[type=text], input[type=password] { width: 100%; padding: 9px 12px; border: 0.5px solid var(--border); border-radius: var(--radius); font-size: 15px; background: var(--bg); color: var(--text); outline: none; }
-input:focus { border-color: var(--purple); box-shadow: 0 0 0 3px var(--purple-light); }
-button { padding: 9px 18px; border: 0.5px solid var(--border); border-radius: var(--radius); background: transparent; color: var(--text); font-size: 14px; cursor: pointer; transition: background .15s; }
+input[type=text], input[type=password], select { width: 100%; padding: 9px 12px; border: 0.5px solid var(--border); border-radius: var(--radius); font-size: 16px; background: var(--bg) !important; color: var(--text) !important; outline: none; transition: border-color .15s; -webkit-appearance: none; appearance: none; }
+input:focus, select:focus { border-color: var(--purple); box-shadow: 0 0 0 3px var(--purple-light); }
+input[type=password]::-webkit-credentials-auto-fill-button { visibility: hidden; }
+button { padding: 10px 18px; border: 0.5px solid var(--border); border-radius: var(--radius); background: transparent; color: var(--text); font-size: 14px; cursor: pointer; transition: background .15s, transform .1s; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 button:hover { background: var(--bg2); }
+button:active { transform: scale(0.97); }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn-p { background: var(--purple); color: #fff; border-color: var(--purple); }
-.btn-p:hover { background: var(--purple-dark); }
-.btn-r { background: var(--red); color: #fff; border-color: var(--red); }
-.btn-r:hover { background: #A32D2D; }
-.btn-g { background: var(--green); color: #fff; border-color: var(--green); }
+.btn-p:hover { background: var(--purple-dark); border-color: var(--purple-dark); }
 .screen { display: none; }
 .screen.active { display: block; }
+#s-menu { overflow-y: visible; }
+body { overflow-y: auto; }
 .row { display: flex; align-items: center; gap: 10px; }
-.row-between { justify-content: space-between; }
 .row-end { justify-content: flex-end; }
+.row-between { justify-content: space-between; }
 .mt1 { margin-top: 1rem; }
-.mb1 { margin-bottom: 1rem; }
 .gap8 { gap: 8px; }
-.divider { border: none; border-top: 0.5px solid var(--border); margin: 1rem 0; }
-.badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; background: var(--purple-light); color: var(--purple-dark); }
-.class-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; }
-.class-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.class-name { font-weight: 500; font-size: 15px; }
-.class-score { font-size: 13px; color: var(--text2); }
-.prog-bar { height: 8px; background: var(--bg3); border-radius: 4px; overflow: hidden; margin-bottom: 8px; }
-.prog-fill { height: 100%; border-radius: 4px; background: var(--purple); transition: width .5s ease; }
-.prog-fill.done { background: var(--green); }
-.student-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.student-table th { text-align: left; padding: 6px 8px; color: var(--text2); border-bottom: 0.5px solid var(--border); font-weight: 500; }
-.student-table td { padding: 7px 8px; border-bottom: 0.5px solid var(--border); }
-.student-table tr:last-child td { border-bottom: none; }
-.rank-medal { font-size: 15px; }
-.tab-bar { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
-.tab { padding: 6px 14px; border-radius: 20px; font-size: 13px; cursor: pointer; border: 0.5px solid var(--border); background: transparent; color: var(--text2); }
-.tab.active { background: var(--purple-light); border-color: var(--purple); color: var(--purple-dark); font-weight: 500; }
-.alert { padding: 10px 14px; border-radius: var(--radius); font-size: 13px; margin-bottom: 12px; }
-.alert-green { background: var(--green-light); color: var(--green); }
-.alert-red { background: var(--red-light); color: var(--red); }
-.toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); background: var(--green); color: #fff; padding: 10px 20px; border-radius: var(--radius); font-size: 14px; z-index: 999; opacity: 0; transition: opacity .3s; pointer-events: none; }
+.gap12 { gap: 12px; }
+.divider { border: none; border-top: 0.5px solid var(--border); margin: 1.25rem 0; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+.badge-purple { background: var(--purple-light); color: var(--purple-dark); }
+.badge-gray { background: var(--bg3); color: var(--text2); }
+.dots::after { content: ''; animation: dots 1.5s infinite; }
+@keyframes dots { 0%{content:''} 33%{content:'.'} 66%{content:'..'} 100%{content:'...'} }
+
+/* ── 等候室 ── */
+.code-box { font-size: 36px; font-weight: 500; letter-spacing: 8px; color: var(--purple); text-align: center; padding: 1.2rem; background: var(--purple-light); border-radius: var(--radius); margin: 1rem 0; }
+.player-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--bg2); border-radius: var(--radius); border: 0.5px solid var(--border); margin-bottom: 8px; }
+.avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500; flex-shrink: 0; }
+.hint { text-align: center; color: var(--text2); font-size: 14px; padding: 1rem; }
+
+/* ── 倒數 ── */
+.cd-wrap { text-align: center; padding: 4rem 0; }
+.cd-num { font-size: 96px; font-weight: 500; color: var(--purple); animation: pop .4s ease; }
+@keyframes pop { from{transform:scale(1.4);opacity:0} to{transform:scale(1);opacity:1} }
+
+/* ── 共用遊戲元素 ── */
+.game-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.q-label { font-size: 12px; color: var(--text2); font-weight: 500; margin-bottom: 4px; }
+.passage { font-size: 15px; line-height: 1.85; padding: 0.8rem 1rem; background: var(--bg2); border-radius: var(--radius); margin-bottom: 8px; letter-spacing: 0.02em; }
+.c-ok { color: var(--green); }
+.c-err { color: var(--red); background: var(--red-light); border-radius: 2px; }
+.c-dim { color: var(--text2); }
+.c-cur { border-bottom: 2px solid var(--purple); }
+textarea { width: 100%; padding: 10px 14px; font-size: 16px; border: 0.5px solid var(--border); border-radius: var(--radius); background: var(--bg); color: var(--text); resize: none; font-family: inherit; outline: none; transition: border-color .15s; line-height: 1.6; }
+textarea:focus { border-color: var(--purple); box-shadow: 0 0 0 3px var(--purple-light); }
+textarea:disabled { opacity: 0.6; }
+.stats { display: flex; gap: 8px; margin: 8px 0; }
+.stat { flex: 1; padding: 8px 6px; background: var(--bg2); border-radius: var(--radius); text-align: center; }
+.stat-v { font-size: 18px; font-weight: 500; color: var(--purple); }
+.stat-l { font-size: 10px; color: var(--text2); margin-top: 2px; }
+.prog-row { margin-bottom: 7px; }
+.prog-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text2); margin-bottom: 3px; }
+.prog-bar { height: 7px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
+.prog-fill { height: 100%; border-radius: 4px; transition: width .4s ease; }
+.fin-banner { text-align: center; padding: 10px; background: var(--green-light); border-radius: var(--radius); margin: 6px 0; color: var(--green); font-size: 14px; font-weight: 500; }
+.wait-msg { text-align: center; padding: 8px; color: var(--text2); font-size: 13px; }
+
+/* ── 電腦版遊戲（上下分割，769px 以上）── */
+@media (min-width: 769px) {
+  body.game-active { overflow: hidden; }
+  #s-game { display: none; }
+  #s-game.active {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    position: fixed;
+    top: 0; left: 0;
+  }
+  /* 頂部標題列 */
+  #s-game .game-header {
+    padding: 10px 2rem;
+    border-bottom: 0.5px solid var(--border);
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    height: 48px;
+  }
+  /* 主體：垂直置中 */
+  #s-game .game-body {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+    padding: 2rem 2.5rem;
+  }
+  /* 內容容器：固定最大寬度，垂直排列 */
+  #s-game .game-left {
+    width: 100%;
+    max-width: 860px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  #s-game .game-left .passage {
+    font-size: 17px;
+    line-height: 2.1;
+  }
+  #s-game .game-left #g-prog-d { margin-top: 4px; }
+  /* 輸入區緊跟在文章下方，不固定底部 */
+  #s-game .game-right {
+    width: 100%;
+    max-width: 860px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 0.5px solid var(--border);
+  }
+  #s-game .game-right textarea {
+    height: 80px;
+    font-size: 16px;
+  }
+  #s-game .game-right .stats { margin: 0; }
+  /* 包裝 game-left 和 game-right 為同一個置中區塊 */
+  #s-game .game-body {
+    flex-direction: column;
+  }
+  #s-game .wrap-inner { display: none !important; }
+  #s-game .bottom-bar { display: none !important; }
+}
+
+/* ── 手機版遊戲（固定底部，768px 以下）── */
+@media (max-width: 768px) {
+  #s-game { display: none; }
+  #s-game.active {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    height: 100vh;
+    overflow: hidden;
+  }
+  #s-game .game-header { display: none; }
+  #s-game .game-body { display: none; }
+  #s-game .wrap-inner {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 1rem 0;
+    -webkit-overflow-scrolling: touch;
+  }
+  #s-game .bottom-bar {
+    padding: 8px 1rem;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    background: var(--bg);
+    border-top: 0.5px solid var(--border);
+    flex-shrink: 0;
+  }
+  #s-game .bottom-bar textarea { height: 70px; }
+}
+
+/* ── 結果 ── */
+.result-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--radius); margin-bottom: 8px; background: var(--bg2); border: 0.5px solid var(--border); }
+.result-row.gold { background: var(--purple-light); border-color: #5DD4D0; }
+.medal { font-size: 24px; width: 32px; text-align: center; }
+
+/* ── 手機響應式 ── */
+@media (max-width: 480px) {
+  .wrap { padding: 1rem 0.75rem; }
+  .code-box { font-size: 28px; letter-spacing: 6px; }
+  h1 { font-size: 18px; }
+  .q-mode-btn { font-size: 12px; padding: 6px; }
+  .q-check { font-size: 12px; padding: 6px 8px; }
+  .q-select-grid { grid-template-columns: repeat(3, 1fr); gap: 5px; }
+  .stat-v { font-size: 16px; }
+  button { padding: 10px 12px; font-size: 13px; }
+}
+.rname { flex: 1; font-weight: 500; }
+.rstat { font-size: 13px; color: var(--text2); text-align: right; }
+.rstat strong { color: var(--text); }
+.toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); background: var(--red); color: #fff; padding: 10px 20px; border-radius: var(--radius); font-size: 14px; z-index: 999; opacity: 0; transition: opacity .3s; pointer-events: none; }
 .toast.show { opacity: 1; }
+
+/* ── 登入/註冊 ── */
+.auth-tab-bar { display: flex; gap: 0; border-bottom: 0.5px solid var(--border); margin-bottom: 1.25rem; }
+.auth-tab { flex: 1; padding: 9px; text-align: center; font-size: 14px; color: var(--text2); cursor: pointer; border-bottom: 2px solid transparent; transition: all .15s; }
+.auth-tab.active { color: var(--purple); border-bottom-color: var(--purple); font-weight: 500; }
+.form-group { margin-bottom: 12px; }
+.form-label { font-size: 13px; color: var(--text2); margin-bottom: 5px; display: block; }
+
+/* ── 排行榜 ── */
+.lb-class-card { background: var(--bg2); border: none; border-radius: var(--radius); padding: 14px 16px; margin-bottom: 8px; cursor: pointer; transition: background .15s; }
+.lb-class-card:hover { background: var(--bg3); }
+.lb-class-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.lb-class-name { font-weight: 500; font-size: 14px; }
+.lb-class-score { font-size: 13px; color: var(--text2); }
+.lb-prog-bar { height: 7px; background: var(--bg3); border-radius: 4px; overflow: hidden; margin-bottom: 4px; }
+.lb-prog-fill { height: 100%; border-radius: 4px; background: var(--purple); transition: width .5s ease; }
+.lb-prog-fill.done { background: var(--green); }
+.lb-student-row { display: flex; align-items: center; gap: 12px; padding: 10px 4px; border-bottom: 0.5px solid var(--border); font-size: 13px; }
+.lb-student-row:last-child { border-bottom: none; }
+.lb-rank { width: 32px; text-align: center; font-size: 15px; flex-shrink: 0; }
+.lb-name { flex: 1; padding: 0 4px; }
+.lb-score { font-weight: 500; color: var(--purple); white-space: nowrap; }
+.lb-pct { font-size: 11px; color: var(--text2); width: 40px; text-align: right; }
+.user-info-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--purple-light); border-radius: var(--radius); margin-bottom: 12px; font-size: 13px; }
+.user-info-bar strong { color: var(--purple-dark); }
+.q-mode-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 0.5px solid var(--border); }
+.q-mode-btn { flex: 1; padding: 7px; border: 0.5px solid var(--border); border-radius: var(--radius); background: transparent; color: var(--text2); font-size: 13px; cursor: pointer; text-align: center; transition: all .15s; }
+.q-mode-btn.active { background: var(--purple-light); border-color: var(--purple); color: var(--purple-dark); font-weight: 500; }
+.q-select-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; }
+.q-check { display: flex; align-items: center; gap: 6px; padding: 7px 10px; border: 0.5px solid var(--border); border-radius: var(--radius); cursor: pointer; font-size: 13px; color: var(--text2); transition: all .15s; user-select: none; }
+.q-check.checked { background: var(--purple-light); border-color: var(--purple); color: var(--purple-dark); font-weight: 500; }
+.q-check-box { width: 14px; height: 14px; border: 1.5px solid var(--border); border-radius: 3px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+.q-check.checked .q-check-box { background: var(--purple); border-color: var(--purple); color: #fff; }
+.q-select-hint { font-size: 12px; color: var(--text2); margin-top: 6px; }
+.pwd-input { width: 100%; padding-right: 52px; }
+.pwd-toggle { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); border: none; background: none; color: var(--text2); font-size: 13px; cursor: pointer; line-height: 1; padding: 4px; }
 </style>
 </head>
 <body>
 <div class="wrap">
 
-<!-- 登入畫面 -->
-<div id="s-login" class="screen active">
-  <h1>老師管理頁面</h1>
-  <p style="font-size:14px;color:var(--text2);margin-bottom:1.5rem">請輸入管理員密碼</p>
-  <div class="card">
-    <div style="position:relative;width:100%">
-      <input type="password" id="inp-pwd" placeholder="輸入密碼" onkeydown="if(event.key==='Enter') login()" style="width:100%;padding-right:52px">
-      <button onclick="var i=document.getElementById('inp-pwd');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'顯示':'隱藏'" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);border:none;background:none;color:#666;font-size:13px;cursor:pointer;line-height:1">顯示</button>
+<!-- 登入/註冊畫面 -->
+<div id="s-auth" class="screen active">
+  <h1>打字競速 <span class="badge badge-purple">連線版</span></h1>
+  <p class="sub">請先登入或註冊帳號</p>
+  <div class="auth-tab-bar">
+    <div class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">登入</div>
+    <div class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">註冊</div>
+  </div>
+  <!-- 登入 -->
+  <div id="auth-login">
+    <div class="form-group">
+      <label class="form-label">學號</label>
+      <input type="text" id="login-id" placeholder="輸入學號">
     </div>
-    <div class="row row-end mt1">
-      <button class="btn-p" onclick="login()">登入</button>
+    <div class="form-group">
+      <label class="form-label">密碼</label>
+      <div style="position:relative;width:100%">
+        <input type="password" id="login-pwd" placeholder="輸入密碼" onkeydown="if(event.key==='Enter') doLogin()" class="pwd-input">
+        <button onclick="togglePwd('login-pwd',this)" class="pwd-toggle">顯示</button>
+      </div>
+    </div>
+    <div id="login-err" style="display:none;font-size:13px;color:var(--red);margin-bottom:10px"></div>
+    <button class="btn-p" style="width:100%" onclick="doLogin()">登入</button>
+    <div style="text-align:center;margin-top:12px;display:flex;justify-content:space-between">
+      <span>
+        <span style="font-size:13px;color:var(--text2)">不想累積積分？</span>
+        <button onclick="guestLogin()" style="font-size:13px;color:var(--purple);border:none;background:none;padding:0;cursor:pointer;text-decoration:underline">以訪客身份練習</button>
+      </span>
+      <button onclick="showResetPwd()" style="font-size:13px;color:var(--text2);border:none;background:none;padding:0;cursor:pointer;text-decoration:underline">忘記密碼？</button>
     </div>
   </div>
-  <div id="login-err" style="display:none" class="alert alert-red">密碼錯誤，請再試一次</div>
+  <!-- 忘記密碼 -->
+  <div id="auth-reset" style="display:none">
+    <div style="font-size:14px;font-weight:500;margin-bottom:12px">重設密碼</div>
+    <div class="form-group">
+      <label class="form-label">學號</label>
+      <input type="text" id="reset-id" placeholder="輸入學號">
+    </div>
+    <div class="form-group">
+      <label class="form-label">姓名（驗證身份）</label>
+      <input type="text" id="reset-name" placeholder="輸入註冊時的真實姓名">
+    </div>
+    <div class="form-group">
+      <label class="form-label">新密碼</label>
+      <div style="position:relative;width:100%">
+        <input type="password" id="reset-pwd" placeholder="設定新密碼（至少4字元）" class="pwd-input">
+        <button onclick="togglePwd('reset-pwd',this)" class="pwd-toggle">顯示</button>
+      </div>
+    </div>
+    <div id="reset-err" style="display:none;font-size:13px;color:var(--red);margin-bottom:10px"></div>
+    <button class="btn-p" style="width:100%" onclick="doResetPwd()">確認重設</button>
+    <div style="text-align:center;margin-top:10px">
+      <button onclick="showLogin()" style="font-size:13px;color:var(--text2);border:none;background:none;cursor:pointer;text-decoration:underline">返回登入</button>
+    </div>
+  </div>
+
+  <!-- 註冊 -->
+  <div id="auth-register" style="display:none">
+    <div class="form-group">
+      <label class="form-label">姓名</label>
+      <input type="text" id="reg-name" placeholder="輸入真實姓名" maxlength="10">
+    </div>
+    <div class="form-group">
+      <label class="form-label">學號</label>
+      <input type="text" id="reg-id" placeholder="輸入學號" maxlength="20">
+    </div>
+    <div class="form-group">
+      <label class="form-label">班級</label>
+      <select id="reg-class">
+        <option value="">請選擇班級</option>
+        <option value="商一甲">商一甲</option>
+        <option value="商一乙">商一乙</option>
+        <option value="應一甲">應一甲</option>
+        <option value="貿一甲">貿一甲</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">密碼</label>
+      <div style="position:relative;width:100%">
+        <input type="password" id="reg-pwd" placeholder="設定密碼（至少4字元）" maxlength="20" class="pwd-input">
+        <button onclick="togglePwd('reg-pwd',this)" class="pwd-toggle">顯示</button>
+      </div>
+    </div>
+    <div id="reg-err" style="display:none;font-size:13px;color:var(--red);margin-bottom:10px"></div>
+    <button class="btn-p" style="width:100%" onclick="doRegister()">註冊</button>
+  </div>
 </div>
 
-<!-- 管理主頁 -->
-<div id="s-admin" class="screen">
-  <div class="row row-between mb1">
-    <h1>班級積分管理</h1>
+<!-- 主選單 -->
+<div id="s-menu" class="screen">
+  <div class="user-info-bar">
+    <span>👤 <strong id="ui-name"></strong> &nbsp;<span id="ui-class" style="color:var(--text2)"></span></span>
+    <span id="ui-score-wrap">本週 <strong id="ui-score" style="color:var(--purple)">0</strong> 題 &nbsp;</span><button onclick="doLogout()" style="padding:3px 8px;font-size:12px">登出</button>
+  </div>
+  <h1>打字競速 <span class="badge badge-purple">連線版</span></h1>
+  <p class="sub">隨機配對，最多 4 人同時對戰</p>
+
+  <!-- 班級積分排行榜 -->
+  <div class="card">
+    <div style="font-size:14px;font-weight:500;margin-bottom:10px">📊 本週班級積分</div>
+    <div id="lb-overview"></div>
+  </div>
+  <!-- 個人排行（展開後獨立顯示，不擠壓其他內容） -->
+  <div id="lb-detail" class="card" style="display:none;padding:1.25rem 1.5rem">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="font-size:13px;font-weight:500" id="lb-detail-title"></div>
+      <button onclick="closeLbDetail()" style="font-size:12px;color:var(--text2);padding:4px 8px">收起 ▲</button>
+    </div>
+    <div id="lb-detail-list"></div>
+  </div>
+  <!-- inp-name 隱藏，由 currentUser.name 自動填入 -->
+  <input type="hidden" id="inp-name">
+  <div class="card">
+    <div style="font-size:14px;font-weight:500;margin-bottom:10px">遊戲暱稱</div>
+    <input type="text" id="inp-nickname" placeholder="輸入暱稱（預設為真實姓名）" maxlength="10" oninput="if(currentUser && currentUser.studentId) sessionStorage.setItem('nickname_' + currentUser.studentId, this.value)">
+    <div style="font-size:11px;color:var(--text2);margin-top:5px">暱稱只在遊戲中顯示，老師管理頁面仍顯示真實姓名</div>
   </div>
 
-  <!-- 班級總覽 -->
-  <div id="class-overview"></div>
-
-  <hr class="divider">
-
-  <!-- 學生排行 -->
-  <h2>學生個人貢獻</h2>
-  <div class="tab-bar" id="class-tabs"></div>
-  <div id="student-list"></div>
-
-  <hr class="divider">
-
-  <!-- 修改 Admin 密碼 -->
-  <h2>修改管理員密碼</h2>
-  <div class="card" style="margin-bottom:12px">
-    <div style="font-size:13px;color:var(--text2);margin-bottom:10px">變更管理員登入密碼</div>
-    <div class="row gap8" style="flex-wrap:wrap">
-      <div style="position:relative;flex:1;min-width:150px">
-        <input type="password" id="inp-new-admin-pwd" placeholder="輸入新密碼" style="padding-right:52px">
-        <button onclick="var i=document.getElementById('inp-new-admin-pwd');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'顯示':'隱藏'" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);border:none;background:none;color:var(--text2);font-size:13px;cursor:pointer">顯示</button>
+  <!-- 已打過的題目 -->
+  <div class="card" id="my-passages-card" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:14px;font-weight:500">📝 我打過的題目</div>
+      <div style="display:flex;gap:6px">
+        <button id="tab-today" onclick="switchPassageTab('today')" style="font-size:12px;padding:4px 10px;border-radius:20px;background:var(--purple);color:#fff;border-color:var(--purple)">今天</button>
+        <button id="tab-week" onclick="switchPassageTab('week')" style="font-size:12px;padding:4px 10px;border-radius:20px;background:transparent;color:var(--text2)">本週</button>
       </div>
-      <button class="btn-p" onclick="changeAdminPwd()">更新密碼</button>
+    </div>
+    <div id="my-passages-list"></div>
+  </div>
+  <div class="card">
+    <div style="font-size:14px;font-weight:500;margin-bottom:10px">🎒 道具說明</div>
+    <div style="font-size:13px;line-height:1.9;color:var(--text2)">
+      <div style="margin-bottom:8px">
+        <span style="background:var(--purple);color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;margin-right:6px">⚡ 加速券</span>
+        打字中途使用，進度直接跳至 50%，仍需打完剩餘內容才算完成。
+      </div>
+      <div style="margin-bottom:8px">
+        <span style="background:#D4537E;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;margin-right:6px">💎 雙倍券</span>
+        打字中途使用，當題完成後獲得 <strong style="color:var(--text)">+2 分</strong>而非 +1 分。
+      </div>
+      <div style="margin-bottom:8px">
+        <span style="background:#D48A30;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;margin-right:6px">✂️ 縮短券</span>
+        打字中途使用，只需打完前 <strong style="color:var(--text)">70%</strong> 即可完成並計分。
+      </div>
+      <div style="margin-bottom:4px;color:var(--text);font-size:12px;font-weight:500">取得規則：</div>
+      <div style="font-size:12px">
+        • 每天打完第 1 篇，各獲得 1 張加速券和雙倍券<br>
+        • 字速低於 <strong style="color:var(--text)">20 字/分</strong>，額外獲得 1 張縮短券<br>
+        • 每種最多累積 <strong style="color:var(--text)">3 張</strong>，沒用完隔天繼續保留<br>
+        • 三種券<strong style="color:var(--text)">不能同時使用</strong><br>
+        • 提前離開時，本題尚未完成的券會自動歸還<br>
+        • 🎉 <strong style="color:var(--text)">加倍奉還</strong>：昨天打了 3 篇以上，今天發 2 張而非 1 張
+      </div>
     </div>
   </div>
 
+  <div class="card">
+    <div style="font-size:14px;font-weight:500;margin-bottom:10px">房間設定</div>
+    <div class="q-mode-row">
+      <div class="q-mode-btn active" id="mode-random" onclick="setQMode('random')">🎲 隨機題數</div>
+      <div class="q-mode-btn" id="mode-custom" onclick="setQMode('custom')">✏️ 自選題組</div>
+    </div>
+
+    <!-- 隨機模式 -->
+    <div id="random-section" style="margin-top:10px">
+      <div class="row row-between">
+        <span style="font-size:14px;color:var(--text2)">每局題數</span>
+        <select id="sel-q" style="width:auto;padding:6px 10px">
+          <option value="1" selected>1 題（單題）</option>
+          <option value="3">3 題（快速）</option>
+          <option value="5">5 題（標準）</option>
+          <option value="10">10 題（進階）</option>
+          <option value="15">15 題（全部）</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 自選模式 -->
+    <div id="custom-section" style="display:none;margin-top:10px">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:6px">勾選要練習的題組：</div>
+      <div class="q-select-grid" id="q-checkboxes"></div>
+      <div class="q-select-hint" id="q-select-hint">已選 0 題</div>
+    </div>
+
+    <div class="row row-between" style="margin-top:10px">
+      <span style="font-size:14px;color:var(--text2)">最少幾人開始</span>
+      <select id="sel-min" style="width:auto;padding:6px 10px">
+        <option value="1" selected>1 人（單人）</option>
+        <option value="2">2 人</option>
+        <option value="3">3 人</option>
+        <option value="4">4 人</option>
+      </select>
+    </div>
+  </div>
+  <div class="row mt1" style="gap:8px;justify-content:stretch;flex-wrap:wrap">
+    <button style="flex:1" onclick="showJoinCode()">🔑 輸入房號</button>
+    <button style="flex:1" onclick="joinQueue()">🔍 隨機配對</button>
+    <button class="btn-p" style="flex:1" onclick="createNewRoom()">➕ 建立新房間</button>
+  </div>
+
+  <!-- 輸入房號 -->
+  <div id="join-code-section" style="display:none;margin-top:12px">
+    <div class="card" style="margin-bottom:0">
+      <div style="font-size:14px;font-weight:500;margin-bottom:10px">輸入房號</div>
+      <div class="row" style="gap:8px">
+        <input type="text" id="inp-code" placeholder="輸入 4 位房號" maxlength="4"
+          style="text-transform:uppercase;letter-spacing:4px;font-size:18px;font-weight:500;text-align:center"
+          oninput="this.value=this.value.toUpperCase()">
+        <button class="btn-p" onclick="joinByCode()" style="white-space:nowrap">加入</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 等候室 -->
+<div id="s-lobby" class="screen">
+  <h2>等候室</h2>
+  <div class="card">
+    <div style="font-size:13px;color:var(--text2);margin-bottom:4px">房間代碼（可分享給朋友）</div>
+    <div class="code-box" id="lob-code">----</div>
+  </div>
+  <div class="card">
+    <div class="row row-between" style="margin-bottom:10px">
+      <span style="font-size:14px;font-weight:500">目前玩家</span>
+      <span id="lob-count" style="font-size:13px;color:var(--text2)">0 / 4</span>
+    </div>
+    <div id="lob-players"></div>
+    <div class="hint" id="lob-hint">等待其他玩家加入<span class="dots"></span></div>
+  </div>
+  <div id="lob-start-row" style="display:none" class="row row-end gap8">
+    <button onclick="leaveRoom()">離開</button>
+    <button class="btn-p" id="btn-start" onclick="hostStart()">開始遊戲</button>
+  </div>
+  <div id="lob-leave-row" class="row row-end">
+    <button onclick="leaveRoom()">離開房間</button>
+  </div>
+</div>
+
+<!-- 倒數 -->
+<div id="s-cd" class="screen">
+  <div class="cd-wrap">
+    <div class="cd-num" id="cd-num">3</div>
+    <div style="font-size:16px;color:var(--text2);margin-top:12px">準備好了嗎？</div>
+  </div>
+</div>
+
+<!-- 遊戲 -->
+<div id="s-game" class="screen">
+
+  <!-- 電腦版：頂部標題列 -->
+  <div class="game-header">
+    <span id="g-qinfo-d" style="font-size:14px;color:var(--text2);font-weight:500">第 1 / 5 題</span>
+    <div class="row gap12" style="font-size:14px">
+      <span id="g-timer-d">⏱ 0s</span>
+      <span id="g-wpm-d" style="color:var(--purple);font-weight:500">0 字/分</span>
+    </div>
+  </div>
+
+  <!-- 電腦版：左右分割 -->
+  <div class="game-body">
+    <!-- 左欄：文章 -->
+    <div class="game-left">
+      <div id="g-qtitle-d" class="q-label"></div>
+      <div class="passage" id="g-passage-d"></div>
+      <div class="fin-banner" id="g-fin-d" style="display:none"></div>
+      <div class="wait-msg" id="g-wait-d" style="display:none">等待其他玩家完成<span class="dots"></span></div>
+      <div style="display:none;text-align:right;margin-top:8px" id="g-leave-d">
+        <button onclick="leaveEarly()" style="font-size:13px">提前離開</button>
+      </div>
+      <div id="g-boost-d" style="display:none;margin-top:8px">
+        <button onclick="useBoost()" style="font-size:13px;background:var(--purple);color:#fff;border-color:var(--purple)">⚡ 使用加速券（剩餘 <span id="g-boost-count-d">0</span> 張）</button>
+      </div>
+      <div id="g-double-d" style="display:none;margin-top:8px">
+        <button onclick="useDouble()" style="font-size:13px;background:#D4537E;color:#fff;border-color:#D4537E">💎 使用雙倍券（下一題 +2 分，剩餘 <span id="g-double-count-d">0</span> 張）</button>
+      </div>
+      <div id="g-short-d" style="display:none;margin-top:8px">
+        <button onclick="useShort()" style="font-size:13px;background:#D48A30;color:#fff;border-color:#D48A30">✂️ 使用縮短券（只需打完70%，剩餘 <span id="g-short-count-d">0</span> 張）</button>
+      </div>
+    </div>
+    <!-- 右欄：輸入 + 統計 + 進度 -->
+    <div class="game-right">
+      <textarea id="g-input-d" placeholder="在此輸入文字…"
+        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+        onpaste="return false;" ondrop="return false;" oncut="return false;"></textarea>
+      <div class="stats">
+        <div class="stat"><div class="stat-v" id="g-swpm-d">0</div><div class="stat-l">字/分</div></div>
+        <div class="stat"><div class="stat-v" id="g-sacc-d">100%</div><div class="stat-l">準確率</div></div>
+        <div class="stat"><div class="stat-v" id="g-schar-d">0</div><div class="stat-l">已輸入</div></div>
+      </div>
+      <div id="g-prog-d"></div>
+    </div>
+  </div>
+
+  <!-- 手機版：可捲動區域 -->
+  <div class="wrap-inner">
+    <div class="game-top">
+      <span id="g-qinfo" style="font-size:13px;color:var(--text2)">第 1 / 5 題</span>
+      <div class="row gap12" style="font-size:13px">
+        <span id="g-timer">⏱ 0s</span>
+        <span id="g-wpm" style="color:var(--purple);font-weight:500">0 字/分</span>
+      </div>
+    </div>
+    <div id="g-qtitle" class="q-label"></div>
+    <div class="passage" id="g-passage"></div>
+    <div class="stats">
+      <div class="stat"><div class="stat-v" id="g-swpm">0</div><div class="stat-l">字/分</div></div>
+      <div class="stat"><div class="stat-v" id="g-sacc">100%</div><div class="stat-l">準確率</div></div>
+      <div class="stat"><div class="stat-v" id="g-schar">0</div><div class="stat-l">已輸入</div></div>
+    </div>
+    <div id="g-prog"></div>
+    <div class="fin-banner" id="g-fin" style="display:none"></div>
+    <div class="wait-msg" id="g-wait" style="display:none">等待其他玩家完成<span class="dots"></span></div>
+    <div style="display:none;text-align:right;margin-top:8px" id="g-leave">
+      <button onclick="leaveEarly()" style="font-size:13px">提前離開</button>
+    </div>
+    <div id="g-boost" style="display:none;margin-top:8px">
+      <button onclick="useBoost()" style="font-size:13px;background:var(--purple);color:#fff;border-color:var(--purple);width:100%">⚡ 使用加速券（剩餘 <span id="g-boost-count">0</span> 張）</button>
+    </div>
+    <div id="g-double" style="display:none;margin-top:8px">
+      <button onclick="useDouble()" style="font-size:13px;background:#D4537E;color:#fff;border-color:#D4537E;width:100%">💎 使用雙倍券（下一題 +2 分，剩餘 <span id="g-double-count">0</span> 張）</button>
+    </div>
+    <div id="g-short" style="display:none;margin-top:8px">
+      <button onclick="useShort()" style="font-size:13px;background:#D48A30;color:#fff;border-color:#D48A30;width:100%">✂️ 使用縮短券（只需打完70%，剩餘 <span id="g-short-count">0</span> 張）</button>
+    </div>
+  </div>
+
+  <!-- 手機版：固定底部輸入框 -->
+  <div class="bottom-bar">
+    <textarea id="g-input" placeholder="在此輸入文字…"
+      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+      onpaste="return false;" ondrop="return false;" oncut="return false;"></textarea>
+  </div>
+
+</div>
+
+<!-- 結果 -->
+<div id="s-result" class="screen">
+  <h2>🏆 最終排名</h2>
+  <div id="res-list"></div>
   <hr class="divider">
+  <div id="res-sum" style="font-size:13px;color:var(--text2)"></div>
 
-  <!-- 帳號管理 -->
-  <h2>帳號管理</h2>
-  <div class="card">
-    <div style="font-size:13px;color:var(--text2);margin-bottom:10px">搜尋學生帳號</div>
-    <div class="row gap8">
-      <input type="text" id="inp-search" placeholder="輸入學號或姓名搜尋">
-      <button class="btn-p" onclick="searchStudent()">搜尋</button>
-    </div>
-    <div id="search-result" style="margin-top:12px"></div>
+  <!-- 結算後也顯示班級積分 -->
+  <div style="margin-top:1rem">
+    <div style="font-size:14px;font-weight:500;margin-bottom:10px">📊 本週班級積分</div>
+    <div id="res-lb-overview"></div>
   </div>
 
-  <div class="card">
-    <div style="font-size:13px;color:var(--text2);margin-bottom:10px">所有帳號（共 <span id="total-accounts">0</span> 人）</div>
-    <div id="all-accounts"></div>
+  <div class="row row-end gap8 mt1">
+    <button onclick="backMenu()">回主選單</button>
+    <button class="btn-p" onclick="playAgain()">再玩一局</button>
   </div>
 </div>
 
 </div>
 <div class="toast" id="toast"></div>
 
-<!-- 確認重置對話框 -->
-<div id="confirm-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:100;display:none;align-items:center;justify-content:center">
-  <div style="background:var(--bg);border-radius:var(--radius-lg);padding:1.5rem;max-width:340px;width:90%;margin:auto">
-    <h2 id="confirm-title" style="margin-bottom:8px">確認重置？</h2>
-    <p style="font-size:14px;color:var(--text2);margin-bottom:1.5rem">此操作會清除該班學生的本週積分及打題紀錄，無法復原。</p>
-    <div class="row row-end gap8">
-      <button onclick="cancelReset()">取消</button>
-      <button class="btn-r" onclick="doReset()">確認重置</button>
-    </div>
-  </div>
-</div>
-
 <script>
 firebase.initializeApp(FIREBASE_CONFIG);
 const db = firebase.database();
 
-// admin 密碼存在 Firebase system/adminHash，不存在程式碼裡
+// ── 班級設定 ──
 const CLASSES = ['商一甲','商一乙','應一甲','貿一甲'];
+// 四個等級目標（達標後才解鎖下一級）
 const LEVELS = [
-  { label: '⭐ 達標',      targets: { '商一甲': 58,  '商一乙': 52,  '應一甲': 28,  '貿一甲': 20  } },
-  { label: '⭐⭐ 良好',    targets: { '商一甲': 81,  '商一乙': 79,  '應一甲': 39,  '貿一甲': 35  } },
-  { label: '⭐⭐⭐ 優秀',  targets: { '商一甲': 115, '商一乙': 115, '應一甲': 55,  '貿一甲': 50  } },
-  { label: '🎉 傳說',      targets: { '商一甲': 115, '商一乙': 115, '應一甲': 55,  '貿一甲': 50  } },
+  { label: '⭐ 達標',      reward: '總成績 +1',      targets: { '商一甲': 58,  '商一乙': 52,  '應一甲': 28,  '貿一甲': 20  } },
+  { label: '⭐⭐ 良好',    reward: '總成績 +2',      targets: { '商一甲': 81,  '商一乙': 79,  '應一甲': 39,  '貿一甲': 35  } },
+  { label: '⭐⭐⭐ 優秀',  reward: '總成績 +3',      targets: { '商一甲': 115, '商一乙': 115, '應一甲': 55,  '貿一甲': 50  } },
+  { label: '🎉 傳說',      reward: '總成績 +3 + 點心', targets: { '商一甲': 116, '商一乙': 116, '應一甲': 56,  '貿一甲': 51  } },
 ];
-const TARGETS = { '商一甲': 115, '商一乙': 115, '應一甲': 55, '貿一甲': 50 }; // 最高等級目標
+// 向下相容
+const TARGETS = { '商一甲': 58, '商一乙': 52, '應一甲': 28, '貿一甲': 20 };
 const MEDALS = ['🥇','🥈','🥉'];
 
-async function sha256(str) {
-  var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+// ── 目前登入的使用者 ──
+var currentUser = null; // { studentId, name, class, weekScore }
+
+// ── 登入/註冊 ──
+function switchAuthTab(tab) {
+  document.getElementById('tab-login').classList.toggle('active', tab==='login');
+  document.getElementById('tab-register').classList.toggle('active', tab==='register');
+  document.getElementById('auth-login').style.display = tab==='login' ? 'block' : 'none';
+  document.getElementById('auth-register').style.display = tab==='register' ? 'block' : 'none';
 }
 
-function toast(msg, isRed) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.style.background = isRed ? 'var(--red)' : 'var(--green)';
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
-}
+async function doLogin() {
+  const sid = document.getElementById('login-id').value.trim();
+  const pwd = document.getElementById('login-pwd').value;
+  if (!sid || !pwd) { showAuthErr('login', '請填寫學號和密碼'); return; }
 
-async function login() {
-  const pwd = document.getElementById('inp-pwd').value;
-  if (!pwd) { document.getElementById('login-err').style.display = 'block'; return; }
-
-  // 從 Firebase 讀取 admin 密碼 hash 比對，不存在程式碼裡
-  const snap = await db.ref('system/adminHash').once('value');
-  const storedHash = snap.val();
-
-  if (!storedHash) {
-    // 第一次使用：把目前輸入的密碼設為 admin 密碼
-    const hashed = await sha256(pwd);
-    await db.ref('system/adminHash').set(hashed);
-    document.getElementById('s-login').classList.remove('active');
-    document.getElementById('s-admin').classList.add('active');
-    document.getElementById('login-err').style.display = 'none';
-    loadData();
-    return;
+  const snap = await db.ref('users/' + sid).once('value');
+  const user = snap.val();
+  if (!user) { showAuthErr('login', '找不到此學號，請先註冊'); return; }
+  var hashedPwd = await sha256(pwd);
+  // 相容舊版明文密碼（第一次登入後自動升級為雜湊）
+  if (user.password !== hashedPwd && user.password !== pwd) {
+    showAuthErr('login', '密碼錯誤'); return;
+  }
+  // 如果是舊版明文密碼，自動升級為雜湊
+  if (user.password === pwd && user.password !== hashedPwd) {
+    await db.ref('users/' + sid + '/password').set(hashedPwd);
   }
 
-  const inputHash = await sha256(pwd);
-  if (inputHash === storedHash) {
-    document.getElementById('s-login').classList.remove('active');
-    document.getElementById('s-admin').classList.add('active');
-    document.getElementById('login-err').style.display = 'none';
-    loadData();
+  currentUser = user;
+  // 產生此次登入的唯一 session ID
+  currentUser.sessionId = 'sess_' + Date.now() + Math.random().toString(36).slice(2,6);
+  await db.ref('users/' + user.studentId + '/activeSession').set(currentUser.sessionId);
+  // 存入 sessionStorage，重新整理後可自動恢復登入
+  sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+  document.getElementById('login-err').style.display = 'none';
+  enterMenu();
+}
+
+async function doRegister() {
+  const name = document.getElementById('reg-name').value.trim();
+  const sid = document.getElementById('reg-id').value.trim();
+  const cls = document.getElementById('reg-class').value;
+  const pwd = document.getElementById('reg-pwd').value;
+
+  if (!name || !sid || !cls || !pwd) { showAuthErr('reg', '請填寫所有欄位'); return; }
+  if (pwd.length < 4) { showAuthErr('reg', '密碼至少需要 4 個字元'); return; }
+
+  // 檢查學號是否已存在
+  const snap = await db.ref('users/' + sid).once('value');
+  if (snap.val()) { showAuthErr('reg', '此學號已經註冊過了'); return; }
+
+  var hashedPwd = await sha256(pwd);
+  const userData = { studentId: sid, name, class: cls, password: hashedPwd, weekScore: 0, totalScore: 0 };
+  await db.ref('users/' + sid).set(userData);
+  currentUser = userData;
+  currentUser.sessionId = 'sess_' + Date.now() + Math.random().toString(36).slice(2,6);
+  await db.ref('users/' + sid + '/activeSession').set(currentUser.sessionId);
+  sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+  document.getElementById('reg-err').style.display = 'none';
+  toast('註冊成功！歡迎 ' + name);
+  enterMenu();
+}
+
+function showAuthErr(type, msg) {
+  const el = document.getElementById(type === 'login' ? 'login-err' : 'reg-err');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function updateUserBar() {
+  if (!currentUser) return;
+  document.getElementById('ui-name').textContent = currentUser.name;
+  document.getElementById('ui-class').textContent = currentUser.isGuest ? '訪客' : currentUser.class;
+  document.getElementById('ui-score').textContent = currentUser.isGuest ? '—' : (currentUser.weekScore || 0);
+}
+
+function enterMenu() {
+  go('s-menu');
+  updateUserBar();
+  loadLeaderboard();
+  loadMyPassages();
+  // 預填暱稱：優先用 sessionStorage 儲存的暱稱，否則用真實姓名
+  var nickInp = document.getElementById('inp-nickname');
+  if (nickInp && currentUser && !currentUser.isGuest) {
+    var savedNick = sessionStorage.getItem('nickname_' + currentUser.studentId);
+    nickInp.value = savedNick || currentUser.name;
+  }
+}
+
+function guestLogin() {
+  currentUser = { name: '訪客', class: '', isGuest: true, weekScore: 0 };
+  sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+  enterMenu();
+}
+
+function showResetPwd() {
+  document.getElementById('auth-login').style.display = 'none';
+  document.getElementById('auth-register').style.display = 'none';
+  document.getElementById('auth-reset').style.display = 'block';
+  document.getElementById('tab-login').classList.remove('active');
+  document.getElementById('tab-register').classList.remove('active');
+}
+
+function showLogin() {
+  document.getElementById('auth-reset').style.display = 'none';
+  document.getElementById('auth-login').style.display = 'block';
+  document.getElementById('tab-login').classList.add('active');
+}
+
+async function doResetPwd() {
+  var sid = document.getElementById('reset-id').value.trim();
+  var name = document.getElementById('reset-name').value.trim();
+  var newPwd = document.getElementById('reset-pwd').value;
+  var errEl = document.getElementById('reset-err');
+
+  if (!sid || !name || !newPwd) { errEl.textContent = '請填寫所有欄位'; errEl.style.display = 'block'; return; }
+  if (newPwd.length < 4) { errEl.textContent = '密碼至少需要 4 個字元'; errEl.style.display = 'block'; return; }
+
+  var snap = await db.ref('users/' + sid).once('value');
+  var user = snap.val();
+  if (!user) { errEl.textContent = '找不到此學號'; errEl.style.display = 'block'; return; }
+  if (user.name !== name) { errEl.textContent = '姓名驗證失敗，請確認輸入的姓名與註冊時相同'; errEl.style.display = 'block'; return; }
+
+  var hashed = await sha256(newPwd);
+  await db.ref('users/' + sid + '/password').set(hashed);
+  errEl.style.display = 'none';
+  toast('✅ 密碼重設成功！請用新密碼登入');
+  showLogin();
+}
+
+function togglePwd(inputId, btn) {
+  var inp = document.getElementById(inputId);
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    btn.textContent = '隱藏';
   } else {
-    document.getElementById('login-err').style.display = 'block';
+    inp.type = 'password';
+    btn.textContent = '顯示';
   }
 }
 
-var allStudents = [];
-var currentTab = '商一甲';
+function doLogout() {
+  // 清除排行榜監聽
+  if (lbRef) { lbRef.off(); lbRef = null; }
+  // 清除 Firebase activeSession 和 sessionStorage
+  if (currentUser && currentUser.studentId) {
+    db.ref('users/' + currentUser.studentId + '/activeSession').remove();
+  }
+  sessionStorage.removeItem('currentUser');
+  currentUser = null;
+  lbOpenClass = null;
+  go('s-auth');
+}
 
-function loadData() {
-  db.ref('users').on('value', function(snap) {
+// ── 排行榜 ──
+var lbRef = null;
+function loadLeaderboard() {
+  if (lbRef) lbRef.off();
+  lbRef = db.ref('users');
+  lbRef.on('value', function(snap) {
     const data = snap.val() || {};
-    allStudents = Object.values(data);
-    renderOverview();
-    renderTabs();
-    renderStudentList(currentTab);
-    renderAllAccounts();
+    const students = Object.values(data);
+    // 更新自己的分數顯示
+    if (currentUser && !currentUser.isGuest) {
+      const me = data[currentUser.studentId];
+      if (me) {
+        currentUser.weekScore = me.weekScore || 0;
+        updateUserBar();
+      }
+    }
+    renderLeaderboard(students);
   });
 }
 
-function renderOverview() {
-  const overview = document.getElementById('class-overview');
+var lbOpenClass = null;
+function renderLeaderboard(students) {
+  const overview = document.getElementById('lb-overview');
   overview.innerHTML = CLASSES.map(cls => {
-    const students = allStudents.filter(s => s.class === cls);
-    const total = students.reduce((sum, s) => sum + (s.weekScore || 0), 0);
+    const clsStudents = students.filter(s => s.class === cls);
+    const total = clsStudents.reduce((sum, s) => sum + (s.weekScore||0), 0);
 
-    // 找當前等級
+    // 找出當前等級（最高已達成的等級）
     var currentLevelIdx = -1;
     for (var li = 0; li < LEVELS.length; li++) {
       if (total >= LEVELS[li].targets[cls]) currentLevelIdx = li;
       else break;
     }
+
+    // 顯示的目標等級（下一個未達成的等級）
     var showLevelIdx = Math.min(currentLevelIdx + 1, LEVELS.length - 1);
-    var target = LEVELS[showLevelIdx].targets[cls];
+    var showLevel = LEVELS[showLevelIdx];
+    var target = showLevel.targets[cls];
     var pct = Math.min(100, Math.round((total / target) * 100));
     var done = total >= target;
     var allDone = currentLevelIdx === LEVELS.length - 1;
 
-    var badges = '';
+    // 已達成的等級標籤
+    var achievedBadges = '';
     for (var ai = 0; ai <= currentLevelIdx; ai++) {
-      badges += '<span style="font-size:11px;background:var(--green-light);color:var(--green);padding:1px 6px;border-radius:4px;margin-right:3px">' + LEVELS[ai].label + '</span>';
+      achievedBadges += '<span style="font-size:11px;background:var(--green-light);color:var(--green);padding:1px 6px;border-radius:4px;margin-right:3px">' + LEVELS[ai].label + '</span>';
     }
 
-    return `<div class="class-card">
-      <div class="class-header">
-        <span class="class-name">${cls}</span>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span class="class-score">${total} / ${target} 題 &nbsp;${pct}%</span>
-          <button onclick="confirmResetClass('${cls}')" style="font-size:11px;padding:3px 8px;color:var(--red);border-color:var(--red);background:none">🔄 重置</button>
-        </div>
+    return `<div class="lb-class-card" onclick="toggleLbDetail('${cls}')">
+      <div class="lb-class-header">
+        <span class="lb-class-name">${cls}</span>
+        <span class="lb-class-score">${total}/${target} 題 &nbsp;${pct}%</span>
       </div>
-      ${badges ? '<div style="margin-bottom:6px">' + badges + '</div>' : ''}
-      <div class="prog-bar"><div class="prog-fill ${done?'done':''}" style="width:${pct}%"></div></div>
-      <div style="font-size:12px;color:var(--text2)">
-        ${students.length} 位學生 ・
-        ${allDone ? '🎉 全部達成！' : (done ? '✅ ' + LEVELS[showLevelIdx].label + ' 達成！' : '目標：' + LEVELS[showLevelIdx].label + ' 還差 ' + (target-total) + ' 題')}
+      ${achievedBadges ? '<div style="margin-bottom:6px">' + achievedBadges + '</div>' : ''}
+      <div class="lb-prog-bar"><div class="lb-prog-fill ${done?'done':''}" style="width:${pct}%"></div></div>
+      <div style="font-size:11px;color:var(--text2);margin-top:3px">
+        ${allDone ? '🎉 全部達成！等待點心！' : 
+          (done ? '✅ ' + showLevel.label + ' 達成！' : 
+          '目標：' + showLevel.label + '（' + showLevel.reward + '）還差 ' + (target-total) + ' 題')}
       </div>
+      <div style="font-size:10px;color:var(--text2);margin-top:2px">點擊查看個人排行</div>
     </div>`;
+  }).join('');
+
+  // 如果有展開的班級，用本地已有的資料直接更新（不需要再讀 Firebase）
+  if (lbOpenClass) {
+    var clsStudents = students.filter(s => s.class === lbOpenClass);
+    renderLbDetail(lbOpenClass, clsStudents);
+    // 不透過 toggleLbDetail，直接渲染避免重複 Firebase 請求
+  }
+}
+
+var lbLoading = false;
+function toggleLbDetail(cls) {
+  if (lbOpenClass === cls) {
+    closeLbDetail();
+    return;
+  }
+  if (lbLoading) return; // 防止快速點擊 race condition
+  lbLoading = true;
+  lbOpenClass = cls;
+  document.getElementById('lb-detail').style.display = 'block';
+  document.getElementById('lb-detail-list').innerHTML = '<div style="font-size:13px;color:var(--text2);padding:8px 0">載入中...</div>';
+  db.ref('users').orderByChild('class').equalTo(cls).once('value', function(snap) {
+    lbLoading = false;
+    if (lbOpenClass !== cls) return; // 已被切換，放棄渲染
+    var students = snap.val() ? Object.values(snap.val()) : [];
+    renderLbDetail(cls, students);
+  });
+}
+
+function renderLbDetail(cls, students) {
+  const sorted = [...students].sort((a,b) => (b.weekScore||0)-(a.weekScore||0));
+  const total = sorted.reduce((sum, s) => sum + (s.weekScore||0), 0);
+  document.getElementById('lb-detail-title').textContent = cls + ' 個人貢獻';
+  document.getElementById('lb-detail-list').innerHTML = sorted.length === 0
+    ? '<div style="font-size:13px;color:var(--text2);padding:8px 0">此班目前沒有學生</div>'
+    : sorted.map((s, i) => {
+        const score = s.weekScore || 0;
+        const pct = total > 0 ? Math.round((score/total)*100) : 0;
+        const isMe = currentUser && s.studentId === currentUser.studentId;
+        return `<div class="lb-student-row" style="${isMe?'background:var(--purple-light);border-radius:var(--radius);padding:8px;margin:-2px -4px':''}">
+          <div class="lb-rank">${MEDALS[i]||i+1}</div>
+          <div class="lb-name">${escHtml(s.name)}${isMe?' <span style="font-size:11px;color:var(--purple)">(我)</span>':''}</div>
+          <div class="lb-score">${score} 題</div>
+          <div class="lb-pct">${pct}%</div>
+        </div>`;
+      }).join('');
+}
+
+function closeLbDetail() {
+  lbOpenClass = null;
+  lbLoading = false;
+  document.getElementById('lb-detail').style.display = 'none';
+}
+
+// ── 完成題目時加積分（每人每天每題只計一次）──
+function addWeekScore() {
+  if (!currentUser || !currentUser.studentId) return;
+  if (currentUser.isGuest) return; // 訪客不累積積分
+  // 從 Firebase 驗證帳號確實存在，防止 sessionStorage 偽造
+  db.ref('users/' + currentUser.studentId + '/studentId').once('value', function(chk) {
+    if (!chk.val()) return; // 帳號不存在，拒絕計分
+    _doAddWeekScore();
+  });
+}
+function _doAddWeekScore() {
+  if (!currentUser || !currentUser.studentId) return;
+
+  // 取得今天日期字串（台灣時區）
+  var today = new Date().toLocaleDateString('zh-TW', {
+    timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).replace(/\//g, '-');
+
+  // 記錄格式：用題目內容前20字的 hash 當 key，確保不同題不會衝突
+  // 用 djb2 hash 產生穩定的數字 key，碰撞機率極低且不含特殊字元
+  var passageKey = 'p' + (function(str) {
+    var h = 5381;
+    for (var i = 0; i < str.length; i++) h = ((h << 5) + h) ^ str.charCodeAt(i);
+    return Math.abs(h);
+  })(curText.slice(0, 30));
+  var recordRef = db.ref('users/' + currentUser.studentId + '/dailyPassages/' + today + '/' + passageKey);
+
+  // 先驗證 session，防止多分頁重複計分
+  // 若帳號沒有 activeSession（舊帳號），允許計分
+  db.ref('users/' + currentUser.studentId + '/activeSession').once('value', function(sesSnap) {
+    var activeSession = sesSnap.val();
+    if (activeSession && activeSession !== currentUser.sessionId) {
+      toast('⚠️ 此帳號已在其他分頁登入，請關閉多餘的分頁！');
+      return;
+    }
+    recordRef.once('value', function(snap) {
+      if (snap.val()) {
+        toast('今天這題已計過分，換題繼續加油！');
+        return;
+      }
+      // 存題目前10字方便老師在 admin 查看是哪篇
+      var passageTitle = curText.slice(0, 10).replace(/\n/g, '');
+      var scoreAdd = doubleActive ? 2 : 1;
+      recordRef.set(passageTitle);
+      currentUser.weekScore = (currentUser.weekScore || 0) + scoreAdd;
+      db.ref('users/' + currentUser.studentId + '/weekScore').transaction(function(val) {
+        return (val || 0) + scoreAdd;
+      });
+      if (doubleActive) {
+        doubleActive = false;
+        boostUsed = false;
+        updateDoubleUI();
+        toast('💎 雙倍券生效！本題 +2 分');
+      }
+      // 每天打完第一篇發1張加速券
+      var today = new Date().toLocaleDateString('zh-TW', {
+        timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+      }).replace(/\//g, '-');
+      var boostRef = db.ref('users/' + currentUser.studentId + '/boostTicket');
+      boostRef.once('value', function(bs) {
+        var boostData = bs.val() || {};
+        if (boostData.lastGiven !== today) {
+          // 計算昨天打了幾篇（加倍奉還：昨天3篇以上，今天發2張）
+          var yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          var yesterdayStr = yesterday.toLocaleDateString('zh-TW', {
+            timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+          }).replace(/\//g, '-');
+          db.ref('users/' + currentUser.studentId + '/dailyPassages/' + yesterdayStr).once('value', function(ydSnap) {
+            var ydCount = ydSnap.val() ? Object.keys(ydSnap.val()).length : 0;
+            var bonus = ydCount >= 3 ? 2 : 1; // 昨天3篇以上發2張，否則1張
+            var current = boostData.count || 0;
+            var newCount = Math.min(current + bonus, 3);
+            boostRef.set({ count: newCount, lastGiven: today });
+            currentUser.boostCount = newCount;
+            updateBoostUI();
+            if (bonus === 2) {
+              toast('🎉 加倍奉還！昨天表現優秀，獲得加速券 x2！目前共 ' + newCount + ' 張');
+            } else {
+              toast('🎉 獲得加速券 x1！目前共 ' + newCount + ' 張');
+            }
+          });
+        }
+        // 更新主選單的打題紀錄（如果在主選單）
+        if (document.getElementById('my-passages-card')) loadMyPassages();
+      });
+      // 打完第1篇就發雙倍券（加倍奉還：昨天3篇以上發2張）
+      var doubleRef = db.ref('users/' + currentUser.studentId + '/doubleTicket');
+      doubleRef.once('value', function(ds) {
+        var doubleData = ds.val() || {};
+        if (doubleData.lastGiven !== today) {
+          var yesterday2 = new Date();
+          yesterday2.setDate(yesterday2.getDate() - 1);
+          var yesterdayStr2 = yesterday2.toLocaleDateString('zh-TW', {
+            timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+          }).replace(/\//g, '-');
+          db.ref('users/' + currentUser.studentId + '/dailyPassages/' + yesterdayStr2).once('value', function(ydSnap2) {
+            var ydCount2 = ydSnap2.val() ? Object.keys(ydSnap2.val()).length : 0;
+            var bonus2 = ydCount2 >= 3 ? 2 : 1;
+            var current2 = doubleData.count || 0;
+            var newCount2 = Math.min(current2 + bonus2, 3);
+            doubleRef.set({ count: newCount2, lastGiven: today });
+            currentUser.doubleCount = newCount2;
+            updateDoubleUI();
+            if (bonus2 === 2) {
+              toast('💎 加倍奉還！獲得雙倍券 x2！目前共 ' + newCount2 + ' 張');
+            } else {
+              toast('💎 獲得雙倍券 x1！目前共 ' + newCount2 + ' 張');
+            }
+          });
+        }
+      });
+    });
+  });
+} // end _doAddWeekScore
+
+const PASSAGES = [
+  "由此可知，Dell經營線上購物成功，是經過有效規劃，善用企業原本的優勢，契合市場機會，而非人云亦云、盲目上網。國內業者企圖經營線上購物業務時，不妨考慮是否也有相類似的條件或是其他利基。由藍色巨人IBM、媒體巨擘Time Warner集團與軟體霸主Microsoft經營線上購物中心Avenue、DreamShop與線上服務業務MSN的前例來看，僅憑藉大量資金、專業技術便想在線上購物市場大小通吃的作法不切實際，缺乏本業專門領域知識（Know-how）往往遭致失敗命運。",
+  "然而令人頭疼的是，如果你用無線電來當傳輸介質的話，單單利用基本的調變方式，是沒有辦法在目前受限的頻帶下傳遞大量的資料。當然事情也沒有這麼糟糕，為了解決在無線電環境下頻寬過小的窘境，展頻（Spread Spectrum）技術自然而然就被提出來了。展頻技術的方法有兩種，一種叫做直接序列（Direct Sequence），另外一種叫做跳頻（Frequency Hopping）。這兩種技巧都是利用一個虛擬雜訊碼產生器（Pseudo Noise Code Generator），來產生虛擬雜訊碼，利用這個特殊的虛擬雜訊碼與原調變後的訊號相結合而達到展頻的目的。",
+  "「行業萎縮」的效應若再加上我國加入WTO組織、市場開放的因素，便是加乘的效應，這些效應在過去可以看到的例子是保險業，外國的保險商在我國市場開放之後，這幾年挾其服務的效率與品質已搶佔了頗大的市場版圖。其他諸如貨運、金融、食品等行業不可避免地將迎戰另一波衝擊。跨國性的公司本來就有獨特的行業經營模式，若搭配Internet為工具，便更容易接觸到終端客戶，國內廠商若不能妥善因應，將可能出現我國中小廠商直接迎戰裝備優良的跨國企業的局面。",
+  "ANSI與ETSI已決定採用DMT（Discrete Multitone）為ADSL的調變方式，因此ANSIT 1.413的標準業已產生，各電話公司均已展開部署ADSL設備，唯恐在這場高速傳輸服務的競爭中缺席。\nADSL的典型應用架構，由於同時提供語音與數據傳輸服務，須於用戶家中及電信機房中裝設分歧器（Splitter），將語音與數據傳輸信號分離，故導致ADSL設備成本上升，價格昂貴，且須由專業技術人員至用戶家中，將電話線重新佈線並裝置分歧器方可使用。在電話公司方面，亦須花費巨額投資。於各個電信機房加裝分歧器及DSLAM等設備。",
+  "對於使用者而言，它不是完全透通的，有些程式應用很可能會莫名其妙地被阻擋在門外；當有新的程式應用或是TCP/IP的服務要增加時，必須要重新開發新的過濾器；使用者在網路上所能使用的程式應用數目，以及服務項目，受到代理器的數量限制，不能任意加添。以一個檔案傳輸（FTP）的相同實例來看，在應用程式層的過濾方式可以用應用程式閘通道（Application Gateway）來實現。比較先進的防火牆在這一方面都做了一些補強措施，只讓真正在檔案傳輸狀態的資料封包能通過防火牆。",
+  "1997年8月28日，法國的Fernand Portela先生宣稱Netscape Communicator for Windows 95/NT 4.03版以前的軟體出現兩個JavaScript的嚴重缺陷，當使用者配置Netscape記憶電子郵件POP所需的密碼時，惡意的網站伺服器操作員即可劫取該密碼。是項安全漏洞已經告知Netscape並被立刻修正。1997年8月7日，Ben Mesander先生證實了微軟IE的Java安全漏洞。該漏洞可以讓網站伺服器的操作員用以竊取使用者的檔案，即使使用者有防火牆的安全防護亦不能倖免。這一個問題波及微軟IE 3.0與4.0的版本，Macintosh不受影響；Netscape瀏覽器如果設置HTTP Proxy Server也會受到影響。使用者可以取消Java的方式加以防堵。",
+  "在全美各地大規模的測試實驗計畫中，有部分區域已進入商用階段，並且有巨額投資將現有網路升級成雙向HFC網路，用戶每月只要付US$40左右就可以快速連上網際網路。而在國內除了有寶福有線電視公司在台北萬華、中正區從事相關的實驗計畫，實驗規模為一百戶，採用的是3Com、Hybrid以及West End的有線電視數據機外，新竹的竹視有線電視公司在科學園區亦有實驗計畫，採用的是3Com、Hybrid以及LAN city的產品。這兩個實驗計畫都是由T1連上HiNet，以提供網際網路存取服務。",
+  "有線電纜網路系統就是提供頭端與用戶端之間雙向傳輸的功能，並將數位資料經過調變（Modulation）之後以類比訊號傳送。為了在此系統中提供雙向的資訊存取服務，頭端除了要配備光訊號接收器以接收用戶端在上行（由用戶端至頭端）頻道傳遞的訊號，且根據用戶需求分配合理的頻寬外，同時須具備解決碰撞的機制，並將相關控制資訊由下行（頭端往用戶端）頻道傳給用戶端。此外，在頭端架設路由器與網際網路相連，及設置WWW快取伺服器，可以使用戶端透過有線電視數據機進行網際網路存取，無需打電話撥接，也無連線時間過長的顧忌。",
+  "Internet Phone的出現可以說是真正開始讓人感受到網際網路也可以提供原本通信網路的服務，而且成本低廉。比如在學術網路上的兩個使用者只要透過兩台連接於網際網路的電腦就可以進行交談，不論相隔多遠都只要付市內電話的錢即可，如果電腦是直接連上網際網路，而不是撥接上網，則連一毛錢都不用付，想聊多久就聊多久！這種利用分封技術為基礎的網路電話目前雖受限於頻寬的不足而影響語音的品質，但是網路技術的進步終將會克服這項瓶頸。目前許多廠商已看好這個新興的市場，而紛紛投入發展網路電信的相關技術。",
+  "當然使用此一方式，需要天時、地利、人和的配合，再加上駭客高超的技術，缺一不可，但並非人人皆有此能力可以截取到資料，因此筆者親自上網申請認證，在申請憑證的過程中，原想使用假IP攻擊法來試試，但此行為卻會觸犯法律範圍（別因小小的好奇而讓您深陷囹圄，畢竟Hacker與Cracker只有一線之隔），所以只能以正常程序申請，填寫各項資料，同時監控資料封包，這時發現了一個從以前就存在的有趣議題，只是許多人會忽略了它，所以在此提出與各位共同來討論。",
+  "隨著公司業務的成長，辦公室擴張，公司內部的網路系統也像小樹苗漸漸成長茁壯一樣越來越大，到了一定的程度後，還會開花結果，分株形成另外一棵樹，也就是產生了分枝辦公室（Branch Office）。兩個辦公室相隔了一段距離，分屬兩棟辦公大樓，如何讓兩個辦公室內的網路互通有無，就是隨之而來的挑戰。經過一段時間的嘗試後，筆者在此提供一個花費不多的方式，讓您不用購買昂貴的路由器，大費周章地再佈線連結兩個辦公室。如果您用的網路作業系統是Windows NT的話，只要使用數據機，透過電話線，就可以連接兩個網路。",
+  "一般而言，一個區域內所需考慮的頻寬需求有幾類。以下將從問題考量為出發點，再針對問題做分析與解答，以進一步有效的規劃出頻寬的需求與擴充的能量。特殊與一般的應用程式：一般的文字、檔案的更新、刪除、增加並不需要特別的頻寬，Ethernet的10Mbps或token Ring的16Mbps應綽綽有餘，只要在一個網路區段的node數不要太多（一般以不超過30個node為限）。然而特殊應用的軟體，如汽車風動、航太工業、氣象預報等則很有可能在一個網路區段中只有一到二個nodes。",
+  "整合服務（Integration）的主要工作，是要使分散系統與現有的有線網路能作訊息交換，即作傳輸媒介與位址的轉換。此工作主角，使落在埠接器（Portal）上。分送服務（Distribution）的主要工作，是將分散系統內的資料送至正確的位址上。在IEEE 802.11標準上，並未訂出此服務要如何將分散系統內的資料送至正確的位址上，但說明了要達成此工作所需必要資訊，這些資訊將由聯結服務（Association）、取消聯結服務（Disassociation）、重新聯結服務（Reassociation）等來提供。",
+  "一般大眾認為，傳統的企業運算環境，往往有以下缺點：太過於複雜、安全性及穩定性不夠、應用軟體的特性、功能、以及應用系統並不能被每一個使用者所運用、對於桌上型系統的管理及升級的費用過高、要開發並且佈署一個應用系統所需的時間過長。這些缺點都可在Java的運算環境中獲得解決！這不但是Java被採用為佈署應用系統最新方式的原因之一，更重要的是，由於Java具有跨工作平臺作業的特性，因此已成為企業採用的最佳考慮因素，使用者也不致浪費了原本在軟硬體上的投資。",
+  "Microsoft for NetWare目錄服務管理員是微軟NT Server上的外掛服務產品，它提供了NT網域上的主要網域去同步並管理NetWare 3.x Bindery為主的Server上的帳號資料庫，安裝後僅提供單向同步，也就是由PDC上去同步NetWare，在NetWare Server上所建的帳號並不會同步到NT來。安裝NT Server PDC上須有NWLink IPX/SPX傳輸協定和GSNW，且最好能安裝NT 4.0 Service Pack 2以上，安裝時出現的二個選項DSMN及DSMN的管理工具，說明了DSMN的管理工作可在網域的任一成員上安裝，而DSMN當然一定要在PDC上。"
+];
+
+const COLORS = ['#7F77DD','#1D9E75','#D85A30','#D4537E'];
+
+// ── 工具 ──
+// XSS 防護：跳脫 HTML 特殊字元
+function escHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+async function sha256(str) {
+  var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+function shuffle(a) { return [...a].sort(() => Math.random() - .5); }
+function rndCode() {
+  var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 移除 0/O/1/I 等易混淆字元
+  var code = '';
+  for (var i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+function go(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
+function calcWpm(chars, t0) { const m = (Date.now() - t0) / 60000; return m > 0 ? Math.round(chars / m) : 0; }
+// 同時更新多個同功能元素（手機版 + 電腦版）
+function syncEl(ids, prop, val, isStyle) {
+  ids.forEach(id => { const el = document.getElementById(id); if (!el) return; isStyle ? el.style[prop] = val : el[prop] = val; });
+}
+
+// ── 狀態 ──
+const myUid = 'u' + Date.now() + Math.random().toString(36).slice(2,5);
+let myName = '';
+let roomId = null;
+let roomRef = null;
+let curQ = 0;
+let curText = '';
+let startTime = 0;
+let timerIv = null;
+let inputOn = false;
+let typed = '';
+let doneThisQ = false;
+let lastStatus = '';
+let lastQ = -1;
+
+// ── 配對 ──
+
+// 從表單取得共用設定值
+function getFormValues() {
+  var nickInp = document.getElementById('inp-nickname');
+  const name = (nickInp && nickInp.value.trim()) ? nickInp.value.trim() : (currentUser ? currentUser.name : '訪客');
+  const minP = parseInt(document.getElementById('sel-min').value);
+  const isCustom = qMode === 'custom';
+  const picked = isCustom
+    ? selectedQs.slice().sort((a,b) => a-b).map(i => PASSAGES[i])
+    : null;
+  const qcount = isCustom
+    ? (picked ? picked.length : 1)
+    : parseInt(document.getElementById('sel-q').value);
+  return { name, minP, qcount, picked };
+}
+
+async function createNewRoom() {
+  const { name, minP, qcount, picked } = getFormValues();
+  if (!currentUser) { toast('請先登入！'); go('s-auth'); return; }
+  if (qMode === 'custom' && (!picked || picked.length === 0)) { toast('請至少勾選一題！'); return; }
+  myName = name + (currentUser.class ? '(' + currentUser.class + ')' : '');
+  await doCreate(qcount, minP, picked);
+}
+
+function showJoinCode() {
+  var sec = document.getElementById('join-code-section');
+  sec.style.display = sec.style.display === 'none' ? 'block' : 'none';
+  if (sec.style.display === 'block') {
+    setTimeout(function() { document.getElementById('inp-code').focus(); }, 100);
+  }
+}
+
+async function joinByCode() {
+  if (!currentUser) { toast('請先登入！'); go('s-auth'); return; }
+  const { name: nickname } = getFormValues();
+  myName = nickname + (currentUser.class ? '(' + currentUser.class + ')' : '');
+  var code = document.getElementById('inp-code').value.trim().toUpperCase();
+  if (code.length !== 4) { toast('請輸入 4 位房號'); return; }
+
+  var roomKey = 'room_' + code;
+  var snap = await db.ref('rooms/' + roomKey).once('value');
+  var room = snap.val();
+
+  if (!room) { toast('找不到房號 ' + code + '，請確認是否正確'); return; }
+  if (room.status !== 'waiting') { toast('該房間遊戲已開始，無法加入'); return; }
+  var playerCount = room.players ? Object.keys(room.players).length : 0;
+  if (playerCount >= 4) { toast('該房間已滿 4 人'); return; }
+  if (playerCount >= room.minP) { toast('該房間人數已滿（' + room.minP + ' 人），無法加入'); return; }
+
+  await doJoin(roomKey);
+}
+
+var qMode = 'random';
+var selectedQs = [];
+
+function setQMode(mode) {
+  qMode = mode;
+  document.getElementById('mode-random').classList.toggle('active', mode === 'random');
+  document.getElementById('mode-custom').classList.toggle('active', mode === 'custom');
+  document.getElementById('random-section').style.display = mode === 'random' ? 'block' : 'none';
+  document.getElementById('custom-section').style.display = mode === 'custom' ? 'block' : 'none';
+  if (mode === 'custom') {
+    var grid = document.getElementById('q-checkboxes');
+    if (grid && grid.innerHTML.trim() === '') {
+      initCheckboxes();
+    }
+  }
+}
+
+function initCheckboxes() {
+  const grid = document.getElementById('q-checkboxes');
+  grid.innerHTML = PASSAGES.map(function(_, i) {
+    return '<div class="q-check" id="qc-' + i + '" onclick="toggleQ(' + i + ')">' +
+      '<div class="q-check-box" id="qcb-' + i + '"></div>' +
+      '題組 ' + (i + 1) +
+      '</div>';
   }).join('');
 }
 
-function renderTabs() {
-  document.getElementById('class-tabs').innerHTML = CLASSES.map(cls =>
-    `<button class="tab ${cls===currentTab?'active':''}" onclick="switchTab('${cls}')">${cls}</button>`
-  ).join('');
-}
-
-function switchTab(cls) {
-  currentTab = cls;
-  renderTabs();
-  renderStudentList(cls);
-}
-
-function renderStudentList(cls) {
-  const students = allStudents
-    .filter(s => s.class === cls)
-    .sort((a, b) => (b.weekScore||0) - (a.weekScore||0));
-  const total = students.reduce((sum, s) => sum + (s.weekScore||0), 0);
-
-  if (students.length === 0) {
-    document.getElementById('student-list').innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text2);font-size:14px">此班目前沒有學生</div>`;
-    return;
+function toggleQ(i) {
+  var idx = selectedQs.indexOf(i);
+  if (idx === -1) {
+    selectedQs.push(i);
+    document.getElementById('qc-' + i).classList.add('checked');
+    document.getElementById('qcb-' + i).textContent = '✓';
+  } else {
+    selectedQs.splice(idx, 1);
+    document.getElementById('qc-' + i).classList.remove('checked');
+    document.getElementById('qcb-' + i).textContent = '';
   }
-
-  document.getElementById('student-list').innerHTML = `
-    <table class="student-table">
-      <thead><tr>
-        <th style="width:40px">排名</th>
-        <th>姓名</th>
-        <th>學號</th>
-        <th style="text-align:right">完成題次</th>
-        <th style="text-align:right">貢獻比</th>
-        <th style="text-align:center">操作</th>
-      </tr></thead>
-      <tbody>${students.map((s, i) => {
-        const score = s.weekScore || 0;
-        const pct = total > 0 ? Math.round((score / total) * 100) : 0;
-        return `<tr>
-          <td><span class="rank-medal">${MEDALS[i] || (i+1)}</span></td>
-          <td style="cursor:pointer;color:var(--purple)" onclick="toggleDetail('${s.studentId}','${s.name}')">${s.name} ▾</td>
-          <td style="color:var(--text2)">${s.studentId}</td>
-          <td style="text-align:right;font-weight:500;color:var(--purple)">${score}</td>
-          <td style="text-align:right;color:var(--text2)">${pct}%</td>
-          <td style="text-align:center;display:flex;gap:4px;justify-content:center">
-            <button onclick="editScore('${s.studentId}','${s.name}',${s.weekScore||0})" style="font-size:12px;padding:4px 8px;color:var(--purple);border-color:var(--purple)">修改積分</button>
-            <button onclick="deleteAccount('${s.studentId}')" style="font-size:12px;padding:4px 8px;color:var(--red);border-color:var(--red)">刪除</button>
-          </td>
-          </tr>
-          <tr id="detail-${s.studentId}" style="display:none">
-            <td colspan="7" style="padding:0">
-              <div id="detail-content-${s.studentId}" style="padding:10px 14px;background:var(--bg3);font-size:12px"></div>
-            </td>
-        </tr>`;
-      }).join('')}</tbody>
-    </table>`;
+  document.getElementById('q-select-hint').textContent = '已選 ' + selectedQs.length + ' 題';
 }
 
-function renderAllAccounts() {
-  const sorted = [...allStudents].sort((a,b) => a.class.localeCompare(b.class) || a.studentId.localeCompare(b.studentId));
-  document.getElementById('total-accounts').textContent = sorted.length;
-  document.getElementById('all-accounts').innerHTML = sorted.length === 0
-    ? '<div style="text-align:center;padding:1rem;color:var(--text2);font-size:14px">目前沒有帳號</div>'
-    : `<table class="student-table">
-        <thead><tr><th>班級</th><th>姓名</th><th>學號</th><th style="text-align:right">本週積分</th><th style="text-align:center">操作</th></tr></thead>
-        <tbody>${sorted.map(s => `<tr>
-          <td><span class="badge">${s.class}</span></td>
-          <td>${s.name}</td>
-          <td style="color:var(--text2)">${s.studentId}</td>
-          <td style="text-align:right;color:var(--purple);font-weight:500">${s.weekScore||0}</td>
-          <td style="text-align:center;display:flex;gap:4px;justify-content:center">
-            <button onclick="resetPassword('${s.studentId}','${s.name}')" style="font-size:12px;padding:4px 8px">重設密碼</button>
-            <button onclick="editScore('${s.studentId}','${s.name}',${s.weekScore||0})" style="font-size:12px;padding:4px 8px;color:var(--purple);border-color:var(--purple)">修改積分</button>
-            <button onclick="deleteAccount('${s.studentId}')" style="font-size:12px;padding:4px 8px;color:var(--red);border-color:var(--red)">刪除</button>
-          </td>
-        </tr>`).join('')}</tbody>
-      </table>`;
+async function joinQueue() {
+  const { name, minP, qcount, picked } = getFormValues();
+  if (!currentUser) { toast('請先登入！'); go('s-auth'); return; }
+  if (qMode === 'custom' && (!picked || picked.length === 0)) { toast('請至少勾選一題！'); return; }
+  myName = name + (currentUser.class ? '(' + currentUser.class + ')' : '');
+
+  // 單人模式直接建房，不配對
+  if (minP === 1) { await doCreate(qcount, minP, picked); return; }
+
+  // 多人模式：找相同 minP 且未滿的房間
+  const snap = await db.ref('rooms').orderByChild('status').equalTo('waiting').once('value');
+  let found = null;
+  snap.forEach(c => {
+    const r = c.val();
+    const n = r.players ? Object.keys(r.players).length : 0;
+    if (r.minP === minP && r.minP > 1 && n < minP && !found) found = c.key;
+  });
+  found ? await doJoin(found) : await doCreate(qcount, minP, picked);
 }
 
-function searchStudent() {
-  const q = document.getElementById('inp-search').value.trim().toLowerCase();
-  if (!q) { document.getElementById('search-result').innerHTML = ''; return; }
-  const found = allStudents.filter(s =>
-    s.studentId.toLowerCase().includes(q) || s.name.toLowerCase().includes(q)
-  );
-  document.getElementById('search-result').innerHTML = found.length === 0
-    ? '<div style="font-size:13px;color:var(--text2)">找不到符合的學生</div>'
-    : `<table class="student-table">
-        <thead><tr><th>班級</th><th>姓名</th><th>學號</th><th style="text-align:right">本週積分</th><th style="text-align:center">操作</th></tr></thead>
-        <tbody>${found.map(s => `<tr>
-          <td><span class="badge">${s.class}</span></td>
-          <td>${s.name}</td>
-          <td style="color:var(--text2)">${s.studentId}</td>
-          <td style="text-align:right;color:var(--purple);font-weight:500">${s.weekScore||0}</td>
-          <td style="text-align:center;display:flex;gap:4px;justify-content:center">
-            <button onclick="resetPassword('${s.studentId}','${s.name}')" style="font-size:12px;padding:4px 8px">重設密碼</button>
-            <button onclick="editScore('${s.studentId}','${s.name}',${s.weekScore||0})" style="font-size:12px;padding:4px 8px;color:var(--purple);border-color:var(--purple)">修改積分</button>
-            <button onclick="deleteAccount('${s.studentId}')" style="font-size:12px;padding:4px 8px;color:var(--red);border-color:var(--red)">刪除</button>
-          </td>
-        </tr>`).join('')}</tbody>
-      </table>`;
-}
-
-// ── 個人打題紀錄 ──
-var openDetail = null;
-function toggleDetail(studentId, name) {
-  var row = document.getElementById('detail-' + studentId);
-  if (!row) return;
-  if (openDetail === studentId) {
-    row.style.display = 'none';
-    openDetail = null;
-    return;
-  }
-  if (openDetail) {
-    var prev = document.getElementById('detail-' + openDetail);
-    if (prev) prev.style.display = 'none';
-  }
-  openDetail = studentId;
-  row.style.display = '';
-  var box = document.getElementById('detail-content-' + studentId);
-  box.innerHTML = '<span style="color:var(--text2)">載入中...</span>';
-
-  // 同時讀取 history（詳細成績）和 dailyPassages（每日統計）
-  db.ref('users/' + studentId).once('value', function(snap) {
-    var userData = snap.val();
-    if (!userData) { box.innerHTML = '<span style="color:var(--text2)">尚無資料</span>'; return; }
-
-    var history = userData.history ? Object.values(userData.history) : [];
-    var dailyData = userData.dailyPassages || {};
-
-    // 按時間排序（最新在前）
-    history.sort(function(a,b) { return (b.timestamp||0)-(a.timestamp||0); });
-
-    // ── 折線圖（每日打題數）──
-    var dayMap = {};
-    history.forEach(function(h) {
-      var day = h.time ? h.time.split(' ')[0] : '未知';
-      dayMap[day] = (dayMap[day] || 0) + 1;
+async function doCreate(qcount, minP, customPassages) {
+  const code = rndCode();
+  roomId = 'room_' + code;
+  var sourceList = customPassages ? customPassages : shuffle(PASSAGES).slice(0, qcount);
+  const qs = sourceList.map((t, i) => ({ i: i, t: t }));
+  await db.ref('rooms/' + roomId).set({
+    code: code, status: 'waiting', host: myUid,
+    qcount: qcount, minP: minP, qs: qs, q: 0, roundStart: 0,
+    isCustom: !!customPassages,
+    createdAt: Date.now(),
+    players: { [myUid]: mkPlayer() }
+  });
+  db.ref('rooms/' + roomId + '/players/' + myUid).onDisconnect().remove();
+  // 120分鐘後自動清除房間（用本地副本避免 roomId 被 cleanup 清除）
+  var roomIdCopy = roomId;
+  setTimeout(function() {
+    db.ref('rooms/' + roomIdCopy).once('value', function(s) {
+      if (s.val()) db.ref('rooms/' + roomIdCopy).remove();
     });
-    var days = Object.keys(dayMap).sort();
-    var chartData = days.map(function(d) { return { day: d, count: dayMap[d] }; });
+  }, 120 * 60 * 1000);
+  listen();
+  go('s-lobby');
+}
 
-    var svgChart = '';
-    if (chartData.length > 0) {
-      var maxCount = Math.max.apply(null, chartData.map(function(d) { return d.count; }));
-      var chartW = 460, chartH = 90, padL = 28, padB = 22, padR = 10, padT = 10;
-      var innerW = chartW - padL - padR;
-      var innerH = chartH - padT - padB;
-      var pts = chartData.map(function(d, i) {
-        var x = padL + (chartData.length === 1 ? innerW/2 : i / (chartData.length-1) * innerW);
-        var y = padT + innerH - (maxCount > 0 ? d.count / maxCount * innerH : 0);
-        return { x: x, y: y, day: d.day, count: d.count };
-      });
-      var polyline = pts.map(function(p) { return p.x+','+p.y; }).join(' ');
-      var area = polyline + ' ' + pts[pts.length-1].x+','+(padT+innerH) + ' ' + pts[0].x+','+(padT+innerH);
-      var yLines = [];
-      for (var yi = 0; yi <= maxCount; yi += Math.max(1, Math.ceil(maxCount/4))) {
-        var yy = padT + innerH - (maxCount > 0 ? yi/maxCount*innerH : 0);
-        yLines.push('<text x="'+(padL-4)+'" y="'+(yy+4)+'" font-size="9" text-anchor="end" fill="var(--text2)">'+yi+'</text>');
-        yLines.push('<line x1="'+padL+'" y1="'+yy+'" x2="'+(chartW-padR)+'" y2="'+yy+'" stroke="var(--border)" stroke-width="0.5"/>');
+async function doJoin(rid) {
+  roomId = rid;
+  await db.ref('rooms/' + roomId + '/players/' + myUid).set(mkPlayer());
+  db.ref('rooms/' + roomId + '/players/' + myUid).onDisconnect().remove();
+  listen();
+  go('s-lobby');
+}
+
+function mkPlayer() {
+  return { name: myName, uid: myUid, prog: 0, wpm: 0, done: 0, totalWpm: 0, totalAcc: 0, rounds: 0, joinedAt: Date.now() };
+}
+
+// ── 監聽房間 ──
+var reconnectTimer = null;
+var isOnline = true;
+
+// 監聽網路連線狀態
+db.ref('.info/connected').on('value', function(snap) {
+  var connected = snap.val();
+  if (connected && !isOnline) {
+    // 重新連線
+    isOnline = true;
+    if (roomId) {
+      // 重新加入房間（更新 onDisconnect）
+      db.ref('rooms/' + roomId + '/players/' + myUid).onDisconnect().remove();
+      showToastReconnect('網路已重新連線 ✅');
+    }
+  } else if (!connected && isOnline) {
+    isOnline = false;
+    if (roomId) showToastReconnect('網路連線中斷，嘗試重新連線...');
+  }
+});
+
+function showToastReconnect(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = msg.includes('✅') ? 'var(--green)' : '#B45309';
+  t.classList.add('show');
+  setTimeout(function() {
+    t.classList.remove('show');
+    t.style.background = '';
+  }, 3000);
+}
+
+function listen() {
+  if (roomRef) roomRef.off();
+  roomRef = db.ref('rooms/' + roomId);
+  roomRef.on('value', function(snap) {
+    const d = snap.val();
+    if (!d) { backMenu(); return; }
+    // 如果房主不在玩家列表裡，且我是最早加入的人，接手房主
+    if (d.status === 'waiting' && d.players) {
+      var playerList = Object.values(d.players);
+      var hostExists = playerList.some(function(p) { return p.uid === d.host; });
+      if (!hostExists && playerList.length > 0) {
+        var earliest = playerList.sort(function(a,b){ return (a.joinedAt||0)-(b.joinedAt||0); })[0];
+        if (earliest.uid === myUid) {
+          db.ref('rooms/' + roomId).update({ host: myUid });
+        }
       }
-      var xStep = Math.ceil(pts.length/7);
-      var xLabels = pts.filter(function(_,i){ return i%xStep===0||i===pts.length-1; }).map(function(p) {
-        return '<text x="'+p.x+'" y="'+(chartH-5)+'" font-size="9" text-anchor="middle" fill="var(--text2)">'+p.day.slice(5)+'</text>';
-      });
-      var dots = pts.map(function(p) {
-        return '<circle cx="'+p.x+'" cy="'+p.y+'" r="3" fill="var(--purple)" stroke="var(--bg)" stroke-width="1.5"><title>'+p.day+'：'+p.count+'次</title></circle>';
-      });
-      svgChart = '<div style="margin-bottom:14px">' +
-        '<div style="font-size:12px;font-weight:500;margin-bottom:6px">📈 每日打題趨勢</div>' +
-        '<svg width="100%" viewBox="0 0 '+chartW+' '+chartH+'" style="overflow:visible">' +
-        yLines.join('') +
-        '<polyline points="'+area+'" fill="var(--purple-light)" stroke="none" opacity="0.4"/>' +
-        '<polyline points="'+polyline+'" fill="none" stroke="var(--purple)" stroke-width="2" stroke-linejoin="round"/>' +
-        dots.join('') + xLabels.join('') + '</svg></div>';
+    }
+    onRoom(d);
+  }, function(error) {
+    // Firebase 監聽錯誤時自動重連
+    console.error('Firebase listen error:', error);
+    if (roomId) {
+      setTimeout(function() { listen(); }, 3000);
+    }
+  });
+}
+
+function onRoom(d) {
+  const ps = d.players ? Object.values(d.players) : [];
+
+  if (d.status === 'waiting') {
+    renderLobby(d, ps);
+
+  } else if (d.status === 'countdown') {
+    if (lastStatus !== 'countdown' || lastQ !== d.q) {
+      lastStatus = 'countdown';
+      lastQ = d.q; // 更新 lastQ 防止網路抖動重複觸發 doCountdown
+      doCountdown(d.cdStart || Date.now(), d);
     }
 
-    // ── 曾打過哪些篇（統計）──
-    var passageCount = {};
-    history.forEach(function(h) {
-      var t = h.passage || '未知';
-      if (!passageCount[t]) passageCount[t] = { count: 0, wpmSum: 0, accSum: 0 };
-      passageCount[t].count++;
-      passageCount[t].wpmSum += (h.wpm || 0);
-      passageCount[t].accSum += (h.acc || 0);
+  } else if (d.status === 'playing') {
+    if (d.advancing) advancing = true;
+    else if (d.advancing === false) advancing = false;
+
+    if (lastStatus !== 'playing') {
+      // 第一次進入遊戲，從第 0 題開始
+      lastStatus = 'playing';
+      lastQ = 0;
+      startQ(d, ps);
+    } else {
+      // 更新其他人的進度條
+      updateBars(ps);
+      // 每次 Firebase 更新都檢查結算條件
+      checkAllDone(d, ps);
+    }
+
+  } else if (d.status === 'results') {
+    if (lastStatus !== 'results') {
+      lastStatus = 'results';
+      showResults(d, ps);
+    }
+  }
+}
+
+// ── 等候室 ──
+var lastLobbyHash = '';
+function renderLobby(d, ps) {
+  go('s-lobby');
+  var hash = ps.map(function(p){ return p.uid + p.name; }).join(',') + d.host + ps.length;
+  var canStart = ps.length >= 1;
+  var iAmHost = d.host === myUid;
+  // 人數或房主沒變就不重建 DOM
+  if (hash === lastLobbyHash) {
+    document.getElementById('lob-hint').style.display = canStart ? 'none' : 'block';
+    document.getElementById('lob-start-row').style.display = (iAmHost && canStart) ? 'flex' : 'none';
+    document.getElementById('lob-leave-row').style.display = (iAmHost && canStart) ? 'none' : 'flex';
+    return;
+  }
+  lastLobbyHash = hash;
+  document.getElementById('lob-code').textContent = d.code || '----';
+  document.getElementById('lob-count').textContent = ps.length + ' / ' + d.minP;
+  document.getElementById('lob-players').innerHTML = ps.map(function(p, i) {
+    return '<div class="player-item">' +
+      '<div class="avatar" style="background:' + COLORS[i] + '22;color:' + COLORS[i] + '">' + p.name.slice(0,2) + '</div>' +
+      '<div style="flex:1">' + escHtml(p.name) + '</div>' +
+      '<span class="badge ' + (p.uid === d.host ? 'badge-purple' : 'badge-gray') + '">' + (p.uid === d.host ? '房主' : '等待中') + '</span>' +
+      '</div>';
+  }).join('');
+  document.getElementById('lob-hint').style.display = canStart ? 'none' : 'block';
+  document.getElementById('lob-start-row').style.display = (iAmHost && canStart) ? 'flex' : 'none';
+  document.getElementById('lob-leave-row').style.display = (iAmHost && canStart) ? 'none' : 'flex';
+}
+
+async function hostStart() {
+  // 再次確認是房主才能開始
+  const snap = await db.ref('rooms/' + roomId + '/host').once('value');
+  if (snap.val() !== myUid) { toast('只有房主可以開始遊戲'); return; }
+  await db.ref('rooms/' + roomId).update({ status: 'countdown', cdStart: Date.now(), q: 0 });
+}
+
+// ── 倒數 ──
+var cdInterval = null;
+function doCountdown(t0, d) {
+  go('s-cd');
+  if (cdInterval) clearInterval(cdInterval);
+
+  function getRemaining() {
+    return Math.max(0, Math.ceil(3 - (Date.now() - t0) / 1000));
+  }
+
+  document.getElementById('cd-num').textContent = getRemaining() || 1;
+
+  cdInterval = setInterval(function() {
+    var n = getRemaining();
+    if (n <= 0) {
+      clearInterval(cdInterval);
+      cdInterval = null;
+      // 只有 Firebase host 才能推進，避免重複寫入
+      if (roomId) {
+        db.ref('rooms/' + roomId + '/host').once('value', function(s) {
+          if (s.val() === myUid && roomId) {
+            db.ref('rooms/' + roomId).update({ status: 'playing', roundStart: Date.now() });
+          }
+        });
+      }
+    } else {
+      document.getElementById('cd-num').textContent = n;
+    }
+  }, 300);
+}
+
+// ── 開始新題 ──
+function startQ(d, ps) {
+  curQ = d.q;
+  curText = d.qs[curQ].t;
+  typed = '';
+  doneThisQ = false;
+  startTime = d.roundStart || Date.now();
+
+  // 用 CSS 判斷哪個 textarea 目前可見，比 innerWidth 更可靠
+  var desktopInput = document.getElementById('g-input-d');
+  var isDesktop = desktopInput && desktopInput.offsetParent !== null;
+  var qText = '第 ' + (curQ + 1) + ' / ' + d.qcount + ' 題';
+  var qtTitle = '題目 ' + (curQ + 1) + '：';
+
+  // 兩套元素同步更新
+  syncEl(['g-qinfo','g-qinfo-d'], 'textContent', qText);
+  syncEl(['g-qtitle','g-qtitle-d'], 'textContent', qtTitle);
+  syncEl(['g-fin','g-fin-d'], 'display', 'none', true);
+  syncEl(['g-wait','g-wait-d'], 'display', 'none', true);
+  syncEl(['g-leave','g-leave-d'], 'display', 'none', true);
+
+  renderPassage('', curText);
+  buildBars(ps);
+
+  // 根據螢幕大小決定用哪個 textarea
+  // 兩個都重置，確保狀態乾淨
+  syncEl(['g-input','g-input-d'], 'value', '');
+  syncEl(['g-input','g-input-d'], 'disabled', false);
+  var inp = document.getElementById(isDesktop ? 'g-input-d' : 'g-input');
+  inputOn = true;
+  lastTypedLen = 0;
+
+  if (timerIv) clearInterval(timerIv);
+  timerIv = setInterval(function() {
+    var s = Math.round((Date.now() - startTime) / 1000);
+    var wpmStr = calcWpm(typed.length, startTime) + ' 字/分';
+    var timerStr = '⏱ ' + s + 's';
+    syncEl(['g-timer','g-timer-d'], 'textContent', timerStr);
+    syncEl(['g-wpm','g-wpm-d'], 'textContent', wpmStr);
+  }, 400);
+
+  go('s-game');
+  document.body.classList.add('game-active');
+  // 顯示加速券、雙倍券和縮短券按鈕
+  updateBoostUI();
+  updateDoubleUI();
+  updateShortUI();
+  setTimeout(function() { inp.focus(); }, 100);
+}
+
+// ── 打字輸入 ──
+// 防複製貼上 + 輸入事件（手機版 + 電腦版 textarea 都綁定）
+var lastTypedLen = 0;
+var isComposing = false; // 追蹤輸入法組字狀態
+var doubleActive = false; // 雙倍券是否啟動
+var boostUsed = false;    // 加速券是否已使用（本題）
+var shortActive = false;  // 縮短券是否啟動
+
+function setupInput(inputEl) {
+  if (!inputEl) return;
+
+  // 封鎖貼上、拖曳、剪下
+  ['paste','drop','cut'].forEach(function(ev) {
+    inputEl.addEventListener(ev, function(e) {
+      e.preventDefault(); e.stopPropagation(); return false;
     });
-    var passageList = Object.entries(passageCount).sort(function(a,b){ return b[1].count-a[1].count; });
-    var passageTags = passageList.map(function(p) {
-      var avgWpm = Math.round(p[1].wpmSum/p[1].count);
-      var avgAcc = Math.round(p[1].accSum/p[1].count);
-      return '<div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius);padding:6px 10px;font-size:12px">' +
-        '<div style="font-weight:500;margin-bottom:2px">'+p[0]+'…</div>' +
-        '<div style="color:var(--text2);font-size:11px">打了 <strong style="color:var(--purple)">'+p[1].count+'</strong> 次　平均 <strong>'+avgWpm+'</strong> 字/分　準確率 <strong>'+avgAcc+'%</strong></div>' +
-        '</div>';
-    }).join('');
-    var totalSummary = '<div style="margin-bottom:14px">' +
-      '<div style="font-size:12px;font-weight:500;margin-bottom:8px">📚 打過的題目（共 '+passageList.length+' 篇）</div>' +
-      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px">'+passageTags+'</div></div>';
+  });
 
-    // ── 每次詳細紀錄 ──
-    var historyRows = history.slice(0, 50).map(function(h) {
-      return '<tr>' +
-        '<td style="padding:5px 8px;color:var(--text2);font-size:11px">'+( h.time || '—')+'</td>' +
-        '<td style="padding:5px 8px;font-size:12px">'+(h.passage||'—')+'…</td>' +
-        '<td style="padding:5px 8px;text-align:right;color:var(--purple);font-weight:500">'+(h.wpm||0)+'</td>' +
-        '<td style="padding:5px 8px;text-align:right">'+(h.acc||0)+'%</td>' +
-        '</tr>';
-    }).join('');
-    var historyTable = '<div>' +
-      '<div style="font-size:12px;font-weight:500;margin-bottom:8px">📋 每次成績（最近50筆）</div>' +
-      '<table style="width:100%;border-collapse:collapse;font-size:12px">' +
-      '<thead><tr style="border-bottom:0.5px solid var(--border)">' +
-      '<th style="padding:5px 8px;text-align:left;color:var(--text2);font-weight:500">時間</th>' +
-      '<th style="padding:5px 8px;text-align:left;color:var(--text2);font-weight:500">題目</th>' +
-      '<th style="padding:5px 8px;text-align:right;color:var(--text2);font-weight:500">字/分</th>' +
-      '<th style="padding:5px 8px;text-align:right;color:var(--text2);font-weight:500">準確率</th>' +
-      '</tr></thead><tbody>' + (history.length > 0 ? historyRows : '<tr><td colspan="4" style="padding:12px;text-align:center;color:var(--text2)">尚無紀錄</td></tr>') +
-      '</tbody></table></div>';
+  // 輸入法開始組字（注音/倉頡/拼音）
+  inputEl.addEventListener('compositionstart', function() {
+    isComposing = true;
+  });
 
-    box.innerHTML = (chartData.length > 0 ? svgChart : '') + totalSummary + historyTable;
+  // 輸入法組字結束，才更新 lastTypedLen
+  inputEl.addEventListener('compositionend', function() {
+    isComposing = false;
+    lastTypedLen = this.value.length;
+    handleTyping(this.value);
+  });
+
+  inputEl.addEventListener('input', function() {
+    // 組字中不做任何判斷，等 compositionend
+    if (isComposing) return;
+    lastTypedLen = this.value.length;
+    handleTyping(this.value);
+  });
+}
+setupInput(document.getElementById('g-input'));
+setupInput(document.getElementById('g-input-d'));
+
+function handleTyping(val) {
+  if (!inputOn || !curText) return;
+  typed = val;
+
+  // 把 curText 的 \n 去掉來比對（使用者不需要打換行）
+  var compareText = curText.replace(/\n/g, '');
+  renderPassage(typed, curText);
+
+  const correct = Array.from(typed).filter(function(c, i) { return c === compareText[i]; }).length;
+  const pct = Math.min(100, Math.round((typed.length / compareText.length) * 100));
+  const wpm = calcWpm(typed.length, startTime);
+  const acc = typed.length > 0 ? Math.round((correct / typed.length) * 100) : 100;
+
+  syncEl(['g-swpm','g-swpm-d'], 'textContent', wpm);
+  syncEl(['g-sacc','g-sacc-d'], 'textContent', acc+'%');
+  syncEl(['g-schar','g-schar-d'], 'textContent', typed.length);
+  syncEl(['g-wpm','g-wpm-d'], 'textContent', wpm+' 字/分');
+
+  // 自己的進度條即時更新，不等 Firebase
+  var myBar = document.getElementById('bar-' + myUid);
+  var myPct = document.getElementById('pct-' + myUid);
+  if (myBar) myBar.style.width = pct + '%';
+  if (myPct) myPct.textContent = pct + '%';
+
+  // 節流：每 300ms 最多寫一次 Firebase，避免過度寫入
+  var now = Date.now();
+  if (now - lastProgUpdate >= 300 || typed === compareText) {
+    lastProgUpdate = now;
+    db.ref('rooms/' + roomId + '/players/' + myUid).update({ prog: pct, wpm: wpm });
+  }
+
+  // 縮短券：打到70%就算完成
+  var shortTarget = shortActive ? Math.floor(compareText.length * 0.7) : compareText.length;
+  var shortDone = shortActive ? (typed.length >= shortTarget && typed.slice(0, shortTarget) === compareText.slice(0, shortTarget)) : (typed === compareText);
+
+  if (shortDone && !doneThisQ) {
+    doneThisQ = true;
+    // 縮短券模式：把輸入補完整再計分（不觸發 input 事件）
+    if (shortActive) {
+      typed = compareText;
+      // 直接設定 value，不用 syncEl 避免再次觸發 input
+      var inpEl = document.getElementById('g-input');
+      var inpDEl = document.getElementById('g-input-d');
+      if (inpEl) inpEl.value = compareText;
+      if (inpDEl) inpDEl.value = compareText;
+      renderPassage(compareText, curText);
+    }
+    finishQ(wpm, acc);
+  }
+}
+
+function renderPassage(ty, text) {
+  var compareText = text.replace(/\n/g, '');
+  var tyIdx = 0;
+  var html = Array.from(text).map(function(c) {
+    if (c === '\n') return '<br>';
+    var cls = 'c-dim';
+    if (tyIdx < ty.length) cls = ty[tyIdx] === c ? 'c-ok' : 'c-err';
+    if (tyIdx === ty.length) cls = 'c-cur';
+    tyIdx++;
+    return '<span class="' + cls + '">' + (c === ' ' ? '&nbsp;' : c) + '</span>';
+  }).join('');
+  // 同時更新手機版和電腦版的 passage
+  syncEl(['g-passage','g-passage-d'], 'innerHTML', html);
+}
+
+// 用 uid 的 hash 固定每個玩家的顏色，不依陣列順序
+function uidToColor(uid) {
+  var hash = 0;
+  for (var i = 0; i < uid.length; i++) hash = uid.charCodeAt(i) + ((hash << 5) - hash);
+  return COLORS[Math.abs(hash) % COLORS.length];
+}
+
+function buildBars(ps) {
+  var html = ps.map(function(p) {
+    var isMe = p.uid === myUid;
+    var color = uidToColor(p.uid);
+    var nameLabel = escHtml(p.name) + (isMe
+      ? ' <span style="font-size:10px;background:var(--purple);color:#fff;border-radius:4px;padding:1px 5px;vertical-align:middle;margin-left:4px">我</span>'
+      : '');
+    var rowStyle = isMe
+      ? 'background:var(--purple-light);border-radius:var(--radius);padding:4px 6px;margin-bottom:6px;'
+      : '';
+    return '<div class="prog-row" style="' + rowStyle + '">' +
+      '<div class="prog-label"><span>' + nameLabel + '</span><span id="pct-' + p.uid + '">0%</span></div>' +
+      '<div class="prog-bar"><div class="prog-fill" id="bar-' + p.uid + '" style="width:0%;background:' + color + '"></div></div>' +
+      '</div>';
+  }).join('');
+  syncEl(['g-prog','g-prog-d'], 'innerHTML', html);
+}
+
+function updateBars(ps) {
+  ps.forEach(function(p) {
+    if (p.uid === myUid) return; // 自己的進度條由本地即時更新，不用 Firebase 覆蓋
+    var b = document.getElementById('bar-' + p.uid);
+    var l = document.getElementById('pct-' + p.uid);
+    if (b) b.style.width = Math.min(p.prog || 0, 100) + '%';
+    if (l) l.textContent = Math.min(Math.round(p.prog || 0), 100) + '%';
   });
 }
 
-// ── 修改 Admin 密碼 ──
-async function changeAdminPwd() {
-  var newPwd = document.getElementById('inp-new-admin-pwd').value;
-  if (!newPwd || newPwd.length < 4) { toast('密碼至少需要 4 個字元', true); return; }
-  var hashed = await sha256(newPwd);
-  await db.ref('system/adminHash').set(hashed);
-  document.getElementById('inp-new-admin-pwd').value = '';
-  toast('✅ 管理員密碼已更新');
-}
+// ── 完成本題 ──
+var myTotalWpm = 0, myTotalAcc = 0, myRounds = 0; // 本地追蹤累計值，避免重複讀 Firebase
 
-// ── 重設密碼 ──
-async function resetPassword(studentId, name) {
-  var newPwd = prompt('重設 ' + name + ' 的密碼\n請輸入新密碼（至少4字元）：');
-  if (newPwd === null) return;
-  if (newPwd.length < 4) { alert('密碼至少需要 4 個字元'); return; }
-  var hashed = await sha256(newPwd);
-  await db.ref('users/' + studentId + '/password').set(hashed);
-  toast('✅ ' + name + ' 的密碼已重設，請告知同學新密碼：' + newPwd);
-}
+function finishQ(wpm, acc) {
+  clearInterval(timerIv);
+  inputOn = false;
+  syncEl(['g-input','g-input-d'], 'disabled', true);
+  syncEl(['g-input','g-input-d'], 'value', typed);
 
-// ── 修改積分 ──
-function editScore(studentId, name, currentScore) {
-  var newScore = prompt('修改 ' + name + ' 的本週積分（目前：' + currentScore + ' 題）\n請輸入新的積分：', currentScore);
-  if (newScore === null) return; // 取消
-  var score = parseInt(newScore);
-  if (isNaN(score) || score < 0) { alert('請輸入有效的數字（0 以上）'); return; }
-  db.ref('users/' + studentId + '/weekScore').set(score, function(err) {
-    if (err) { toast('修改失敗：' + err.message, true); }
-    else { toast('✅ 已將 ' + name + ' 的積分修改為 ' + score + ' 題'); }
-  });
-}
+  myTotalWpm += wpm;
+  myTotalAcc += acc;
+  myRounds += 1;
+  boostUsed = false;   // 重置加速券狀態
+  shortActive = false; // 重置縮短券狀態
 
-async function deleteAccount(studentId) {
-  if (!confirm(`確定要刪除學號 ${studentId} 的帳號嗎？`)) return;
-  await db.ref('users/' + studentId).remove();
-  toast('帳號已刪除');
-}
+  // 字速低於 20 字/分，發縮短券（一天一張）
+  if (wpm < 20 && currentUser && currentUser.studentId && !currentUser.isGuest) {
+    var shortToday = new Date().toLocaleDateString('zh-TW', {
+      timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).replace(/\//g, '-');
+    var shortRef = db.ref('users/' + currentUser.studentId + '/shortTicket');
+    shortRef.once('value', function(ss) {
+      var shortData = ss.val() || {};
+      if (shortData.lastGiven !== shortToday) {
+        var curShort = shortData.count || 0;
+        var newShort = Math.min(curShort + 1, 3);
+        shortRef.set({ count: newShort, lastGiven: shortToday });
+        currentUser.shortCount = newShort;
+        updateShortUI();
+        toast('✂️ 字速較慢，獲得縮短券 x1！目前共 ' + newShort + ' 張');
+      }
+    });
+  }
 
-var resetTargetClass = null;
+  // 完成一題加一分到個人積分（訪客不累積）
+  if (!currentUser || !currentUser.isGuest) addWeekScore();
 
-function confirmResetClass(cls) {
-  resetTargetClass = cls;
-  document.getElementById('confirm-title').textContent = '確認重置 ' + cls + '？';
-  document.getElementById('confirm-overlay').style.display = 'flex';
-}
+  // 記錄每次打題的詳細成績
+  if (currentUser && currentUser.studentId && !currentUser.isGuest) {
+    var now = new Date();
+    var timeStr = now.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
+    var passageTitle = curText.slice(0, 15).replace(/\n/g, '');
+    db.ref('users/' + currentUser.studentId + '/history').push({
+      time: timeStr, timestamp: Date.now(),
+      passage: passageTitle, wpm: wpm, acc: acc
+    });
+  }
 
-function cancelReset() {
-  resetTargetClass = null;
-  document.getElementById('confirm-overlay').style.display = 'none';
-}
+  var finText = '✅ 完成！' + wpm + ' 字/分 ｜ 準確率 ' + acc + '%';
+  syncEl(['g-fin','g-fin-d'], 'textContent', finText);
+  syncEl(['g-fin','g-fin-d'], 'display', 'block', true);
 
-async function doReset() {
-  // 先把班級存起來，再關閉對話框，避免 cancelReset 清掉 resetTargetClass
-  var targetCls = resetTargetClass;
-  document.getElementById('confirm-overlay').style.display = 'none';
-  resetTargetClass = null;
+  // 計算下一題索引（在非同步操作前先記錄）
+  var nextQ = curQ + 1;
 
-  if (!targetCls) { toast('錯誤：未指定班級', true); return; }
+  // 先讀房間資料取得 qcount
+  db.ref('rooms/' + roomId).once('value', function(snap) {
+    var d = snap.val();
+    if (!d) return;
 
-  const snap = await db.ref('users').once('value');
-  const data = snap.val() || {};
-  const updates = {};
-  Object.keys(data).forEach(id => {
-    var s = data[id];
-    if (s.class === targetCls) {
-      updates['users/' + id + '/weekScore'] = 0;
-      updates['users/' + id + '/dailyPassages'] = null; // 清除每日打題記錄，讓同學可以重新計分
-      // history 保留，長期成績紀錄不清除
+    if (nextQ >= d.qcount) {
+      // ── 最後一題打完 ──
+      syncEl(['g-wait','g-wait-d'], 'display', 'block', true);
+      syncEl(['g-leave','g-leave-d'], 'display', 'block', true);
+
+      db.ref('rooms/' + roomId + '/players/' + myUid).update({
+        prog: 100, wpm: wpm, done: d.qcount,
+        totalWpm: myTotalWpm, totalAcc: myTotalAcc, rounds: myRounds
+      }, function(err) {
+        if (err) return;
+        // 讀取最新玩家資料判斷是否全員完成
+        db.ref('rooms/' + roomId + '/players').once('value', function(psSnap) {
+          var latestPs = psSnap.val() ? Object.values(psSnap.val()) : [];
+          var allDone = latestPs.length > 0 && latestPs.every(function(p) {
+            return (p.done || 0) >= d.qcount;
+          });
+          if (allDone) {
+            // 用 transaction 確保只結算一次
+            db.ref('rooms/' + roomId + '/status').transaction(function(status) {
+              if (status === null || status === 'playing') return 'results';
+              return;
+            });
+          }
+          // 單人模式備援：如果只有自己，直接結算不等 onRoom
+          if (latestPs.length === 1 && latestPs[0].uid === myUid) {
+            db.ref('rooms/' + roomId + '/status').transaction(function(status) {
+              if (status === null || status === 'playing') return 'results';
+              return;
+            });
+          }
+        });
+      });
+
+    } else {
+      // ── 還有下一題，1.5 秒後直接進下一題 ──
+      syncEl(['g-fin','g-fin-d'], 'textContent', finText + '　下一題準備中...');
+
+      // 寫入目前題目成績
+      db.ref('rooms/' + roomId + '/players/' + myUid).update({
+        prog: 100, wpm: wpm, done: nextQ,
+        totalWpm: myTotalWpm, totalAcc: myTotalAcc, rounds: myRounds
+      });
+
+      setTimeout(function() {
+        if (!roomId) return;
+        db.ref('rooms/' + roomId).once('value', function(s2) {
+          var d2 = s2.val();
+          if (!d2) return;
+          var ps2 = d2.players ? Object.values(d2.players) : [];
+          curQ = nextQ;
+          curText = d2.qs[nextQ].t;
+          typed = '';
+          doneThisQ = false;
+          startTime = Date.now();
+          db.ref('rooms/' + roomId + '/players/' + myUid).update({ prog: 0 });
+          syncEl(['g-fin','g-fin-d'], 'display', 'none', true);
+          syncEl(['g-wait','g-wait-d'], 'display', 'none', true);
+          syncEl(['g-leave','g-leave-d'], 'display', 'none', true);
+          renderPassage('', curText);
+          buildBars(ps2);
+          syncEl(['g-input','g-input-d'], 'value', '');
+          syncEl(['g-input','g-input-d'], 'disabled', false);
+          var isDesktop = document.getElementById('g-input-d') && document.getElementById('g-input-d').offsetParent !== null;
+          var inp = document.getElementById(isDesktop ? 'g-input-d' : 'g-input');
+          inputOn = true;
+          lastTypedLen = 0;
+          boostUsed = false;    // 換題重置加速券狀態
+          doubleActive = false; // 換題重置雙倍券狀態
+          shortActive = false;  // 換題重置縮短券狀態
+          syncEl(['g-qinfo','g-qinfo-d'], 'textContent', '第 ' + (nextQ+1) + ' / ' + d2.qcount + ' 題');
+          syncEl(['g-qtitle','g-qtitle-d'], 'textContent', '題目 ' + (nextQ+1) + '：');
+          if (timerIv) clearInterval(timerIv);
+          timerIv = setInterval(function() {
+            var s = Math.round((Date.now() - startTime) / 1000);
+            syncEl(['g-timer','g-timer-d'], 'textContent', '⏱ ' + s + 's');
+            syncEl(['g-wpm','g-wpm-d'], 'textContent', calcWpm(typed.length, startTime) + ' 字/分');
+          }, 400);
+          setTimeout(function() { if (inp) inp.focus(); }, 100);
+        });
+      }, 1500);
     }
   });
-  await db.ref().update(updates);
-  await db.ref('system/lastReset_' + targetCls).set(new Date().toISOString());
-  toast('✅ ' + targetCls + ' 分數已重置完成');
 }
+
+// ── 已打過的題目 ──
+var passageTabMode = 'today';
+
+function switchPassageTab(mode) {
+  passageTabMode = mode;
+  document.getElementById('tab-today').style.background = mode === 'today' ? 'var(--purple)' : 'transparent';
+  document.getElementById('tab-today').style.color = mode === 'today' ? '#fff' : 'var(--text2)';
+  document.getElementById('tab-today').style.borderColor = mode === 'today' ? 'var(--purple)' : 'var(--border)';
+  document.getElementById('tab-week').style.background = mode === 'week' ? 'var(--purple)' : 'transparent';
+  document.getElementById('tab-week').style.color = mode === 'week' ? '#fff' : 'var(--text2)';
+  document.getElementById('tab-week').style.borderColor = mode === 'week' ? 'var(--purple)' : 'var(--border)';
+  loadMyPassages();
+}
+
+function loadMyPassages() {
+  if (!currentUser || currentUser.isGuest) return;
+  var card = document.getElementById('my-passages-card');
+  var list = document.getElementById('my-passages-list');
+  if (!card || !list) return;
+  card.style.display = 'block';
+
+  db.ref('users/' + currentUser.studentId + '/dailyPassages').once('value', function(snap) {
+    var data = snap.val() || {};
+    var today = new Date().toLocaleDateString('zh-TW', {
+      timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).replace(/\//g, '-');
+
+    // 收集要顯示的日期
+    var days = Object.keys(data).sort().reverse();
+    if (passageTabMode === 'today') {
+      days = days.filter(function(d) { return d === today; });
+    }
+
+    if (days.length === 0) {
+      list.innerHTML = '<div style="font-size:13px;color:var(--text2);padding:8px 0">' +
+        (passageTabMode === 'today' ? '今天還沒打過任何題目！' : '本週還沒打過任何題目！') +
+        '</div>';
+      return;
+    }
+
+    // 所有 15 題的標題（前 12 字）
+    var PASSAGE_TITLES = PASSAGES.map(function(p, i) {
+      return '題組' + (i+1) + '：' + p.replace(/\n/g, '').slice(0, 12) + '…';
+    });
+
+    var html = days.map(function(day) {
+      var passages = data[day];
+      var keys = Object.keys(passages);
+      var isToday = day === today;
+      return '<div style="margin-bottom:10px">' +
+        '<div style="font-size:12px;color:var(--text2);margin-bottom:6px">' +
+        (isToday ? '📅 今天' : day) + '　共 ' + keys.length + ' 篇</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:5px">' +
+        keys.map(function(k) {
+          var title = typeof passages[k] === 'string' ? passages[k] + '…' : '已完成';
+          return '<span style="background:var(--purple-light);color:var(--purple-dark);' +
+            'padding:4px 10px;border-radius:20px;font-size:12px">✓ ' + escHtml(title) + '</span>';
+        }).join('') +
+        '</div></div>';
+    }).join('');
+
+    // 未打過的題目（今天模式才顯示）
+    if (passageTabMode === 'today') {
+      var todayData = data[today] || {};
+      var doneCount = Object.keys(todayData).length;
+      var remaining = 15 - doneCount;
+      if (remaining > 0) {
+        html += '<div style="font-size:12px;color:var(--text2);margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)">' +
+          '還有 <strong style="color:var(--purple)">' + remaining + '</strong> 篇今天可以打 💪</div>';
+      } else {
+        html += '<div style="font-size:12px;color:var(--green);margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)">' +
+          '🎉 今天 15 篇全部打完了！</div>';
+      }
+    }
+
+    list.innerHTML = html;
+  });
+}
+
+// ── 加速券 ──
+function updateBoostUI() {
+  if (!currentUser || currentUser.isGuest) return;
+  var today = new Date().toLocaleDateString('zh-TW', {
+    timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).replace(/\//g, '-');
+  db.ref('users/' + currentUser.studentId + '/boostTicket').once('value', function(snap) {
+    var data = snap.val() || {};
+    var count = data.count || 0; // 直接讀 count，不依賴 date
+    currentUser.boostCount = count;
+    // 更新兩個版本的按鈕
+    ['g-boost', 'g-boost-d'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = (count > 0 && inputOn) ? 'block' : 'none';
+    });
+    ['g-boost-count', 'g-boost-count-d'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = count;
+    });
+  });
+}
+
+function useBoost() {
+  if (!currentUser || currentUser.isGuest) return;
+  if (!inputOn || !curText) { toast('請在打字中使用加速券'); return; }
+  var count = currentUser.boostCount || 0;
+  if (count <= 0) { toast('沒有加速券了！'); return; }
+  if (doubleActive) { toast('雙倍券使用中，無法同時使用加速券！'); return; }
+  if (shortActive) { toast('縮短券使用中，無法同時使用加速券！'); return; }
+
+  var today = new Date().toLocaleDateString('zh-TW', {
+    timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).replace(/\//g, '-');
+
+  // 扣除一張券
+  currentUser.boostCount = count - 1;
+  db.ref('users/' + currentUser.studentId + '/boostTicket').set({
+    date: today, count: count - 1
+  });
+
+  // 把輸入內容跳到文章的50%位置
+  var compareText = curText.replace(/\n/g, '');
+  var halfLen = Math.floor(compareText.length / 2);
+  var halfText = compareText.slice(0, halfLen);
+
+  // 更新兩個 textarea
+  ['g-input', 'g-input-d'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.value = halfText;
+      el.disabled = false;
+    }
+  });
+  lastTypedLen = halfLen;
+  typed = halfText;
+  boostUsed = true;
+
+  // 觸發畫面更新
+  handleTyping(halfText);
+  updateBoostUI();
+  toast('⚡ 加速券使用！進度已跳至50%，繼續加油！');
+}
+
+// ── 雙倍券 ──
+function updateDoubleUI() {
+  if (!currentUser || currentUser.isGuest) return;
+  var today = new Date().toLocaleDateString('zh-TW', {
+    timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).replace(/\//g, '-');
+  db.ref('users/' + currentUser.studentId + '/doubleTicket').once('value', function(snap) {
+    var data = snap.val() || {};
+    var count = data.count || 0; // 直接讀 count，不依賴 date
+    currentUser.doubleCount = count;
+    ['g-double', 'g-double-d'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = (count > 0 && inputOn && !doubleActive) ? 'block' : 'none';
+    });
+    ['g-double-count', 'g-double-count-d'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = count;
+    });
+  });
+}
+
+function useDouble() {
+  if (!currentUser || currentUser.isGuest) return;
+  if (!inputOn) { toast('請在打字中使用雙倍券'); return; }
+  var count = currentUser.doubleCount || 0;
+  if (count <= 0) { toast('沒有雙倍券了！'); return; }
+  if (doubleActive) { toast('雙倍券已啟動中！'); return; }
+  if (boostUsed) { toast('加速券使用中，無法同時使用雙倍券！'); return; }
+  if (shortActive) { toast('縮短券使用中，無法同時使用雙倍券！'); return; }
+
+  var today = new Date().toLocaleDateString('zh-TW', {
+    timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).replace(/\//g, '-');
+
+  currentUser.doubleCount = count - 1;
+  db.ref('users/' + currentUser.studentId + '/doubleTicket').set({
+    date: today, count: count - 1
+  });
+
+  doubleActive = true;
+  updateDoubleUI();
+  toast('💎 雙倍券啟動！本題完成後獲得 +2 分！');
+}
+
+// ── 縮短券 ──
+function updateShortUI() {
+  if (!currentUser || currentUser.isGuest) return;
+  db.ref('users/' + currentUser.studentId + '/shortTicket').once('value', function(snap) {
+    var data = snap.val() || {};
+    var count = data.count || 0;
+    currentUser.shortCount = count;
+    ['g-short', 'g-short-d'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = (count > 0 && inputOn && !shortActive) ? 'block' : 'none';
+    });
+    ['g-short-count', 'g-short-count-d'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = count;
+    });
+  });
+}
+
+function useShort() {
+  if (!currentUser || currentUser.isGuest) return;
+  if (!inputOn) { toast('請在打字中使用縮短券'); return; }
+  var count = currentUser.shortCount || 0;
+  if (count <= 0) { toast('沒有縮短券了！'); return; }
+  if (shortActive) { toast('縮短券已啟動中！'); return; }
+  if (boostUsed) { toast('加速券使用中，無法同時使用縮短券！'); return; }
+  if (doubleActive) { toast('雙倍券使用中，無法同時使用縮短券！'); return; }
+
+  var shortToday = new Date().toLocaleDateString('zh-TW', {
+    timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).replace(/\//g, '-');
+
+  currentUser.shortCount = count - 1;
+  db.ref('users/' + currentUser.studentId + '/shortTicket').set({
+    count: count - 1, lastGiven: shortToday
+  });
+
+  shortActive = true;
+  updateShortUI();
+  toast('✂️ 縮短券啟動！打完前70%即可完成！');
+}
+
+// ── 全員完成檢查（onRoom 觸發，作為備援確保結算）──
+var advancing = false;
+var lastProgUpdate = 0;
+function checkAllDone(d, ps) {
+  if (d.status !== 'playing') return;
+  if (ps.length === 0) return;
+  var allDone = ps.every(function(p) { return (p.done || 0) >= d.qcount; });
+  if (!allDone) return;
+  // 用 transaction 安全觸發，防止重複
+  // 注意：status 可能是 null（Firebase 初始讀取），需處理
+  db.ref('rooms/' + roomId + '/status').transaction(function(status) {
+    if (status === null || status === 'playing') return 'results';
+    return; // 已經是 results 或其他狀態，不改
+  });
+}
+
+// ── 結算 ──
+function showResults(d, ps) {
+  clearInterval(timerIv);
+  go('s-result');
+  // 延遲 2.5 秒讀取，確保 addWeekScore 已寫入 Firebase
+  var resLb = document.getElementById('res-lb-overview');
+  if (resLb) resLb.innerHTML = '<div style="text-align:center;padding:12px;color:var(--text2);font-size:13px">更新中...</div>';
+  setTimeout(function() {
+    db.ref('users').once('value', function(snap) {
+      const data = snap.val() || {};
+      const students = Object.values(data);
+      if (!resLb) return;
+      resLb.innerHTML = CLASSES.map(function(cls) {
+        var clsStudents = students.filter(function(s) { return s.class === cls; });
+        var total = clsStudents.reduce(function(sum, s) { return sum + (s.weekScore||0); }, 0);
+
+        // 用四等級邏輯
+        var currentLevelIdx = -1;
+        for (var li = 0; li < LEVELS.length; li++) {
+          if (total >= LEVELS[li].targets[cls]) currentLevelIdx = li;
+          else break;
+        }
+        var showLevelIdx = Math.min(currentLevelIdx + 1, LEVELS.length - 1);
+        var target = LEVELS[showLevelIdx].targets[cls];
+        var pct = Math.min(100, Math.round((total / target) * 100));
+        var done = total >= target;
+        var allDone = currentLevelIdx === LEVELS.length - 1;
+
+        var badges = '';
+        for (var ai = 0; ai <= currentLevelIdx; ai++) {
+          badges += '<span style="font-size:10px;background:var(--green-light);color:var(--green);padding:1px 5px;border-radius:3px;margin-right:3px">' + LEVELS[ai].label + '</span>';
+        }
+
+        return '<div class="lb-class-card" style="cursor:default">' +
+          '<div class="lb-class-header">' +
+          '<span class="lb-class-name">' + cls + '</span>' +
+          '<span class="lb-class-score">' + total + '/' + target + ' 題 ' + pct + '%</span>' +
+          '</div>' +
+          (badges ? '<div style="margin-bottom:5px">' + badges + '</div>' : '') +
+          '<div class="lb-prog-bar"><div class="lb-prog-fill ' + (done?'done':'') + '" style="width:' + pct + '%"></div></div>' +
+          '<div style="font-size:11px;color:var(--text2);margin-top:3px">' +
+          (allDone ? '🎉 全部達成！' : (done ? '✅ ' + LEVELS[showLevelIdx].label + ' 達成！' : '目標：' + LEVELS[showLevelIdx].label + ' 還差 ' + (target-total) + ' 題')) +
+          '</div></div>';
+      }).join('');
+    });
+  }, 2500);
+  var medals = ['🥇','🥈','🥉','🏅'];
+  var ranked = ps.map(function(p) {
+    return {
+      name: p.name,
+      avgWpm: p.rounds > 0 ? Math.round(p.totalWpm / p.rounds) : 0,
+      avgAcc: p.rounds > 0 ? Math.round(p.totalAcc / p.rounds) : 0
+    };
+  }).sort(function(a, b) {
+    if (b.avgWpm !== a.avgWpm) return b.avgWpm - a.avgWpm;
+    return b.avgAcc - a.avgAcc; // 字速相同時，準確率高的排前面
+  });
+
+  document.getElementById('res-list').innerHTML = ranked.map(function(p, i) {
+    return '<div class="result-row ' + (i === 0 ? 'gold' : '') + '">' +
+      '<div class="medal">' + (medals[i] || (i+1)) + '</div>' +
+      '<div class="rname">' + escHtml(p.name) + '</div>' +
+      '<div class="rstat">平均 <strong>' + p.avgWpm + '</strong> 字/分 &nbsp; 準確率 <strong>' + p.avgAcc + '%</strong></div>' +
+      '</div>';
+  }).join('');
+  document.getElementById('res-sum').textContent = '共完成 ' + d.qcount + ' 題';
+}
+
+// ── 提前離開（完成題目後可離開）──
+async function leaveEarly() {
+  if (!roomId) { backMenu(); return; }
+
+  // 還券：如果雙倍券啟動中但還沒打完，把券還回去
+  if (doubleActive && currentUser && currentUser.studentId) {
+    doubleActive = false;
+  boostUsed = false;
+  shortActive = false;
+    var prevDoubleCount = currentUser.doubleCount || 0;
+    db.ref('users/' + currentUser.studentId + '/doubleTicket').update({ count: prevDoubleCount + 1 });
+  }
+  // 還券：縮短券啟動中但還沒打完，把券還回去
+  if (shortActive && currentUser && currentUser.studentId) {
+    shortActive = false;
+    var prevShortCount = currentUser.shortCount || 0;
+    db.ref('users/' + currentUser.studentId + '/shortTicket').update({ count: prevShortCount + 1 });
+  }
+  // 還券：如果加速券已使用但這題還沒完成，把券還回去
+  if (currentUser && currentUser.studentId && !doneThisQ) {
+    db.ref('users/' + currentUser.studentId + '/boostTicket').once('value', function(snap) {
+      var data = snap.val() || {};
+      var prevCount = currentUser.boostCount || 0;
+      var curCount = data.count || 0;
+      // 使用後 count 減少了，還回去
+      if (curCount < prevCount) {
+        db.ref('users/' + currentUser.studentId + '/boostTicket').update({ count: prevCount });
+      }
+    });
+  }
+
+  var snap = await db.ref('rooms/' + roomId).once('value');
+  var d = snap.val();
+  if (!d) { cleanup(); backMenu(); return; }
+
+  var remaining = d.players
+    ? Object.values(d.players).filter(function(p) { return p.uid !== myUid; })
+    : [];
+
+  if (remaining.length === 0) {
+    // 沒有其他人，直接刪除房間
+    await db.ref('rooms/' + roomId).remove();
+    cleanup(); backMenu(); return;
+  }
+
+  // 移除自己
+  await db.ref('rooms/' + roomId + '/players/' + myUid).remove();
+
+  // 如果自己是房主，轉移給最早加入的人，並重置 advancing
+  if (d.host === myUid) {
+    var next = remaining.sort(function(a,b){ return (a.joinedAt||0)-(b.joinedAt||0); })[0];
+    await db.ref('rooms/' + roomId).update({ host: next.uid, advancing: false });
+  }
+
+  // 離開後立刻檢查剩餘玩家是否都打完所有題目（個人進度模式）
+  if (d.status === 'playing') {
+    var allDone = remaining.every(function(p) { return (p.done || 0) >= d.qcount; });
+    if (allDone) {
+      await db.ref('rooms/' + roomId).update({ status: 'results' });
+    }
+  }
+
+  cleanup(); backMenu();
+}
+
+// ── 離開 / 重玩 ──
+async function leaveRoom() {
+  if (!roomId) { backMenu(); return; }
+
+  // 如果自己是房主，轉移給下一位玩家
+  var snap = await db.ref('rooms/' + roomId).once('value');
+  var d = snap.val();
+  if (d) {
+    var remaining = d.players
+      ? Object.values(d.players).filter(function(p) { return p.uid !== myUid; })
+      : [];
+    if (remaining.length > 0 && d.host === myUid) {
+      var next = remaining.sort(function(a,b){ return (a.joinedAt||0)-(b.joinedAt||0); })[0];
+      await db.ref('rooms/' + roomId).update({ host: next.uid });
+    }
+  }
+
+  await db.ref('rooms/' + roomId + '/players/' + myUid).remove();
+  cleanup();
+  backMenu();
+}
+
+function backMenu() {
+  cleanup();
+  document.body.classList.remove('game-active');
+  if (currentUser) {
+    enterMenu(); // 重新載入最新排行榜資料
+  } else {
+    go('s-menu');
+  }
+}
+
+function cleanup() {
+  clearInterval(timerIv);
+  if (cdInterval) { clearInterval(cdInterval); cdInterval = null; }
+  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+  if (roomRef) { roomRef.off(); roomRef = null; }
+  if (lbRef) { lbRef.off(); lbRef = null; }
+  roomId = null;
+  curQ = 0; curText = ''; lastStatus = ''; lastQ = -1;
+  typed = ''; doneThisQ = false; inputOn = false; advancing = false;
+  myTotalWpm = 0; myTotalAcc = 0; myRounds = 0;
+  lastProgUpdate = 0; lastLobbyHash = '';
+  syncEl(['g-leave','g-leave-d'], 'display', 'none', true);
+  lbOpenClass = null;
+  lbLoading = false;
+  doubleActive = false;
+  boostUsed = false;
+  shortActive = false;
+  var lb = document.getElementById('lb-detail');
+  if (lb) lb.style.display = 'none';
+  ['g-boost','g-boost-d','g-double','g-double-d','g-short','g-short-d'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+}
+
+async function playAgain() {
+  var hostSnap = await db.ref('rooms/' + roomId + '/host').once('value');
+  if (hostSnap.val() !== myUid) { toast('只有房主可以重新開始'); return; }
+  // 重置本地累計值，避免上一局成績帶入下一局
+  myTotalWpm = 0; myTotalAcc = 0; myRounds = 0;
+  var snap = await db.ref('rooms/' + roomId).once('value');
+  var d = snap.val();
+  // 自選題組：保留原本選的題目不變
+  // 隨機模式：從全部 PASSAGES 重新隨機抽，確保每次不同
+  var qs;
+  if (d.isCustom) {
+    // 自選模式：保持原本選的題目不變
+    qs = d.qs;
+  } else {
+    // 隨機模式：重新從所有 PASSAGES 抽新的題目
+    qs = shuffle(PASSAGES).slice(0, d.qcount).map(function(t, i) { return { i: i, t: t }; });
+  }
+  var updates = { status: 'waiting', qs: qs, q: 0, roundStart: 0 };
+  var ps = d.players ? Object.values(d.players) : [];
+  ps.forEach(function(p) {
+    updates['players/' + p.uid + '/totalWpm'] = 0;
+    updates['players/' + p.uid + '/totalAcc'] = 0;
+    updates['players/' + p.uid + '/rounds'] = 0;
+    updates['players/' + p.uid + '/done'] = 0;
+    updates['players/' + p.uid + '/prog'] = 0;
+  });
+  lastStatus = ''; lastQ = -1; advancing = false;
+  doubleActive = false; boostUsed = false; shortActive = false;
+  await db.ref('rooms/' + roomId).update(updates);
+}
+// ── 防止瀏覽器返回鍵跳出遊戲 ──
+window.history.pushState(null, '', window.location.href);
+window.addEventListener('popstate', function() {
+  window.history.pushState(null, '', window.location.href);
+});
+
+// ── 頁面載入時自動恢復登入 ──
+(function autoRestore() {
+  var saved = sessionStorage.getItem('currentUser');
+  if (!saved) return;
+  try {
+    var user = JSON.parse(saved);
+    if (!user) return;
+    // 訪客直接恢復
+    if (user.isGuest) { currentUser = user; enterMenu(); return; }
+    if (!user.studentId) return;
+    // 從 Firebase 重新讀取最新資料
+    db.ref('users/' + user.studentId).once('value', function(snap) {
+      var latest = snap.val();
+      if (!latest) { sessionStorage.removeItem('currentUser'); return; }
+      // 重新產生 sessionId，確保此分頁的 session 是最新的
+      var newSessionId = 'sess_' + Date.now() + Math.random().toString(36).slice(2,6);
+      currentUser = Object.assign(latest, { sessionId: newSessionId });
+      db.ref('users/' + user.studentId + '/activeSession').set(newSessionId);
+      sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+      enterMenu();
+    });
+  } catch(e) {
+    sessionStorage.removeItem('currentUser');
+  }
+})();
 </script>
 </body>
 </html>
