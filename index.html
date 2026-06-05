@@ -395,6 +395,33 @@ textarea:disabled { opacity: 0.6; }
     <div id="my-passages-list"></div>
   </div>
   <div class="card">
+    <div style="font-size:14px;font-weight:500;margin-bottom:10px">🎒 道具說明</div>
+    <div style="font-size:13px;line-height:1.9;color:var(--text2)">
+      <div style="margin-bottom:8px">
+        <span style="background:var(--purple);color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;margin-right:6px">⚡ 加速券</span>
+        打字中途使用，進度直接跳至 50%，仍需打完剩餘內容才算完成。
+      </div>
+      <div style="margin-bottom:8px">
+        <span style="background:#D4537E;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;margin-right:6px">💎 雙倍券</span>
+        打字中途使用，當題完成後獲得 <strong style="color:var(--text)">+2 分</strong>而非 +1 分。
+      </div>
+      <div style="margin-bottom:8px">
+        <span style="background:#D48A30;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;margin-right:6px">✂️ 縮短券</span>
+        打字中途使用，只需打完前 <strong style="color:var(--text)">70%</strong> 即可完成並計分。
+      </div>
+      <div style="margin-bottom:4px;color:var(--text);font-size:12px;font-weight:500">取得規則：</div>
+      <div style="font-size:12px">
+        • 每天打完第 1 篇，各獲得 1 張加速券和雙倍券<br>
+        • 字速低於 <strong style="color:var(--text)">20 字/分</strong>，額外獲得 1 張縮短券<br>
+        • 每種最多累積 <strong style="color:var(--text)">3 張</strong>，沒用完隔天繼續保留<br>
+        • 三種券<strong style="color:var(--text)">不能同時使用</strong><br>
+        • 提前離開時，本題尚未完成的券會自動歸還<br>
+        • 🎉 <strong style="color:var(--text)">加倍奉還</strong>：昨天打了 3 篇以上，今天發 2 張而非 1 張
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
     <div style="font-size:14px;font-weight:500;margin-bottom:10px">房間設定</div>
     <div class="q-mode-row">
       <div class="q-mode-btn active" id="mode-random" onclick="setQMode('random')">🎲 隨機題數</div>
@@ -513,6 +540,9 @@ textarea:disabled { opacity: 0.6; }
       <div id="g-double-d" style="display:none;margin-top:8px">
         <button onclick="useDouble()" style="font-size:13px;background:#D4537E;color:#fff;border-color:#D4537E">💎 使用雙倍券（下一題 +2 分，剩餘 <span id="g-double-count-d">0</span> 張）</button>
       </div>
+      <div id="g-short-d" style="display:none;margin-top:8px">
+        <button onclick="useShort()" style="font-size:13px;background:#D48A30;color:#fff;border-color:#D48A30">✂️ 使用縮短券（只需打完70%，剩餘 <span id="g-short-count-d">0</span> 張）</button>
+      </div>
     </div>
     <!-- 右欄：輸入 + 統計 + 進度 -->
     <div class="game-right">
@@ -555,6 +585,9 @@ textarea:disabled { opacity: 0.6; }
     </div>
     <div id="g-double" style="display:none;margin-top:8px">
       <button onclick="useDouble()" style="font-size:13px;background:#D4537E;color:#fff;border-color:#D4537E;width:100%">💎 使用雙倍券（下一題 +2 分，剩餘 <span id="g-double-count">0</span> 張）</button>
+    </div>
+    <div id="g-short" style="display:none;margin-top:8px">
+      <button onclick="useShort()" style="font-size:13px;background:#D48A30;color:#fff;border-color:#D48A30;width:100%">✂️ 使用縮短券（只需打完70%，剩餘 <span id="g-short-count">0</span> 張）</button>
     </div>
   </div>
 
@@ -600,7 +633,7 @@ const LEVELS = [
   { label: '⭐ 達標',      reward: '總成績 +1',      targets: { '商一甲': 58,  '商一乙': 52,  '應一甲': 28,  '貿一甲': 20  } },
   { label: '⭐⭐ 良好',    reward: '總成績 +2',      targets: { '商一甲': 81,  '商一乙': 79,  '應一甲': 39,  '貿一甲': 35  } },
   { label: '⭐⭐⭐ 優秀',  reward: '總成績 +3',      targets: { '商一甲': 115, '商一乙': 115, '應一甲': 55,  '貿一甲': 50  } },
-  { label: '🎉 傳說',      reward: '總成績 +3 + 點心', targets: { '商一甲': 115, '商一乙': 116, '應一甲': 55,  '貿一甲': 51  } },
+  { label: '🎉 傳說',      reward: '總成績 +3 + 點心', targets: { '商一甲': 116, '商一乙': 116, '應一甲': 56,  '貿一甲': 51  } },
 ];
 // 向下相容
 const TARGETS = { '商一甲': 58, '商一乙': 52, '應一甲': 28, '貿一甲': 20 };
@@ -927,6 +960,7 @@ function _doAddWeekScore() {
       });
       if (doubleActive) {
         doubleActive = false;
+        boostUsed = false;
         updateDoubleUI();
         toast('💎 雙倍券生效！本題 +2 分');
       }
@@ -937,25 +971,55 @@ function _doAddWeekScore() {
       var boostRef = db.ref('users/' + currentUser.studentId + '/boostTicket');
       boostRef.once('value', function(bs) {
         var boostData = bs.val() || {};
-        if (boostData.date !== today) {
-          // 今天還沒領過加速券，發1張
-          boostRef.set({ date: today, count: 1 });
-          currentUser.boostCount = 1;
-          updateBoostUI();
-          toast('🎉 獲得加速券 x1！打字中途可使用');
+        if (boostData.lastGiven !== today) {
+          // 計算昨天打了幾篇（加倍奉還：昨天3篇以上，今天發2張）
+          var yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          var yesterdayStr = yesterday.toLocaleDateString('zh-TW', {
+            timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+          }).replace(/\//g, '-');
+          db.ref('users/' + currentUser.studentId + '/dailyPassages/' + yesterdayStr).once('value', function(ydSnap) {
+            var ydCount = ydSnap.val() ? Object.keys(ydSnap.val()).length : 0;
+            var bonus = ydCount >= 3 ? 2 : 1; // 昨天3篇以上發2張，否則1張
+            var current = boostData.count || 0;
+            var newCount = Math.min(current + bonus, 3);
+            boostRef.set({ count: newCount, lastGiven: today });
+            currentUser.boostCount = newCount;
+            updateBoostUI();
+            if (bonus === 2) {
+              toast('🎉 加倍奉還！昨天表現優秀，獲得加速券 x2！目前共 ' + newCount + ' 張');
+            } else {
+              toast('🎉 獲得加速券 x1！目前共 ' + newCount + ' 張');
+            }
+          });
         }
         // 更新主選單的打題紀錄（如果在主選單）
         if (document.getElementById('my-passages-card')) loadMyPassages();
       });
-      // 打完第1篇就發雙倍券（跟加速券一樣）
+      // 打完第1篇就發雙倍券（加倍奉還：昨天3篇以上發2張）
       var doubleRef = db.ref('users/' + currentUser.studentId + '/doubleTicket');
       doubleRef.once('value', function(ds) {
         var doubleData = ds.val() || {};
-        if (doubleData.date !== today) {
-          doubleRef.set({ date: today, count: 1 });
-          currentUser.doubleCount = 1;
-          updateDoubleUI();
-          toast('💎 獲得雙倍券 x1！下一題可得 +2 分');
+        if (doubleData.lastGiven !== today) {
+          var yesterday2 = new Date();
+          yesterday2.setDate(yesterday2.getDate() - 1);
+          var yesterdayStr2 = yesterday2.toLocaleDateString('zh-TW', {
+            timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+          }).replace(/\//g, '-');
+          db.ref('users/' + currentUser.studentId + '/dailyPassages/' + yesterdayStr2).once('value', function(ydSnap2) {
+            var ydCount2 = ydSnap2.val() ? Object.keys(ydSnap2.val()).length : 0;
+            var bonus2 = ydCount2 >= 3 ? 2 : 1;
+            var current2 = doubleData.count || 0;
+            var newCount2 = Math.min(current2 + bonus2, 3);
+            doubleRef.set({ count: newCount2, lastGiven: today });
+            currentUser.doubleCount = newCount2;
+            updateDoubleUI();
+            if (bonus2 === 2) {
+              toast('💎 加倍奉還！獲得雙倍券 x2！目前共 ' + newCount2 + ' 張');
+            } else {
+              toast('💎 獲得雙倍券 x1！目前共 ' + newCount2 + ' 張');
+            }
+          });
         }
       });
     });
@@ -1384,9 +1448,10 @@ function startQ(d, ps) {
 
   go('s-game');
   document.body.classList.add('game-active');
-  // 顯示加速券和雙倍券按鈕
+  // 顯示加速券、雙倍券和縮短券按鈕
   updateBoostUI();
   updateDoubleUI();
+  updateShortUI();
   setTimeout(function() { inp.focus(); }, 100);
 }
 
@@ -1395,6 +1460,8 @@ function startQ(d, ps) {
 var lastTypedLen = 0;
 var isComposing = false; // 追蹤輸入法組字狀態
 var doubleActive = false; // 雙倍券是否啟動
+var boostUsed = false;    // 加速券是否已使用（本題）
+var shortActive = false;  // 縮短券是否啟動
 
 function setupInput(inputEl) {
   if (!inputEl) return;
@@ -1459,8 +1526,22 @@ function handleTyping(val) {
     db.ref('rooms/' + roomId + '/players/' + myUid).update({ prog: pct, wpm: wpm });
   }
 
-  if (typed === compareText && !doneThisQ) {
+  // 縮短券：打到70%就算完成
+  var shortTarget = shortActive ? Math.floor(compareText.length * 0.7) : compareText.length;
+  var shortDone = shortActive ? (typed.length >= shortTarget && typed.slice(0, shortTarget) === compareText.slice(0, shortTarget)) : (typed === compareText);
+
+  if (shortDone && !doneThisQ) {
     doneThisQ = true;
+    // 縮短券模式：把輸入補完整再計分（不觸發 input 事件）
+    if (shortActive) {
+      typed = compareText;
+      // 直接設定 value，不用 syncEl 避免再次觸發 input
+      var inpEl = document.getElementById('g-input');
+      var inpDEl = document.getElementById('g-input-d');
+      if (inpEl) inpEl.value = compareText;
+      if (inpDEl) inpDEl.value = compareText;
+      renderPassage(compareText, curText);
+    }
     finishQ(wpm, acc);
   }
 }
@@ -1527,6 +1608,27 @@ function finishQ(wpm, acc) {
   myTotalWpm += wpm;
   myTotalAcc += acc;
   myRounds += 1;
+  boostUsed = false;   // 重置加速券狀態
+  shortActive = false; // 重置縮短券狀態
+
+  // 字速低於 20 字/分，發縮短券（一天一張）
+  if (wpm < 20 && currentUser && currentUser.studentId && !currentUser.isGuest) {
+    var shortToday = new Date().toLocaleDateString('zh-TW', {
+      timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).replace(/\//g, '-');
+    var shortRef = db.ref('users/' + currentUser.studentId + '/shortTicket');
+    shortRef.once('value', function(ss) {
+      var shortData = ss.val() || {};
+      if (shortData.lastGiven !== shortToday) {
+        var curShort = shortData.count || 0;
+        var newShort = Math.min(curShort + 1, 3);
+        shortRef.set({ count: newShort, lastGiven: shortToday });
+        currentUser.shortCount = newShort;
+        updateShortUI();
+        toast('✂️ 字速較慢，獲得縮短券 x1！目前共 ' + newShort + ' 張');
+      }
+    });
+  }
 
   // 完成一題加一分到個人積分（訪客不累積）
   if (!currentUser || !currentUser.isGuest) addWeekScore();
@@ -1620,6 +1722,9 @@ function finishQ(wpm, acc) {
           var inp = document.getElementById(isDesktop ? 'g-input-d' : 'g-input');
           inputOn = true;
           lastTypedLen = 0;
+          boostUsed = false;    // 換題重置加速券狀態
+          doubleActive = false; // 換題重置雙倍券狀態
+          shortActive = false;  // 換題重置縮短券狀態
           syncEl(['g-qinfo','g-qinfo-d'], 'textContent', '第 ' + (nextQ+1) + ' / ' + d2.qcount + ' 題');
           syncEl(['g-qtitle','g-qtitle-d'], 'textContent', '題目 ' + (nextQ+1) + '：');
           if (timerIv) clearInterval(timerIv);
@@ -1722,7 +1827,7 @@ function updateBoostUI() {
   }).replace(/\//g, '-');
   db.ref('users/' + currentUser.studentId + '/boostTicket').once('value', function(snap) {
     var data = snap.val() || {};
-    var count = (data.date === today) ? (data.count || 0) : 0;
+    var count = data.count || 0; // 直接讀 count，不依賴 date
     currentUser.boostCount = count;
     // 更新兩個版本的按鈕
     ['g-boost', 'g-boost-d'].forEach(function(id) {
@@ -1741,6 +1846,8 @@ function useBoost() {
   if (!inputOn || !curText) { toast('請在打字中使用加速券'); return; }
   var count = currentUser.boostCount || 0;
   if (count <= 0) { toast('沒有加速券了！'); return; }
+  if (doubleActive) { toast('雙倍券使用中，無法同時使用加速券！'); return; }
+  if (shortActive) { toast('縮短券使用中，無法同時使用加速券！'); return; }
 
   var today = new Date().toLocaleDateString('zh-TW', {
     timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
@@ -1767,6 +1874,7 @@ function useBoost() {
   });
   lastTypedLen = halfLen;
   typed = halfText;
+  boostUsed = true;
 
   // 觸發畫面更新
   handleTyping(halfText);
@@ -1782,7 +1890,7 @@ function updateDoubleUI() {
   }).replace(/\//g, '-');
   db.ref('users/' + currentUser.studentId + '/doubleTicket').once('value', function(snap) {
     var data = snap.val() || {};
-    var count = (data.date === today) ? (data.count || 0) : 0;
+    var count = data.count || 0; // 直接讀 count，不依賴 date
     currentUser.doubleCount = count;
     ['g-double', 'g-double-d'].forEach(function(id) {
       var el = document.getElementById(id);
@@ -1801,6 +1909,8 @@ function useDouble() {
   var count = currentUser.doubleCount || 0;
   if (count <= 0) { toast('沒有雙倍券了！'); return; }
   if (doubleActive) { toast('雙倍券已啟動中！'); return; }
+  if (boostUsed) { toast('加速券使用中，無法同時使用雙倍券！'); return; }
+  if (shortActive) { toast('縮短券使用中，無法同時使用雙倍券！'); return; }
 
   var today = new Date().toLocaleDateString('zh-TW', {
     timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
@@ -1814,6 +1924,47 @@ function useDouble() {
   doubleActive = true;
   updateDoubleUI();
   toast('💎 雙倍券啟動！本題完成後獲得 +2 分！');
+}
+
+// ── 縮短券 ──
+function updateShortUI() {
+  if (!currentUser || currentUser.isGuest) return;
+  db.ref('users/' + currentUser.studentId + '/shortTicket').once('value', function(snap) {
+    var data = snap.val() || {};
+    var count = data.count || 0;
+    currentUser.shortCount = count;
+    ['g-short', 'g-short-d'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = (count > 0 && inputOn && !shortActive) ? 'block' : 'none';
+    });
+    ['g-short-count', 'g-short-count-d'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = count;
+    });
+  });
+}
+
+function useShort() {
+  if (!currentUser || currentUser.isGuest) return;
+  if (!inputOn) { toast('請在打字中使用縮短券'); return; }
+  var count = currentUser.shortCount || 0;
+  if (count <= 0) { toast('沒有縮短券了！'); return; }
+  if (shortActive) { toast('縮短券已啟動中！'); return; }
+  if (boostUsed) { toast('加速券使用中，無法同時使用縮短券！'); return; }
+  if (doubleActive) { toast('雙倍券使用中，無法同時使用縮短券！'); return; }
+
+  var shortToday = new Date().toLocaleDateString('zh-TW', {
+    timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).replace(/\//g, '-');
+
+  currentUser.shortCount = count - 1;
+  db.ref('users/' + currentUser.studentId + '/shortTicket').set({
+    count: count - 1, lastGiven: shortToday
+  });
+
+  shortActive = true;
+  updateShortUI();
+  toast('✂️ 縮短券啟動！打完前70%即可完成！');
 }
 
 // ── 全員完成檢查（onRoom 觸發，作為備援確保結算）──
@@ -1907,21 +2058,26 @@ async function leaveEarly() {
   // 還券：如果雙倍券啟動中但還沒打完，把券還回去
   if (doubleActive && currentUser && currentUser.studentId) {
     doubleActive = false;
-    var today = new Date().toLocaleDateString('zh-TW', {
-      timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
-    }).replace(/\//g, '-');
-    db.ref('users/' + currentUser.studentId + '/doubleTicket').set({ date: today, count: 1 });
+  boostUsed = false;
+  shortActive = false;
+    var prevDoubleCount = currentUser.doubleCount || 0;
+    db.ref('users/' + currentUser.studentId + '/doubleTicket').update({ count: prevDoubleCount + 1 });
+  }
+  // 還券：縮短券啟動中但還沒打完，把券還回去
+  if (shortActive && currentUser && currentUser.studentId) {
+    shortActive = false;
+    var prevShortCount = currentUser.shortCount || 0;
+    db.ref('users/' + currentUser.studentId + '/shortTicket').update({ count: prevShortCount + 1 });
   }
   // 還券：如果加速券已使用但這題還沒完成，把券還回去
   if (currentUser && currentUser.studentId && !doneThisQ) {
-    var today2 = new Date().toLocaleDateString('zh-TW', {
-      timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
-    }).replace(/\//g, '-');
     db.ref('users/' + currentUser.studentId + '/boostTicket').once('value', function(snap) {
       var data = snap.val() || {};
-      // 加速券被用掉後 count 變 0，還回去設為 1
-      if (data.date === today2 && (data.count || 0) === 0) {
-        db.ref('users/' + currentUser.studentId + '/boostTicket').set({ date: today2, count: 1 });
+      var prevCount = currentUser.boostCount || 0;
+      var curCount = data.count || 0;
+      // 使用後 count 減少了，還回去
+      if (curCount < prevCount) {
+        db.ref('users/' + currentUser.studentId + '/boostTicket').update({ count: prevCount });
       }
     });
   }
@@ -2007,9 +2163,11 @@ function cleanup() {
   lbOpenClass = null;
   lbLoading = false;
   doubleActive = false;
+  boostUsed = false;
+  shortActive = false;
   var lb = document.getElementById('lb-detail');
   if (lb) lb.style.display = 'none';
-  ['g-boost','g-boost-d','g-double','g-double-d'].forEach(function(id) {
+  ['g-boost','g-boost-d','g-double','g-double-d','g-short','g-short-d'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
@@ -2042,6 +2200,7 @@ async function playAgain() {
     updates['players/' + p.uid + '/prog'] = 0;
   });
   lastStatus = ''; lastQ = -1; advancing = false;
+  doubleActive = false; boostUsed = false; shortActive = false;
   await db.ref('rooms/' + roomId).update(updates);
 }
 // ── 防止瀏覽器返回鍵跳出遊戲 ──
