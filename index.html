@@ -633,7 +633,7 @@ const LEVELS = [
   { label: '⭐ 達標',      reward: '總成績 +1',      targets: { '商一甲': 58,  '商一乙': 52,  '應一甲': 28,  '貿一甲': 20  } },
   { label: '⭐⭐ 良好',    reward: '總成績 +2',      targets: { '商一甲': 81,  '商一乙': 79,  '應一甲': 39,  '貿一甲': 35  } },
   { label: '⭐⭐⭐ 優秀',  reward: '總成績 +3',      targets: { '商一甲': 115, '商一乙': 115, '應一甲': 55,  '貿一甲': 50  } },
-  { label: '🎉 傳說',      reward: '總成績 +3 + 點心', targets: { '商一甲': 116, '商一乙': 116, '應一甲': 56,  '貿一甲': 51  } },
+  { label: '🎉 傳說',      reward: '總成績 +3 + 點心', targets: { '商一甲': 115, '商一乙': 116, '應一甲': 55,  '貿一甲': 51  } },
 ];
 // 向下相容
 const TARGETS = { '商一甲': 58, '商一乙': 52, '應一甲': 28, '貿一甲': 20 };
@@ -972,15 +972,21 @@ function _doAddWeekScore() {
       boostRef.once('value', function(bs) {
         var boostData = bs.val() || {};
         if (boostData.lastGiven !== today) {
-          // 計算昨天打了幾篇（加倍奉還：昨天3篇以上，今天發2張）
+          // 加倍奉還：用 history 計算昨天打了幾篇（不受重置影響）
           var yesterday = new Date();
           yesterday.setDate(yesterday.getDate() - 1);
           var yesterdayStr = yesterday.toLocaleDateString('zh-TW', {
             timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
           }).replace(/\//g, '-');
-          db.ref('users/' + currentUser.studentId + '/dailyPassages/' + yesterdayStr).once('value', function(ydSnap) {
-            var ydCount = ydSnap.val() ? Object.keys(ydSnap.val()).length : 0;
-            var bonus = ydCount >= 3 ? 2 : 1; // 昨天3篇以上發2張，否則1張
+          db.ref('users/' + currentUser.studentId + '/history').once('value', function(hSnap) {
+            var histData = hSnap.val() ? Object.values(hSnap.val()) : [];
+            // 用 timestamp 比對昨天的紀錄（更可靠，不受時間格式影響）
+            var ydStart = new Date(yesterdayStr + 'T00:00:00+08:00').getTime();
+            var ydEnd   = new Date(yesterdayStr + 'T23:59:59+08:00').getTime();
+            var ydCount = histData.filter(function(h) {
+              return h.timestamp && h.timestamp >= ydStart && h.timestamp <= ydEnd;
+            }).length;
+            var bonus = ydCount >= 3 ? 2 : 1;
             var current = boostData.count || 0;
             var newCount = Math.min(current + bonus, 3);
             boostRef.set({ count: newCount, lastGiven: today });
@@ -1006,8 +1012,14 @@ function _doAddWeekScore() {
           var yesterdayStr2 = yesterday2.toLocaleDateString('zh-TW', {
             timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
           }).replace(/\//g, '-');
-          db.ref('users/' + currentUser.studentId + '/dailyPassages/' + yesterdayStr2).once('value', function(ydSnap2) {
-            var ydCount2 = ydSnap2.val() ? Object.keys(ydSnap2.val()).length : 0;
+          // 用 history 計算昨天打了幾篇（不受重置影響）
+          db.ref('users/' + currentUser.studentId + '/history').once('value', function(ydSnap2) {
+            var histData2 = ydSnap2.val() ? Object.values(ydSnap2.val()) : [];
+            var ydStart2 = new Date(yesterdayStr2 + 'T00:00:00+08:00').getTime();
+            var ydEnd2   = new Date(yesterdayStr2 + 'T23:59:59+08:00').getTime();
+            var ydCount2 = histData2.filter(function(h) {
+              return h.timestamp && h.timestamp >= ydStart2 && h.timestamp <= ydEnd2;
+            }).length;
             var bonus2 = ydCount2 >= 3 ? 2 : 1;
             var current2 = doubleData.count || 0;
             var newCount2 = Math.min(current2 + bonus2, 3);
@@ -1935,7 +1947,8 @@ function updateShortUI() {
     currentUser.shortCount = count;
     ['g-short', 'g-short-d'].forEach(function(id) {
       var el = document.getElementById(id);
-      if (el) el.style.display = (count > 0 && inputOn && !shortActive) ? 'block' : 'none';
+      // inputOn 判斷由 useShort 函式負責，這裡只管有沒有券
+      if (el) el.style.display = (count > 0 && !shortActive) ? 'block' : 'none';
     });
     ['g-short-count', 'g-short-count-d'].forEach(function(id) {
       var el = document.getElementById(id);
