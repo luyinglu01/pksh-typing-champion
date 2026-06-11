@@ -1222,6 +1222,31 @@ async function doCreate(qcount, minP, customPassages) {
   const code = rndCode();
   roomId = 'room_' + code;
   var sourceList = customPassages ? customPassages : shuffle(PASSAGES).slice(0, qcount);
+
+  // 隨機模式：提醒今天已打過的題目
+  if (!customPassages && currentUser && currentUser.studentId && !currentUser.isGuest) {
+    var today = new Date().toLocaleDateString('zh-TW', {
+      timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).replace(/\//g, '-');
+    var daySnap = await db.ref('users/' + currentUser.studentId + '/dailyPassages/' + today).once('value');
+    var todayData = daySnap.val() || {};
+    var todayTitles = Object.values(todayData).filter(function(v) { return typeof v === 'string'; });
+    var repeated = sourceList.filter(function(t) {
+      var title = t.slice(0, 10).replace(/
+/g, '');
+      return todayTitles.includes(title);
+    });
+    if (repeated.length > 0) {
+      var nums = repeated.map(function(t) {
+        var idx = PASSAGES.findIndex(function(p) { return p.slice(0, 10).replace(/
+/g, '') === t.slice(0, 10).replace(/
+/g, ''); });
+        return idx >= 0 ? '題組' + (idx + 1) : '某題';
+      });
+      toast('⚠️ 抽到今天已打過的' + nums.join('、') + '，完成不會再加分喔！');
+    }
+  }
+
   const qs = sourceList.map((t, i) => ({ i: i, t: t }));
   await db.ref('rooms/' + roomId).set({
     code: code, status: 'waiting', host: myUid,
@@ -1813,9 +1838,17 @@ function loadMyPassages() {
         (isToday ? '📅 今天' : day) + '　共 ' + keys.length + ' 篇</div>' +
         '<div style="display:flex;flex-wrap:wrap;gap:5px">' +
         keys.map(function(k) {
-          var title = typeof passages[k] === 'string' ? passages[k] + '…' : '已完成';
+          var title = typeof passages[k] === 'string' ? passages[k] : '已完成';
+          // 比對 PASSAGES 找出是題組幾
+          var passageNum = '';
+          for (var pi = 0; pi < PASSAGES.length; pi++) {
+            if (PASSAGES[pi].slice(0, 10).replace(/\n/g, '') === title) {
+              passageNum = '題組' + (pi + 1) + ' ';
+              break;
+            }
+          }
           return '<span style="background:var(--purple-light);color:var(--purple-dark);' +
-            'padding:4px 10px;border-radius:20px;font-size:12px">✓ ' + escHtml(title) + '</span>';
+            'padding:4px 10px;border-radius:20px;font-size:12px">✓ ' + escHtml(passageNum + title) + '…</span>';
         }).join('') +
         '</div></div>';
     }).join('');
