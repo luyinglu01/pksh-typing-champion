@@ -1677,7 +1677,7 @@ function finishQ(wpm, acc) {
         prog: 100, wpm: wpm, done: d.qcount,
         totalWpm: myTotalWpm, totalAcc: myTotalAcc, rounds: myRounds
       }, function(err) {
-        if (err) return;
+        // 寫入失敗也繼續執行結算，不直接 return
         // 讀取最新玩家資料判斷是否全員完成
         db.ref('rooms/' + roomId + '/players').once('value', function(psSnap) {
           var latestPs = psSnap.val() ? Object.values(psSnap.val()) : [];
@@ -1685,19 +1685,26 @@ function finishQ(wpm, acc) {
             return (p.done || 0) >= d.qcount;
           });
           if (allDone) {
-            // 用 transaction 確保只結算一次
             db.ref('rooms/' + roomId + '/status').transaction(function(status) {
               if (status === null || status === 'playing') return 'results';
               return;
             });
           }
-          // 單人模式備援：如果只有自己，直接結算不等 onRoom
-          if (latestPs.length === 1 && latestPs[0].uid === myUid) {
+          // 單人模式備援：只有自己直接結算
+          if (latestPs.length <= 1) {
             db.ref('rooms/' + roomId + '/status').transaction(function(status) {
               if (status === null || status === 'playing') return 'results';
               return;
             });
           }
+          // 終極備援：3秒後強制結算（以防 Firebase 讀取也失敗）
+          setTimeout(function() {
+            if (!roomId) return;
+            db.ref('rooms/' + roomId + '/status').transaction(function(status) {
+              if (status === null || status === 'playing') return 'results';
+              return;
+            });
+          }, 3000);
         });
       });
 
@@ -1871,12 +1878,12 @@ function useBoost() {
     date: today, count: count - 1
   });
 
-  // 把輸入內容跳到文章的50%位置
+  // 把輸入內容跳到文章的50%位置（填入正確內容，不是同學打的）
   var compareText = curText.replace(/\n/g, '');
   var halfLen = Math.floor(compareText.length / 2);
-  var halfText = compareText.slice(0, halfLen);
+  var halfText = compareText.slice(0, halfLen); // 正確的前50%內容
 
-  // 更新兩個 textarea
+  // 直接填入正確內容，不觸發 input 事件
   ['g-input', 'g-input-d'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) {
@@ -1888,8 +1895,21 @@ function useBoost() {
   typed = halfText;
   boostUsed = true;
 
-  // 觸發畫面更新
-  handleTyping(halfText);
+  // 更新畫面（不重新渲染，直接更新進度條和統計）
+  var pct = 50;
+  var wpm = calcWpm(halfLen, startTime);
+  var correct = halfLen; // 填入的都是正確內容
+  var acc = 100;
+  renderPassage(halfText, curText);
+  syncEl(['g-swpm','g-swpm-d'], 'textContent', wpm);
+  syncEl(['g-sacc','g-sacc-d'], 'textContent', acc + '%');
+  syncEl(['g-schar','g-schar-d'], 'textContent', halfLen);
+  syncEl(['g-wpm','g-wpm-d'], 'textContent', wpm + ' 字/分');
+  var myBar = document.getElementById('bar-' + myUid);
+  var myPct = document.getElementById('pct-' + myUid);
+  if (myBar) myBar.style.width = pct + '%';
+  if (myPct) myPct.textContent = pct + '%';
+  db.ref('rooms/' + roomId + '/players/' + myUid).update({ prog: pct, wpm: wpm });
   updateBoostUI();
   toast('⚡ 加速券使用！進度已跳至50%，繼續加油！');
 }
