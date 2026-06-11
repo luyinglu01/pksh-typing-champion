@@ -14,8 +14,7 @@ const FIREBASE_CONFIG = {
   projectId: "typing-champion-pksh",
   storageBucket: "typing-champion-pksh.firebasestorage.app",
   messagingSenderId: "488113242984",
-  appId: "1:488113242984:web:a9a78c6ee35f0cacc78cdd",
-  measurementId: "G-MK9XZ4KZEQ"
+  appId: "1:488113242984:web:a9a78c6ee35f0cacc78cdd"
 };
 </script>
 
@@ -1233,15 +1232,12 @@ async function doCreate(qcount, minP, customPassages) {
     var todayData = daySnap.val() || {};
     var todayTitles = Object.values(todayData).filter(function(v) { return typeof v === 'string'; });
     var repeated = sourceList.filter(function(t) {
-      var title = t.slice(0, 10).replace(/
-/g, '');
+      var title = t.slice(0, 10).replace(/\n/g, '');
       return todayTitles.includes(title);
     });
     if (repeated.length > 0) {
       var nums = repeated.map(function(t) {
-        var idx = PASSAGES.findIndex(function(p) { return p.slice(0, 10).replace(/
-/g, '') === t.slice(0, 10).replace(/
-/g, ''); });
+        var idx = PASSAGES.findIndex(function(p) { return p.slice(0, 10).replace(/\n/g, '') === t.slice(0, 10).replace(/\n/g, ''); });
         return idx >= 0 ? '題組' + (idx + 1) : '某題';
       });
       toast('⚠️ 抽到今天已打過的' + nums.join('、') + '，完成不會再加分喔！');
