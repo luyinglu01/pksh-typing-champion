@@ -1835,17 +1835,17 @@ function loadMyPassages() {
         (isToday ? '📅 今天' : day) + '　共 ' + keys.length + ' 篇</div>' +
         '<div style="display:flex;flex-wrap:wrap;gap:5px">' +
         keys.map(function(k) {
-          var title = typeof passages[k] === 'string' ? passages[k] : '已完成';
+          var title = typeof passages[k] === 'string' ? passages[k] : '';
           // 比對 PASSAGES 找出是題組幾
-          var passageNum = '';
+          var passageNum = '?';
           for (var pi = 0; pi < PASSAGES.length; pi++) {
             if (PASSAGES[pi].slice(0, 10).replace(/\n/g, '') === title) {
-              passageNum = '題組' + (pi + 1) + ' ';
+              passageNum = (pi + 1);
               break;
             }
           }
           return '<span style="background:var(--purple-light);color:var(--purple-dark);' +
-            'padding:4px 10px;border-radius:20px;font-size:12px">✓ ' + escHtml(passageNum + title) + '…</span>';
+            'padding:4px 10px;border-radius:20px;font-size:12px">✓ 題組' + passageNum + '</span>';
         }).join('') +
         '</div></div>';
     }).join('');
